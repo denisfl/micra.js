@@ -24,7 +24,11 @@
           <a href="#directives"><span class="dot"></span>Directives</a>
           <a href="#event-bus"><span class="dot"></span>Event Bus</a>
           <a href="#fetch"><span class="dot"></span>Fetch</a>
+          <a href="#fetch-errors"><span class="dot"></span>Fetch Errors</a>
           <a href="#lists"><span class="dot"></span>Lists</a>
+          <a href="#expressions"
+            ><span class="dot"></span>Methods in Expressions</a
+          >
           <a href="#refs"><span class="dot"></span>Refs</a>
           <a href="#events"><span class="dot"></span>Events</a>
           <a href="#lifecycle"><span class="dot"></span>Lifecycle</a>
@@ -32,6 +36,7 @@
             ><span class="dot"></span>Multiple Instances</a
           >
         </nav>
+        <button class="btn" onclick="Micra.debug()">🛠 Debug</button>
       </aside>
 
       <div class="main">
@@ -79,6 +84,12 @@
               Copy this to get started. Define one component, mount it with
               <span class="inline-code">data-component</span>, and call
               <span class="inline-code">Micra.start()</span>.
+              <a
+                href="https://github.com/nicedoc/micra.js/blob/main/docs/getting-started.md"
+                class="hint"
+                style="display: inline-block; margin-top: 6px"
+                >Read more in the docs →</a
+              >
             </p>
             <div class="example">
               <div class="example-preview">
@@ -114,6 +125,12 @@ Micra.start()</code></pre>
               Bind inputs with <span class="inline-code">data-model</span> and
               reference state directly inside expressions. As you type, the DOM
               updates immediately from reactive state.
+              <a
+                href="https://github.com/nicedoc/micra.js/blob/main/docs/state.md"
+                class="hint"
+                style="display: inline-block; margin-top: 6px"
+                >Read more in the docs →</a
+              >
             </p>
             <div class="example">
               <div class="example-preview">
@@ -149,6 +166,12 @@ Micra.define('reactive-demo', {
               Micra directives keep markup expressive and terse. This section
               shows text and HTML rendering, conditional visibility, style
               binding, and additive class toggling with independent live demos.
+              <a
+                href="https://github.com/nicedoc/micra.js/blob/main/docs/directives.md"
+                class="hint"
+                style="display: inline-block; margin-top: 6px"
+                >Read more in the docs →</a
+              >
             </p>
             <div class="example">
               <div class="example-preview preview-stack">
@@ -168,19 +191,31 @@ Micra.define('reactive-demo', {
                 </div>
 
                 <div class="mini-demo">
-                  <h4>data-if / data-show</h4>
+                  <h4>data-if</h4>
                   <div data-component="if-demo" class="stack">
                     <button
                       class="btn"
                       @click="toggle"
                       data-text="open ? 'Hide panel' : 'Show panel'"
                     ></button>
-                    <div class="status-pill" data-show="open">Visible</div>
                     <div class="panel" data-if="open">
                       This panel uses
                       <span class="inline-code">data-if</span> to toggle
                       display.
                     </div>
+                  </div>
+                </div>
+
+                <div class="mini-demo">
+                  <h4>data-show</h4>
+                  <div data-component="show-demo" class="stack">
+                    <button class="btn" @click="toggle">
+                      Toggle visibility
+                    </button>
+                    <div class="status-pill" data-show="visible">
+                      Visible with data-show
+                    </div>
+                    <p class="hint">Same as data-if — toggles display:none</p>
                   </div>
                 </div>
 
@@ -263,14 +298,28 @@ Micra.define('text-html-demo', {
                 </div>
 
                 <div class="mini-code">
-                  <h4>data-if / data-show</h4>
-                  <pre><code>&lt;button @click="toggle"&gt;Toggle&lt;/button&gt;
-&lt;div data-show="open"&gt;Visible&lt;/div&gt;
-&lt;div data-if="open"&gt;Panel content&lt;/div&gt;
+                  <h4>data-if</h4>
+                  <pre><code>&lt;div data-component="if-demo"&gt;
+  &lt;button @click="toggle"&gt;Toggle&lt;/button&gt;
+  &lt;div data-if="open"&gt;Panel content&lt;/div&gt;
+&lt;/div&gt;
 
 Micra.define('if-demo', {
   state: { open: true },
   toggle() { this.state.open = !this.state.open },
+})</code></pre>
+                </div>
+
+                <div class="mini-code">
+                  <h4>data-show</h4>
+                  <pre><code>&lt;div data-component="show-demo"&gt;
+  &lt;button @click="toggle"&gt;Toggle&lt;/button&gt;
+  &lt;div data-show="visible"&gt;Content&lt;/div&gt;
+&lt;/div&gt;
+
+Micra.define('show-demo', {
+  state: { visible: true },
+  toggle() { this.state.visible = !this.state.visible },
 })</code></pre>
                 </div>
 
@@ -310,6 +359,12 @@ Micra.define('class-demo', {
               with <span class="inline-code">Micra.emit()</span> and subscribe
               with <span class="inline-code">Micra.on()</span> for tiny
               cross-component communication.
+              <a
+                href="https://github.com/nicedoc/micra.js/blob/main/docs/concepts.md"
+                class="hint"
+                style="display: inline-block; margin-top: 6px"
+                >Read more in the docs →</a
+              >
             </p>
             <div class="example">
               <div class="example-preview">
@@ -329,6 +384,16 @@ Micra.define('class-demo', {
                       class="hint"
                       data-text="'messages received: ' + count"
                     ></p>
+                    <button
+                      class="btn"
+                      @click="unsubscribe"
+                      data-if="!unsubscribed"
+                    >
+                      Unsubscribe
+                    </button>
+                    <p class="hint" data-if="unsubscribed">
+                      Unsubscribed — no more messages.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -340,12 +405,19 @@ Micra.define('class-demo', {
 })
 
 Micra.define('bus-receiver', {
-  state: { count: 0, last: 'Waiting…' },
+  state: { count: 0, last: 'Waiting…', unsubscribed: false },
   onCreate() {
-    this.on('docs:ping', payload =&gt; {
-      this.state.count++
-      this.state.last = 'Ping at ' + payload.at
+    this.__sub = this.on('docs:ping', payload =&gt; {
+      if (!this.state.unsubscribed) {
+        this.state.count++
+        this.state.last = 'Ping at ' + payload.at
+      }
     })
+  },
+  unsubscribe() {
+    this.state.unsubscribed = true
+    this.__sub &amp;&amp; this.__sub()  // calls Micra.off()
+    Micra.emit('docs:ping', { count: this.state.count })
   },
 })</code></pre>
               </div>
@@ -359,6 +431,12 @@ Micra.define('bus-receiver', {
               parsing, CSRF header support, and a clean component-level API.
               This page mocks <span class="inline-code">/api/users</span>, so
               the demo works without a backend.
+              <a
+                href="https://github.com/nicedoc/micra.js/blob/main/docs/api-reference.md"
+                class="hint"
+                style="display: inline-block; margin-top: 6px"
+                >Read more in the docs →</a
+              >
             </p>
             <div class="example">
               <div class="example-preview">
@@ -404,6 +482,57 @@ Micra.define('fetch-demo', {
             </div>
           </section>
 
+          <section id="fetch-errors" class="doc-section">
+            <h2>Fetch Errors</h2>
+            <p>
+              <span class="inline-code">this.fetch()</span> throws a typed
+              <span class="inline-code">FetchError</span> on non-2xx responses.
+              Catch it to handle 404s, 403s, and other server errors gracefully.
+              <a
+                href="https://github.com/nicedoc/micra.js/blob/main/docs/api-reference.md"
+                class="hint"
+                style="display: inline-block; margin-top: 6px"
+                >Read more in the docs →</a
+              >
+            </p>
+            <div class="example">
+              <div class="example-preview">
+                <div data-component="fetch-error-demo" class="stack">
+                  <div class="demo-row">
+                    <button class="btn btn-primary" @click="try404">
+                      Fetch /api/missing (404)
+                    </button>
+                    <button class="btn" @click="tryUsers">
+                      Fetch /api/users (200)
+                    </button>
+                  </div>
+                  <div class="panel" data-if="status">
+                    <strong data-text="'Status: ' + status"></strong>
+                    <p class="hint" data-text="message"></p>
+                  </div>
+                </div>
+              </div>
+              <div class="example-code">
+                <pre><code>Micra.define('fetch-error-demo', {
+  state: { status: null, message: '' },
+  async try404() {
+    try {
+      await this.fetch('/api/missing')
+    } catch (e) {
+      this.state.status = e.status   // 404
+      this.state.message = e.message
+    }
+  },
+  async tryUsers() {
+    const data = await this.fetch('/api/users')
+    this.state.status = 200
+    this.state.message = 'Got ' + data.length + ' users'
+  },
+})</code></pre>
+              </div>
+            </div>
+          </section>
+
           <section id="lists" class="doc-section">
             <h2>Lists (data-each)</h2>
             <p>
@@ -411,7 +540,16 @@ Micra.define('fetch-demo', {
               <span class="inline-code">data-each</span> on a
               <span class="inline-code">template</span>. Add
               <span class="inline-code">data-key</span> for keyed diffing so
-              Micra can preserve and reorder DOM nodes efficiently.
+              Micra can preserve and reorder DOM nodes efficiently. Without
+              <span class="inline-code">data-key</span>, items are matched by
+              position — simpler but may cause unnecessary DOM updates on
+              reorder.
+              <a
+                href="https://github.com/nicedoc/micra.js/blob/main/docs/directives.md"
+                class="hint"
+                style="display: inline-block; margin-top: 6px"
+                >Read more in the docs →</a
+              >
             </p>
             <div class="example">
               <div class="example-preview">
@@ -456,6 +594,38 @@ Micra.define('fetch-demo', {
                     data-text="doneCount() + ' of ' + items.length + ' done'"
                   ></p>
                 </div>
+                <div
+                  data-component="each-no-key-demo"
+                  class="stack"
+                  style="
+                    margin-top: 20px;
+                    padding-top: 16px;
+                    border-top: 1px solid var(--border);
+                  "
+                >
+                  <p class="caption">Non-keyed (no data-key)</p>
+                  <div class="demo-row" style="margin-bottom: 12px">
+                    <button class="btn btn-primary" @click="add">
+                      Add random item
+                    </button>
+                    <button class="btn" @click="shuffle">Shuffle</button>
+                  </div>
+                  <template data-each="items">
+                    <div class="todo-row">
+                      <span data-text="item.text" style="flex: 1"></span>
+                      <button @click="remove" data-bind="data-id:item.id">
+                        ✕
+                      </button>
+                    </div>
+                  </template>
+                  <p
+                    data-if="items.length === 0"
+                    class="hint"
+                    style="text-align: center; padding: 12px 0"
+                  >
+                    No items
+                  </p>
+                </div>
               </div>
               <div class="example-code">
                 <pre><code>&lt;div data-component="each-demo"&gt;
@@ -470,6 +640,71 @@ Micra.define('fetch-demo', {
     &lt;/div&gt;
   &lt;/template&gt;
 &lt;/div&gt;</code></pre>
+                <pre><code>&lt;!-- Non-keyed: no data-key attribute --&gt;
+&lt;template data-each="items"&gt;
+  &lt;div class="todo-row"&gt;
+    &lt;span data-text="item.text"&gt;&lt;/span&gt;
+    &lt;button @click="remove" data-bind="data-id:item.id"&gt;✕&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/template&gt;</code></pre>
+              </div>
+            </div>
+          </section>
+
+          <section id="expressions" class="doc-section">
+            <h2>Methods in Expressions</h2>
+            <p>
+              Directive expressions can call component methods. This lets you
+              keep formatting logic inside the component instead of
+              pre-computing display values in state.
+              <a
+                href="https://github.com/nicedoc/micra.js/blob/main/docs/concepts.md"
+                class="hint"
+                style="display: inline-block; margin-top: 6px"
+                >Read more in the docs →</a
+              >
+            </p>
+            <div class="example">
+              <div class="example-preview">
+                <div data-component="expr-demo" class="stack">
+                  <div class="demo-row">
+                    <button class="btn" @click="dec">−</button>
+                    <strong data-text="'Qty: ' + qty"></strong>
+                    <button class="btn btn-primary" @click="inc">+</button>
+                  </div>
+                  <p>
+                    <strong data-text="formatPrice(qty * 9.99)"></strong>
+                    <span class="hint">
+                      — computed by a method call in data-text</span
+                    >
+                  </p>
+                  <p class="hint" data-text="stockMessage(qty)"></p>
+                </div>
+              </div>
+              <div class="example-code">
+                <pre><code>&lt;div data-component="expr-demo"&gt;
+  &lt;button @click="dec"&gt;−&lt;/button&gt;
+  &lt;strong data-text="'Qty: ' + qty"&gt;&lt;/strong&gt;
+  &lt;button @click="inc"&gt;+&lt;/button&gt;
+
+  &lt;!-- Calls formatPrice(qty * 9.99) --&gt;
+  &lt;strong data-text="formatPrice(qty * 9.99)"&gt;&lt;/strong&gt;
+
+  &lt;!-- Calls stockMessage(qty) --&gt;
+  &lt;p data-text="stockMessage(qty)"&gt;&lt;/p&gt;
+&lt;/div&gt;
+
+Micra.define('expr-demo', {
+  state: { qty: 1 },
+  inc()  { this.state.qty++ },
+  dec()  { if (this.state.qty > 1) this.state.qty-- },
+  formatPrice(n) {
+    return '$' + n.toFixed(2)
+  },
+  stockMessage(n) {
+    return n > 10 ? '⚠ Low stock!' : '✓ In stock'
+  },
+})</code></pre>
               </div>
             </div>
           </section>
@@ -481,6 +716,12 @@ Micra.define('fetch-demo', {
               DOM access for imperative APIs like canvas, charts, or focus
               management. Refs are collected into
               <span class="inline-code">this.refs</span>.
+              <a
+                href="https://github.com/nicedoc/micra.js/blob/main/docs/directives.md"
+                class="hint"
+                style="display: inline-block; margin-top: 6px"
+                >Read more in the docs →</a
+              >
             </p>
             <div class="example">
               <div class="example-preview">
@@ -526,6 +767,12 @@ Micra.define('ref-demo', {
               <span class="inline-code">data-on</span>. Here you can see a plain
               click handler, a prevented form submit, and an Enter-key shortcut
               on an input.
+              <a
+                href="https://github.com/nicedoc/micra.js/blob/main/docs/directives.md"
+                class="hint"
+                style="display: inline-block; margin-top: 6px"
+                >Read more in the docs →</a
+              >
             </p>
             <div class="example">
               <div class="example-preview">
@@ -558,10 +805,18 @@ Micra.define('ref-demo', {
                     />
                     <p class="hint" data-text="lastCommit"></p>
                   </div>
+
+                  <div class="panel stack">
+                    <strong>data-on</strong>
+                    <button class="btn" data-on="click:increment">
+                      Clicked <span data-text="clicks"></span> times
+                    </button>
+                  </div>
                 </div>
               </div>
               <div class="example-code">
-                <pre><code>&lt;button @click="increment"&gt;Clicked &lt;span data-text="clicks"&gt;&lt;/span&gt; times&lt;/button&gt;
+                <pre><code>&lt;!-- @event shorthand --&gt;
+&lt;button @click="increment"&gt;Clicked &lt;span data-text="clicks"&gt;&lt;/span&gt; times&lt;/button&gt;
 
 &lt;form @submit.prevent="submit"&gt;
   &lt;input data-model="name"&gt;
@@ -569,6 +824,9 @@ Micra.define('ref-demo', {
 &lt;/form&gt;
 
 &lt;input data-model="draft" @keydown.enter="commit"&gt;
+
+&lt;!-- data-on alternative --&gt;
+&lt;button data-on="click:increment"&gt;Clicked &lt;span data-text="clicks"&gt;&lt;/span&gt; times&lt;/button&gt;
 
 Micra.define('event-demo', {
   state: { clicks: 0, name: '', draft: '' },
@@ -589,6 +847,12 @@ Micra.define('event-demo', {
               <span class="inline-code">Micra.mount()</span> and
               <span class="inline-code">instance.destroy()</span> so you can see
               both hooks fire.
+              <a
+                href="https://github.com/nicedoc/micra.js/blob/main/docs/lifecycle.md"
+                class="hint"
+                style="display: inline-block; margin-top: 6px"
+                >Read more in the docs →</a
+              >
             </p>
             <div class="example">
               <div class="example-preview">
@@ -645,6 +909,12 @@ instance?.destroy()</code></pre>
               emits to the event bus, and a single
               <span class="inline-code">filter-table</span> component listens
               and updates.
+              <a
+                href="https://github.com/nicedoc/micra.js/blob/main/docs/concepts.md"
+                class="hint"
+                style="display: inline-block; margin-top: 6px"
+                >Read more in the docs →</a
+              >
             </p>
             <div class="example">
               <div class="example-preview">
@@ -773,6 +1043,23 @@ instance?.destroy()</code></pre>
                     data-text="'Showing ' + filtered.length + ' of ' + all.length + ' tasks'"
                   ></p>
                 </div>
+                <div class="demo-row" style="margin-top: 16px">
+                  <button
+                    class="btn"
+                    onclick="
+                      console.table(
+                        Array.from(Micra.instances()).map(([el, inst]) => ({
+                          component: el.getAttribute('data-component'),
+                          el: el.tagName + (el.id ? '#' + el.id : ''),
+                          state: JSON.stringify(inst.state),
+                        })),
+                      )
+                    "
+                  >
+                    Log instances to console
+                  </button>
+                  <span class="hint">Opens the browser console (F12)</span>
+                </div>
               </div>
               <div class="example-code">
                 <pre><code>
@@ -873,16 +1160,19 @@ Micra.define("filter-table", {
       (this.state.filtered = t));
   },
 });
+
+// Look up all running instances at any time
+// Array.from(Micra.instances()).forEach(([el, inst]) => console.log(inst.state));
                 </code></pre>
               </div>
             </div>
           </section>
         </main>
-        <!--<p class="footer-note">
+        <p class="footer-note">
           In the browser console, run
           <span class="inline-code">Micra.debug()</span> to print all live
           components with their state.
-        </p>-->
+        </p>
       </div>
     </div>
 

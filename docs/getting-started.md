@@ -17,7 +17,7 @@ npm install micra
 ```
 
 ```ts
-import * as Micra from 'micra'
+import * as Micra from "micra";
 ```
 
 ## Hello Micra
@@ -39,19 +39,19 @@ This example builds a small counter with automatic mounting.
 ### 2. Define the component
 
 ```ts
-import * as Micra from 'micra'
+import * as Micra from "micra";
 
-Micra.define('counter', {
+Micra.define("counter", {
   state: { count: 0 },
 
   increment() {
-    this.state.count++
+    this.state.count++;
   },
 
   decrement() {
-    this.state.count--
+    this.state.count--;
   },
-})
+});
 ```
 
 - `state` becomes reactive when the component mounts.
@@ -61,7 +61,7 @@ Micra.define('counter', {
 ### 3. Start Micra
 
 ```ts
-Micra.start()
+Micra.start();
 ```
 
 Micra scans the page for elements with `data-component`, looks up each registered definition, and mounts them.
@@ -89,9 +89,9 @@ Auto-mount is the default pattern for server-rendered HTML.
 ```
 
 ```ts
-Micra.define('dashboard', { state: {} })
-Micra.define('billing', { state: {} })
-Micra.start()
+Micra.define("dashboard", { state: {} });
+Micra.define("billing", { state: {} });
+Micra.start();
 ```
 
 `Micra.start()`:
@@ -104,7 +104,7 @@ Micra.start()
 You can also limit the scan to a subtree:
 
 ```ts
-Micra.start(document.getElementById('account-panel')!)
+Micra.start(document.getElementById("account-panel")!);
 ```
 
 ## Direct mount
@@ -112,10 +112,25 @@ Micra.start(document.getElementById('account-panel')!)
 If you do not want auto-mount, mount directly:
 
 ```ts
-const instance = Micra.mount('#counter', {
+const instance = Micra.mount("#counter", {
   state: { count: 0 },
-  increment() { this.state.count++ },
-})
+  increment() {
+    this.state.count++;
+  },
+});
 ```
 
 `Micra.mount()` returns the instance or `null` if the element is missing.
+
+## Debugging
+
+While developing, inspect live components with `Micra.debug()`:
+
+```ts
+Micra.debug();
+// [Micra] 3 live component(s)
+//   counter   $el: <div>  state: { count: 5 }
+//   dropdown  $el: <div>  state: { open: false, label: "Sort by" }
+```
+
+This prints every mounted component, its root element, and current state to the browser console — useful for checking that components mounted correctly and inspecting state values.

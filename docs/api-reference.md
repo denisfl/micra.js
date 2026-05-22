@@ -200,6 +200,27 @@ Example:
 console.log(Micra.registry().has("counter"));
 ```
 
+### `Micra.debug()`
+
+```ts
+function debug(): void;
+```
+
+Prints all live component instances to the browser console grouped by component name.
+
+- **returns**: `void`
+
+Example:
+
+```ts
+Micra.debug();
+// [Micra] 3 live component(s)
+//   counter   $el: <div>  state: { count: 5 }
+//   user-list $el: <div>  state: { users: [...], loading: false }
+```
+
+Use this during development to inspect which components are mounted and what state they hold.
+
 ## Component instance
 
 `this` inside component methods is a `ComponentInstance<S>`.

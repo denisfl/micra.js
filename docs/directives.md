@@ -5,34 +5,34 @@ Each directive runs against the current component state and method context.
 Base context used in the examples:
 
 ```ts
-Micra.define('example', {
+Micra.define("example", {
   state: {
-    name: 'Ana',
-    content: '<strong>Hi</strong>',
+    name: "Ana",
+    content: "<strong>Hi</strong>",
     count: 1,
     loaded: true,
-    url: '/users/1',
+    url: "/users/1",
     loading: false,
-    search: '',
-    tab: 'home',
+    search: "",
+    tab: "home",
     items: [
-      { id: 1, name: 'Ada' },
-      { id: 2, name: 'Linus' },
+      { id: 1, name: "Ada" },
+      { id: 2, name: "Linus" },
     ],
   },
 
   save() {
-    console.log('save')
+    console.log("save");
   },
 
   increment() {
-    this.state.count++
+    this.state.count++;
   },
 
   select(item: { id: number; name: string }) {
-    console.log(item)
+    console.log(item);
   },
-})
+});
 ```
 
 ## `data-text`
@@ -65,11 +65,13 @@ Shows or hides an element by toggling `style.display`.
 
 ## `data-show`
 
-Alias of `data-if`.
+Shows or hides an element by toggling `style.display`. Works identically to `data-if`.
 
 ```html
-<div data-show="loaded">Loaded</div>
+<div data-show="loaded">Content is ready</div>
 ```
+
+Use `data-show` when you prefer the semantic name, or `data-if` — they are interchangeable.
 
 ## `data-bind`
 
@@ -92,7 +94,7 @@ Notes:
 Two-way binds an input, select, textarea, checkbox, or radio to a top-level state key.
 
 ```html
-<input data-model="search" placeholder="Search">
+<input data-model="search" placeholder="Search" />
 <p data-text="search"></p>
 ```
 
@@ -101,13 +103,13 @@ Typing into the input updates `this.state.search`. Re-renders update the field v
 Use top-level keys only:
 
 ```html
-<input data-model="search">
+<input data-model="search" />
 ```
 
 Not:
 
 ```html
-<input data-model="filters.search">
+<input data-model="filters.search" />
 ```
 
 ## `data-each`
@@ -188,7 +190,7 @@ Supported modifiers:
 You can bind multiple events:
 
 ```html
-<input data-on="focus:save, blur:save">
+<input data-on="focus:save, blur:save" />
 ```
 
 ## `@event` shorthand

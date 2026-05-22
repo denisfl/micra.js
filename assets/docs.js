@@ -7,6 +7,16 @@
         { id: 3, name: "Carol White", role: "Viewer" },
       ],
     }[t] ?? [];
+  if (t === "/api/missing") {
+    return Promise.resolve({
+      ok: !1,
+      status: 404,
+      statusText: "Not Found",
+      headers: { get: () => "application/json" },
+      json: () => Promise.resolve({ error: "Resource not found" }),
+      text: () => Promise.resolve('{"error":"Resource not found"}'),
+    });
+  }
   return Promise.resolve({
     ok: !0,
     headers: { get: () => "application/json" },
@@ -46,6 +56,12 @@
       this.state.open = !this.state.open;
     },
   }),
+  Micra.define("show-demo", {
+    state: { visible: !0 },
+    toggle() {
+      this.state.visible = !this.state.visible;
+    },
+  }),
   Micra.define("bind-demo", { state: { color: "#2563eb" } }),
   Micra.define("class-demo", {
     state: { tab: "overview" },
@@ -64,12 +80,22 @@
     },
   }),
   Micra.define("bus-receiver", {
-    state: { count: 0, last: "Waiting for an event\u2026" },
+    state: { count: 0, last: "Waiting for an event\u2026", unsubscribed: !1 },
     onCreate() {
-      this.on("docs:ping", (t) => {
-        (this.state.count++,
-          (this.state.last = "Received ping #" + t.count + " at " + t.at));
+      this.__sub = this.on("docs:ping", (t) => {
+        if (!this.state.unsubscribed) {
+          (this.state.count++,
+            (this.state.last = "Received ping #" + t.count + " at " + t.at));
+        }
       });
+    },
+    unsubscribe() {
+      ((this.state.unsubscribed = !0),
+        this.__sub && this.__sub(),
+        Micra.emit("docs:ping", {
+          count: this.state.count,
+          at: new Date().toLocaleTimeString(),
+        }));
     },
   }),
   Micra.define("fetch-demo", {
@@ -84,6 +110,21 @@
           this.state.loading = !1;
         }
       }
+    },
+  }),
+  Micra.define("fetch-error-demo", {
+    state: { status: null, message: "" },
+    async try404() {
+      try {
+        await this.fetch("/api/missing");
+      } catch (t) {
+        ((this.state.status = t.status), (this.state.message = t.message));
+      }
+    },
+    async tryUsers() {
+      const t = await this.fetch("/api/users");
+      ((this.state.status = 200),
+        (this.state.message = "Got " + t.length + " users"));
     },
   }),
   Micra.define("each-demo", {
@@ -118,6 +159,40 @@
     },
     doneCount() {
       return this.state.items.filter((t) => t.done).length;
+    },
+  }),
+  Micra.define("expr-demo", {
+    state: { qty: 1 },
+    inc() {
+      this.state.qty++;
+    },
+    dec() {
+      this.state.qty > 1 && this.state.qty--;
+    },
+    formatPrice(t) {
+      return "$" + t.toFixed(2);
+    },
+    stockMessage(t) {
+      return t > 10 ? "\u26a0 Low stock!" : "\u2713 In stock";
+    },
+  }),
+  Micra.define("each-no-key-demo", {
+    state: { nextId: 1, items: [] },
+    add() {
+      const names = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon"],
+        t = names[Math.floor(Math.random() * names.length)];
+      ((this.state.items = [
+        ...this.state.items,
+        { id: this.state.nextId, text: t },
+      ]),
+        this.state.nextId++);
+    },
+    shuffle() {
+      this.state.items = [...this.state.items].sort(() => Math.random() - 0.5);
+    },
+    remove(t) {
+      const e = Number(t.currentTarget.dataset.id);
+      this.state.items = this.state.items.filter((s) => s.id !== e);
     },
   }),
   Micra.define("ref-demo", {
