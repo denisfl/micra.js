@@ -1,0 +1,900 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="demo-csrf-token-xyz" />
+    <link rel="stylesheet" href="./assets/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css"
+    />
+
+    <title>Micra.js Documentation</title>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="sidebar-logo">Micra<span>.js</span></div>
+        <nav class="sidebar-nav">
+          <a href="#getting-started" class="active"
+            ><span class="dot"></span>Getting Started</a
+          >
+          <a href="#reactive-state"><span class="dot"></span>Reactive State</a>
+          <a href="#directives"><span class="dot"></span>Directives</a>
+          <a href="#event-bus"><span class="dot"></span>Event Bus</a>
+          <a href="#fetch"><span class="dot"></span>Fetch</a>
+          <a href="#lists"><span class="dot"></span>Lists</a>
+          <a href="#refs"><span class="dot"></span>Refs</a>
+          <a href="#events"><span class="dot"></span>Events</a>
+          <a href="#lifecycle"><span class="dot"></span>Lifecycle</a>
+          <a href="#multiple-instances"
+            ><span class="dot"></span>Multiple Instances</a
+          >
+        </nav>
+      </aside>
+
+      <div class="main">
+        <main class="content">
+          <section class="hero">
+            <h2>Reactive UI for small apps, without a build step.</h2>
+            <p>
+              This page is a single HTML file that loads
+              <span class="inline-code">dist/micra.js</span>, mounts live demos
+              with <span class="inline-code">window.Micra</span>, and shows the
+              exact snippets beside every preview.
+            </p>
+            <div class="hero-code">
+              &lt;script src="dist/micra.js"&gt;&lt;/script&gt;
+            </div>
+            <div class="hero-grid">
+              <div class="hero-card">
+                <strong>Reactive state</strong>
+                <span
+                  >Assign to <span class="inline-code">this.state</span> and
+                  Micra re-renders the DOM.</span
+                >
+              </div>
+              <div class="hero-card">
+                <strong>HTML-first directives</strong>
+                <span
+                  ><span class="inline-code">data-text</span>,
+                  <span class="inline-code">data-if</span>,
+                  <span class="inline-code">data-each</span>, and more.</span
+                >
+              </div>
+              <div class="hero-card">
+                <strong>Tiny runtime</strong>
+                <span
+                  >Use refs, the event bus, fetch helpers, and multiple
+                  component instances on one page.</span
+                >
+              </div>
+            </div>
+          </section>
+
+          <section id="getting-started" class="doc-section">
+            <h2>Getting Started</h2>
+            <p>
+              Copy this to get started. Define one component, mount it with
+              <span class="inline-code">data-component</span>, and call
+              <span class="inline-code">Micra.start()</span>.
+            </p>
+            <div class="example">
+              <div class="example-preview">
+                <div data-component="counter-demo" class="demo-row">
+                  <button class="btn" @click="dec">−</button>
+                  <strong data-text="count"></strong>
+                  <button class="btn btn-primary" @click="inc">+</button>
+                </div>
+              </div>
+              <div class="example-code">
+                <pre><code>&lt;script src="dist/micra.js"&gt;&lt;/script&gt;
+
+&lt;div data-component="counter-demo"&gt;
+  &lt;button @click="dec"&gt;−&lt;/button&gt;
+  &lt;strong data-text="count"&gt;&lt;/strong&gt;
+  &lt;button @click="inc"&gt;+&lt;/button&gt;
+&lt;/div&gt;
+
+Micra.define('counter-demo', {
+  state: { count: 0 },
+  inc() { this.state.count++ },
+  dec() { this.state.count-- },
+})
+
+Micra.start()</code></pre>
+              </div>
+            </div>
+          </section>
+
+          <section id="reactive-state" class="doc-section">
+            <h2>Reactive State</h2>
+            <p>
+              Bind inputs with <span class="inline-code">data-model</span> and
+              reference state directly inside expressions. As you type, the DOM
+              updates immediately from reactive state.
+            </p>
+            <div class="example">
+              <div class="example-preview">
+                <div data-component="reactive-demo" class="stack">
+                  <input
+                    class="field"
+                    data-model="name"
+                    placeholder="Type your name…"
+                  />
+                  <p>
+                    Hello, <strong data-text="name || 'stranger'"></strong>!
+                  </p>
+                  <p class="hint" data-text="'chars: ' + name.length"></p>
+                </div>
+              </div>
+              <div class="example-code">
+                <pre><code>&lt;div data-component="reactive-demo"&gt;
+  &lt;input data-model="name" placeholder="Type your name…"&gt;
+  &lt;p&gt;Hello, &lt;strong data-text="name || 'stranger'"&gt;&lt;/strong&gt;!&lt;/p&gt;
+  &lt;p data-text="'chars: ' + name.length"&gt;&lt;/p&gt;
+&lt;/div&gt;
+
+Micra.define('reactive-demo', {
+  state: { name: '' },
+})</code></pre>
+              </div>
+            </div>
+          </section>
+
+          <section id="directives" class="doc-section">
+            <h2>Directives</h2>
+            <p>
+              Micra directives keep markup expressive and terse. This section
+              shows text and HTML rendering, conditional visibility, style
+              binding, and additive class toggling with independent live demos.
+            </p>
+            <div class="example">
+              <div class="example-preview preview-stack">
+                <div class="mini-demo">
+                  <h4>data-text / data-html</h4>
+                  <div data-component="text-html-demo" class="stack">
+                    <button class="btn" @click="toggle">Toggle content</button>
+                    <div class="directive-output">
+                      <p class="caption">data-text</p>
+                      <div data-text="message"></div>
+                    </div>
+                    <div class="directive-output">
+                      <p class="caption">data-html</p>
+                      <div data-html="markup"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mini-demo">
+                  <h4>data-if / data-show</h4>
+                  <div data-component="if-demo" class="stack">
+                    <button
+                      class="btn"
+                      @click="toggle"
+                      data-text="open ? 'Hide panel' : 'Show panel'"
+                    ></button>
+                    <div class="status-pill" data-show="open">Visible</div>
+                    <div class="panel" data-if="open">
+                      This panel uses
+                      <span class="inline-code">data-if</span> to toggle
+                      display.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mini-demo">
+                  <h4>data-bind</h4>
+                  <div data-component="bind-demo" class="stack">
+                    <input
+                      class="field"
+                      data-model="color"
+                      placeholder="#2563eb"
+                    />
+                    <p data-bind="style:{ color: color }">
+                      This text is styled by reactive state.
+                    </p>
+                    <p class="hint">
+                      Try a hex code like
+                      <span class="inline-code">#dc2626</span>.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="mini-demo">
+                  <h4>data-class</h4>
+                  <div data-component="class-demo">
+                    <div class="tab-row">
+                      <button
+                        class="tab-btn"
+                        @click="select"
+                        data-bind="data-tab:'overview'"
+                        data-class="active:tab === 'overview'"
+                      >
+                        Overview
+                      </button>
+                      <button
+                        class="tab-btn"
+                        @click="select"
+                        data-bind="data-tab:'billing'"
+                        data-class="active:tab === 'billing'"
+                      >
+                        Billing
+                      </button>
+                      <button
+                        class="tab-btn"
+                        @click="select"
+                        data-bind="data-tab:'security'"
+                        data-class="active:tab === 'security'"
+                      >
+                        Security
+                      </button>
+                    </div>
+                    <div class="tab-panel" data-if="tab === 'overview'">
+                      Overview content
+                    </div>
+                    <div class="tab-panel" data-if="tab === 'billing'">
+                      Billing content
+                    </div>
+                    <div class="tab-panel" data-if="tab === 'security'">
+                      Security content
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="example-code code-stack">
+                <div class="mini-code">
+                  <h4>data-text / data-html</h4>
+                  <pre><code>&lt;div data-component="text-html-demo"&gt;
+  &lt;button @click="toggle"&gt;Toggle content&lt;/button&gt;
+  &lt;div data-text="message"&gt;&lt;/div&gt;
+  &lt;div data-html="markup"&gt;&lt;/div&gt;
+&lt;/div&gt;
+
+Micra.define('text-html-demo', {
+  state: {
+    message: 'Plain text &lt;strong&gt;stays literal&lt;/strong&gt;',
+    markup: '&lt;strong&gt;Rendered HTML&lt;/strong&gt;',
+  },
+  toggle() { /* swap both values */ },
+})</code></pre>
+                </div>
+
+                <div class="mini-code">
+                  <h4>data-if / data-show</h4>
+                  <pre><code>&lt;button @click="toggle"&gt;Toggle&lt;/button&gt;
+&lt;div data-show="open"&gt;Visible&lt;/div&gt;
+&lt;div data-if="open"&gt;Panel content&lt;/div&gt;
+
+Micra.define('if-demo', {
+  state: { open: true },
+  toggle() { this.state.open = !this.state.open },
+})</code></pre>
+                </div>
+
+                <div class="mini-code">
+                  <h4>data-bind</h4>
+                  <pre><code>&lt;input data-model="color"&gt;
+&lt;p data-bind="style:{ color: color }"&gt;
+  This text is styled by reactive state.
+&lt;/p&gt;
+
+Micra.define('bind-demo', {
+  state: { color: '#2563eb' },
+})</code></pre>
+                </div>
+
+                <div class="mini-code">
+                  <h4>data-class</h4>
+                  <pre><code>&lt;button @click="select"
+  data-bind="data-tab:'overview'"
+  data-class="active:tab === 'overview'"&gt;
+  Overview
+&lt;/button&gt;
+
+Micra.define('class-demo', {
+  state: { tab: 'overview' },
+  select(e) { this.state.tab = e.currentTarget.dataset.tab },
+})</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="event-bus" class="doc-section">
+            <h2>Event Bus</h2>
+            <p>
+              Independent components can talk without sharing a parent. Emit
+              with <span class="inline-code">Micra.emit()</span> and subscribe
+              with <span class="inline-code">Micra.on()</span> for tiny
+              cross-component communication.
+            </p>
+            <div class="example">
+              <div class="example-preview">
+                <div class="bus-grid">
+                  <div data-component="bus-sender" class="panel stack">
+                    <strong>Sender</strong>
+                    <p class="hint">Each click publishes a global event.</p>
+                    <button class="btn btn-primary" @click="ping">
+                      Emit ping
+                    </button>
+                    <p class="hint" data-text="'events sent: ' + sent"></p>
+                  </div>
+                  <div data-component="bus-receiver" class="panel stack">
+                    <strong>Receiver</strong>
+                    <p data-text="last"></p>
+                    <p
+                      class="hint"
+                      data-text="'messages received: ' + count"
+                    ></p>
+                  </div>
+                </div>
+              </div>
+              <div class="example-code">
+                <pre><code>Micra.define('bus-sender', {
+  ping() {
+    Micra.emit('docs:ping', { at: Date.now() })
+  },
+})
+
+Micra.define('bus-receiver', {
+  state: { count: 0, last: 'Waiting…' },
+  onCreate() {
+    this.on('docs:ping', payload =&gt; {
+      this.state.count++
+      this.state.last = 'Ping at ' + payload.at
+    })
+  },
+})</code></pre>
+              </div>
+            </div>
+          </section>
+
+          <section id="fetch" class="doc-section">
+            <h2>Fetch</h2>
+            <p>
+              Use <span class="inline-code">this.fetch()</span> for JSON
+              parsing, CSRF header support, and a clean component-level API.
+              This page mocks <span class="inline-code">/api/users</span>, so
+              the demo works without a backend.
+            </p>
+            <div class="example">
+              <div class="example-preview">
+                <div data-component="fetch-demo" class="stack">
+                  <div class="demo-row">
+                    <button class="btn btn-primary" @click="load">
+                      Load users
+                    </button>
+                    <span class="hint" data-if="loading">Loading…</span>
+                  </div>
+                  <div class="user-list">
+                    <template data-each="users" data-key="id">
+                      <div class="user-card">
+                        <strong data-text="item.name"></strong>
+                        <span data-text="item.role"></span>
+                      </div>
+                    </template>
+                  </div>
+                  <p
+                    class="hint"
+                    data-if="loaded &amp;&amp; users.length === 0"
+                  >
+                    No users returned.
+                  </p>
+                </div>
+              </div>
+              <div class="example-code">
+                <pre><code>&lt;div data-component="fetch-demo"&gt;
+  &lt;button @click="load"&gt;Load users&lt;/button&gt;
+  &lt;template data-each="users" data-key="id"&gt;
+    &lt;div&gt;
+      &lt;strong data-text="item.name"&gt;&lt;/strong&gt;
+      &lt;span data-text="item.role"&gt;&lt;/span&gt;
+    &lt;/div&gt;
+  &lt;/template&gt;
+&lt;/div&gt;
+
+Micra.define('fetch-demo', {
+  state: { loading: false, users: [] },
+  async load() { this.state.users = await this.fetch('/api/users') },
+})</code></pre>
+              </div>
+            </div>
+          </section>
+
+          <section id="lists" class="doc-section">
+            <h2>Lists (data-each)</h2>
+            <p>
+              Render collections with
+              <span class="inline-code">data-each</span> on a
+              <span class="inline-code">template</span>. Add
+              <span class="inline-code">data-key</span> for keyed diffing so
+              Micra can preserve and reorder DOM nodes efficiently.
+            </p>
+            <div class="example">
+              <div class="example-preview">
+                <div data-component="each-demo" class="stack">
+                  <div class="demo-row" style="margin-bottom: 12px">
+                    <input
+                      class="todo-input"
+                      data-model="newItem"
+                      @keydown.enter="add"
+                      placeholder="Add item…"
+                      style="flex: 1"
+                    />
+                    <button class="btn btn-primary" @click="add">Add</button>
+                  </div>
+                  <template data-each="items" data-key="id">
+                    <div class="todo-row" data-bind="data-id:item.id">
+                      <input
+                        type="checkbox"
+                        data-bind="checked:item.done"
+                        @change="toggle"
+                      />
+                      <span
+                        data-text="item.text"
+                        data-class="done:item.done"
+                        style="flex: 1"
+                      ></span>
+                      <button @click="remove" data-bind="data-id:item.id">
+                        ✕
+                      </button>
+                    </div>
+                  </template>
+                  <p
+                    data-if="items.length === 0"
+                    class="hint"
+                    style="text-align: center; padding: 12px 0"
+                  >
+                    No items yet
+                  </p>
+                  <p
+                    data-if="items.length &gt; 0"
+                    class="hint"
+                    data-text="doneCount() + ' of ' + items.length + ' done'"
+                  ></p>
+                </div>
+              </div>
+              <div class="example-code">
+                <pre><code>&lt;div data-component="each-demo"&gt;
+  &lt;input data-model="newItem" @keydown.enter="add"&gt;
+  &lt;template data-each="items" data-key="id"&gt;
+    &lt;div data-bind="data-id:item.id"&gt;
+      &lt;input type="checkbox"
+        data-bind="checked:item.done"
+        @change="toggle"&gt;
+      &lt;span data-text="item.text" data-class="done:item.done"&gt;&lt;/span&gt;
+      &lt;button @click="remove" data-bind="data-id:item.id"&gt;✕&lt;/button&gt;
+    &lt;/div&gt;
+  &lt;/template&gt;
+&lt;/div&gt;</code></pre>
+              </div>
+            </div>
+          </section>
+
+          <section id="refs" class="doc-section">
+            <h2>Refs (data-ref)</h2>
+            <p>
+              Use <span class="inline-code">data-ref</span> when you need direct
+              DOM access for imperative APIs like canvas, charts, or focus
+              management. Refs are collected into
+              <span class="inline-code">this.refs</span>.
+            </p>
+            <div class="example">
+              <div class="example-preview">
+                <div data-component="ref-demo" class="stack">
+                  <div class="demo-row">
+                    <button class="btn btn-primary" @click="draw">
+                      Draw chart
+                    </button>
+                    <button class="btn" @click="randomize">Shuffle data</button>
+                  </div>
+                  <div class="canvas-wrap">
+                    <canvas data-ref="canvas" width="420" height="180"></canvas>
+                  </div>
+                  <p
+                    class="hint"
+                    data-text="'values: ' + values.join(', ')"
+                  ></p>
+                </div>
+              </div>
+              <div class="example-code">
+                <pre><code>&lt;div data-component="ref-demo"&gt;
+  &lt;button @click="draw"&gt;Draw chart&lt;/button&gt;
+  &lt;canvas data-ref="canvas" width="420" height="180"&gt;&lt;/canvas&gt;
+&lt;/div&gt;
+
+Micra.define('ref-demo', {
+  state: { values: [42, 68, 29, 81] },
+  draw() {
+    const canvas = this.refs.canvas
+    const ctx = canvas.getContext('2d')
+    // draw bars with the canvas API
+  },
+})</code></pre>
+              </div>
+            </div>
+          </section>
+
+          <section id="events" class="doc-section">
+            <h2>Events (@event and data-on)</h2>
+            <p>
+              The <span class="inline-code">@event</span> shorthand is the
+              preferred way to bind events; it expands to the same behavior as
+              <span class="inline-code">data-on</span>. Here you can see a plain
+              click handler, a prevented form submit, and an Enter-key shortcut
+              on an input.
+            </p>
+            <div class="example">
+              <div class="example-preview">
+                <div data-component="event-demo" class="event-grid">
+                  <div class="panel stack">
+                    <strong>@click</strong>
+                    <button class="btn btn-primary" @click="increment">
+                      Clicked <span data-text="clicks"></span> times
+                    </button>
+                  </div>
+
+                  <form class="panel stack" @submit.prevent="submit">
+                    <strong>@submit.prevent</strong>
+                    <input
+                      class="form-input"
+                      data-model="name"
+                      placeholder="Your name"
+                    />
+                    <button class="btn">Submit without reloading</button>
+                    <p class="hint" data-text="submitted"></p>
+                  </form>
+
+                  <div class="panel stack">
+                    <strong>@keydown.enter</strong>
+                    <input
+                      class="form-input"
+                      data-model="draft"
+                      @keydown.enter="commit"
+                      placeholder="Type and press Enter"
+                    />
+                    <p class="hint" data-text="lastCommit"></p>
+                  </div>
+                </div>
+              </div>
+              <div class="example-code">
+                <pre><code>&lt;button @click="increment"&gt;Clicked &lt;span data-text="clicks"&gt;&lt;/span&gt; times&lt;/button&gt;
+
+&lt;form @submit.prevent="submit"&gt;
+  &lt;input data-model="name"&gt;
+  &lt;button&gt;Submit without reloading&lt;/button&gt;
+&lt;/form&gt;
+
+&lt;input data-model="draft" @keydown.enter="commit"&gt;
+
+Micra.define('event-demo', {
+  state: { clicks: 0, name: '', draft: '' },
+  increment() { this.state.clicks++ },
+  submit() { /* prevent default + update state */ },
+  commit(e) { if (e.key === 'Enter') { /* save */ } },
+})</code></pre>
+              </div>
+            </div>
+          </section>
+
+          <section id="lifecycle" class="doc-section">
+            <h2>Lifecycle</h2>
+            <p>
+              <span class="inline-code">onCreate</span> runs after the first
+              render, and <span class="inline-code">onDestroy</span> runs when
+              you tear an instance down. This demo uses a wrapper with
+              <span class="inline-code">Micra.mount()</span> and
+              <span class="inline-code">instance.destroy()</span> so you can see
+              both hooks fire.
+            </p>
+            <div class="example">
+              <div class="example-preview">
+                <div class="stack">
+                  <div class="demo-row">
+                    <button
+                      class="btn btn-primary"
+                      onclick="window.LifecycleDemo.mount()"
+                    >
+                      Mount component
+                    </button>
+                    <button
+                      class="btn"
+                      onclick="window.LifecycleDemo.destroy()"
+                    >
+                      Destroy component
+                    </button>
+                  </div>
+                  <div id="lifecycle-host" class="mount-host">
+                    <div class="mount-placeholder">
+                      Click “Mount component” to create an instance.
+                    </div>
+                  </div>
+                  <div class="panel stack">
+                    <strong>Lifecycle log</strong>
+                    <div id="lifecycle-log" class="log-list"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="example-code">
+                <pre><code>const lifecycleDefinition = {
+  state: { stamp: '', status: 'Ready' },
+  onCreate() {
+    this.state.stamp = new Date().toLocaleTimeString()
+  },
+  onDestroy() {
+    console.log('destroyed')
+  },
+}
+
+const instance = Micra.mount('#target', lifecycleDefinition)
+instance?.destroy()</code></pre>
+              </div>
+            </div>
+          </section>
+
+          <section id="multiple-instances" class="doc-section">
+            <h2>Multiple Instances</h2>
+            <p>
+              One definition can power many isolated roots. These three
+              dropdowns all use the same
+              <span class="inline-code">multi-dropdown</span> definition but
+              read different <span class="inline-code">data-*</span> props. Each
+              emits to the event bus, and a single
+              <span class="inline-code">filter-table</span> component listens
+              and updates.
+            </p>
+            <div class="example">
+              <div class="example-preview">
+                <div class="triple-grid">
+                  <div
+                    class="dropdown-root"
+                    data-component="multi-dropdown"
+                    data-label="Category"
+                    data-kind="category"
+                    data-event="filter:category"
+                  >
+                    <button class="btn dropdown-toggle" @click="toggle">
+                      <span data-text="selectedLabel || label"></span>
+                      <span data-text="open ? '▴' : '▾'"></span>
+                    </button>
+                    <div class="dropdown-menu" data-if="open">
+                      <template data-each="options" data-key="value">
+                        <button
+                          class="menu-item"
+                          @click="select"
+                          data-bind="data-value:item.value"
+                          data-text="item.label"
+                        ></button>
+                      </template>
+                    </div>
+                  </div>
+
+                  <div
+                    class="dropdown-root"
+                    data-component="multi-dropdown"
+                    data-label="Status"
+                    data-kind="status-filter"
+                    data-event="filter:status"
+                  >
+                    <button class="btn dropdown-toggle" @click="toggle">
+                      <span data-text="selectedLabel || label"></span>
+                      <span data-text="open ? '▴' : '▾'"></span>
+                    </button>
+                    <div class="dropdown-menu" data-if="open">
+                      <template data-each="options" data-key="value">
+                        <button
+                          class="menu-item"
+                          @click="select"
+                          data-bind="data-value:item.value"
+                          data-text="item.label"
+                        ></button>
+                      </template>
+                    </div>
+                  </div>
+
+                  <div
+                    class="dropdown-root"
+                    data-component="multi-dropdown"
+                    data-label="Priority"
+                    data-kind="priority"
+                    data-event="filter:priority"
+                  >
+                    <button class="btn dropdown-toggle" @click="toggle">
+                      <span data-text="selectedLabel || label"></span>
+                      <span data-text="open ? '▴' : '▾'"></span>
+                    </button>
+                    <div class="dropdown-menu" data-if="open">
+                      <template data-each="options" data-key="value">
+                        <button
+                          class="menu-item"
+                          @click="select"
+                          data-bind="data-value:item.value"
+                          data-text="item.label"
+                        ></button>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+
+                <div data-component="filter-table" class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Task</th>
+                        <th>Category</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr data-if="filtered.length === 0">
+                        <td colspan="4">
+                          <div class="empty-state">
+                            <p>No tasks match the selected filters.</p>
+                          </div>
+                        </td>
+                      </tr>
+                      <template data-each="filtered" data-key="id">
+                        <tr>
+                          <td
+                            style="font-weight: 500"
+                            data-text="item.name"
+                          ></td>
+                          <td>
+                            <span
+                              class="badge"
+                              data-bind="class:item.categoryBadge"
+                              data-text="item.category"
+                            ></span>
+                          </td>
+                          <td>
+                            <span
+                              class="badge"
+                              data-bind="class:item.statusBadge"
+                              data-text="item.status"
+                            ></span>
+                          </td>
+                          <td>
+                            <span
+                              class="badge"
+                              data-bind="class:item.priorityBadge"
+                              data-text="item.priority"
+                            ></span>
+                          </td>
+                        </tr>
+                      </template>
+                    </tbody>
+                  </table>
+                  <p
+                    class="filter-summary"
+                    data-text="'Showing ' + filtered.length + ' of ' + all.length + ' tasks'"
+                  ></p>
+                </div>
+              </div>
+              <div class="example-code">
+                <pre><code>
+&lt;!-- Three dropdowns, same definition, different props and events --&gt;
+&lt;div data-component="multi-dropdown" data-kind="category" data-event="filter:category"&gt;...&lt;/div&gt;
+&lt;div data-component="multi-dropdown" data-kind="status-filter" data-event="filter:status"&gt;...&lt;/div&gt;
+&lt;div data-component="multi-dropdown" data-kind="priority" data-event="filter:priority"&gt;...&lt;/div&gt;
+
+&lt;!-- Table component listens to events from all three dropdowns --&gt;
+&lt;div data-component="filter-table"&gt;
+  &lt;table&gt;
+    &lt;template data-each="filtered" data-key="id"&gt;
+      &lt;tr&gt;...&lt;/tr&gt;
+    &lt;/template&gt;
+  &lt;/table&gt;
+&lt;/div&gt;
+
+
+Micra.define("multi-dropdown", {
+  state: {
+    open: !1,
+    selectedLabel: "",
+    options: [],
+  },
+  onCreate() {
+    this._event = this.prop("event", "");
+    const t = this.prop("kind", "category"),
+      e = {
+        category: [
+          { label: "All categories", value: "all" },
+          { label: "Design", value: "Design" },
+          { label: "Development", value: "Development" },
+          { label: "Marketing", value: "Marketing" },
+        ],
+        "status-filter": [
+          { label: "All statuses", value: "all" },
+          { label: "Active", value: "Active" },
+          { label: "Completed", value: "Completed" },
+          { label: "On Hold", value: "On Hold" },
+        ],
+        priority: [
+          { label: "All priorities", value: "all" },
+          { label: "High", value: "High" },
+          { label: "Medium", value: "Medium" },
+          { label: "Low", value: "Low" },
+        ],
+      };
+    ((this.state.options = e[t] || e.category),
+      (this.outside = (s) => {
+        this.$el.contains(s.target) || (this.state.open = !1);
+      }),
+      document.addEventListener("click", this.outside));
+  },
+  onDestroy() {
+    document.removeEventListener("click", this.outside);
+  },
+  toggle() {
+    this.state.open = !this.state.open;
+  },
+  select(t) {
+    const e = t.currentTarget.dataset.value || "",
+      s = this.state.options.find((i) => i.value === e);
+    ((this.state.selectedLabel = s ? s.label : e),
+      (this.state.open = !1),
+      this._event && Micra.emit(this._event, e));
+  },
+}));
+
+Micra.define("filter-table", {
+  state: {
+    all: [],
+    filtered: [],
+    category: "all",
+    status: "all",
+    priority: "all",
+  },
+  onCreate() {
+    ((this.state.all = [...mockTasks]),
+      (this.state.filtered = [...mockTasks]),
+      this.on("filter:category", (t) => {
+        ((this.state.category = t), this._apply());
+      }),
+      this.on("filter:status", (t) => {
+        ((this.state.status = t), this._apply());
+      }),
+      this.on("filter:priority", (t) => {
+        ((this.state.priority = t), this._apply());
+      }));
+  },
+  _apply() {
+    let t = this.state.all;
+    (this.state.category !== "all" &&
+      (t = t.filter((e) => e.category === this.state.category)),
+      this.state.status !== "all" &&
+        (t = t.filter((e) => e.status === this.state.status)),
+      this.state.priority !== "all" &&
+        (t = t.filter((e) => e.priority === this.state.priority)),
+      (this.state.filtered = t));
+  },
+});
+                </code></pre>
+              </div>
+            </div>
+          </section>
+        </main>
+        <!--<p class="footer-note">
+          In the browser console, run
+          <span class="inline-code">Micra.debug()</span> to print all live
+          components with their state.
+        </p>-->
+      </div>
+    </div>
+
+    <script src="dist/micra.js"></script>
+    <script src="assets/docs.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", (event) => {
+        document.querySelectorAll("pre code").forEach((el) => {
+          hljs.highlightElement(el);
+        });
+      });
+    </script>
+  </body>
+</html>

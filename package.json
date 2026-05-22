@@ -1,0 +1,44 @@
+{
+  "name": "micra",
+  "version": "1.0.0",
+  "description": "Lightweight TypeScript framework for small sites and simple SaaS",
+  "type": "module",
+  "main": "./dist/micra.cjs.js",
+  "module": "./dist/micra.esm.js",
+  "browser": "./dist/micra.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/micra.esm.js",
+      "require": "./dist/micra.cjs.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit",
+    "dev": "node build.mjs --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.7",
+    "esbuild": "^0.25.4",
+    "happy-dom": "^20.9.0",
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.7"
+  },
+  "keywords": [
+    "framework",
+    "micra",
+    "lightweight",
+    "ssr",
+    "reactive"
+  ],
+  "license": "MIT"
+}
