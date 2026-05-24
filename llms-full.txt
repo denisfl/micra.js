@@ -1,0 +1,567 @@
+# Micra.js — Full LLM Context (llms-full.txt)
+
+This file follows the llmstxt.org "expanded" convention: it inlines code recipes so LLMs that crawl this URL get a complete training surface in one read. The short version is `llms.txt` in the same directory.
+
+> Lightweight reactive TypeScript framework for server-rendered apps and small SaaS frontends. ~4.8 KB gzip. No build step required.
+
+## Install
+
+```bash
+npm install micra.js@^1.1.0
+```
+
+```ts
+import * as Micra from 'micra.js'
+```
+
+Or CDN (no build step):
+
+```html
+<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+```
+
+This exposes a global `Micra` object.
+
+## When to use Micra.js
+
+- Server-rendered pages (Rails, Laravel, Django, Phoenix, etc.) needing a small amount of reactivity
+- Bundle-size-sensitive (~5 KB vs 45+ KB React)
+- No build step desired — drop a `<script>` tag
+- Existing HTML that just needs reactive enhancement
+
+When NOT to use: full SPAs with client-side routing, deep nested reactivity needs, teams already on React/Vue.
+
+## Hard rules for code generation
+
+When generating Micra code, do NOT:
+
+1. Use `document.querySelector` / `getElementById` / `el.innerHTML = ...` for component output.
+2. Use `addEventListener` inside a render-like method (it leaks past `destroy()`).
+3. Store derived values (counts, totals, filtered subsets) as `state` fields. They MUST be methods called from directives.
+4. Call `this.renderList()` / `this.update()` / `this.refresh()` after a state mutation. Micra batches a microtask render on every state write.
+5. Write `this.state.user.name = 'x'` (shallow proxy — nested mutations are invisible). Replace the top-level key.
+6. Use `@keydown.enter` (no key modifiers). Branch on `e.key === 'Enter'` inside the method.
+7. Write `data-model="filters.search"` (creates literal flat key `"filters.search"`, not a nested write).
+8. Import React, Vue, Alpine, htmx, or any other framework.
+
+If you find yourself reaching for any of those — stop and rewrite with the patterns below.
+
+## Component shape
+
+```js
+Micra.define('name', {
+  state: { /* flat raw data */ },
+
+  onCreate() { /* mounted, refs available, safe to fetch */ },
+  onDestroy() { /* clear timers, remove manual listeners */ },
+
+  // Derived values — methods, called from directives via `methodName()`
+  filtered() { return this.state.items.filter(...) },
+  totalCount() { return this.state.items.length },
+
+  // Actions — mutate state; Micra re-renders automatically
+  add() { this.state.items = [...this.state.items, x] },
+})
+Micra.start()
+```
+
+```html
+<div data-component="name">…</div>
+```
+
+## `this` context
+
+- `this.state` — reactive Proxy
+- `this.$el` — root HTMLElement
+- `this.refs` — `{ [name]: HTMLElement }` from `data-ref`
+- `this.render()` — force sync re-render (rarely needed)
+- `this.destroy()` — unmount and remove tracked listeners
+- `this.prop(name, default?)` — read `data-*` attribute (auto-cast `"true"`/`"42"`)
+- `this.fetch(url, options?)` — JSON + CSRF helper, throws `FetchError` on non-2xx
+- `this.emit(event, payload?)` — emit on global bus
+- `this.on(event, handler)` — subscribe on global bus, auto-unsubscribed on destroy
+
+## Directives
+
+| Directive | Example | Behavior |
+|-----------|---------|----------|
+| `data-text` | `data-text="name"` | sets `textContent` |
+| `data-html` | `data-html="content"` | sets `innerHTML` — ⚠️ XSS-prone, only with sanitized values |
+| `data-if` / `data-show` | `data-if="count > 0"` | toggles `style.display` (does NOT remove from DOM) |
+| `data-bind` | `data-bind="href:url, disabled:loading"` | binds attributes; boolean → add/remove |
+| `data-model` | `data-model="search"` | two-way binding; number/range → number; checkbox → boolean |
+| `data-each` | `data-each="items" data-key="id"` | keyed list rendering on `<template>` |
+| `data-ref` | `data-ref="canvas"` | `this.refs.canvas` |
+| `data-class` | `data-class="active:isActive"` | additive class toggle |
+| `data-on` | `data-on="click:save"` | event binding |
+| `@event` | `@click="save"`, `@submit.prevent="…"` | shorthand event binding |
+
+Modifiers: `.prevent`, `.stop`, `.self` (event-only — no key modifiers).
+
+## Expression context (what works inside `data-text="…"`)
+
+- State keys: `count`, `user.name`
+- Component methods (bound `this`): `format(price)`, `filtered()`
+- Whitelisted globals: `Math`, `JSON`, `Date`, `String`, `Number`, `Boolean`, `Array`, `Object`, `parseInt`, `parseFloat`, `isNaN`, `isFinite`, `NaN`, `Infinity`, `undefined`
+- Inside `data-each`: `item`, `index`, `$index`
+
+Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeout`) resolves to `undefined` by design — security shadowing.
+
+---
+
+# Recipes (full inline code)
+
+## Recipe 1 — Counter
+
+```html
+<div data-component="counter">
+  <button @click="dec">−</button>
+  <strong data-text="count"></strong>
+  <button @click="inc">+</button>
+</div>
+
+<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script>
+  Micra.define('counter', {
+    state: { count: 0 },
+    inc() { this.state.count++ },
+    dec() { this.state.count-- },
+  })
+  Micra.start()
+</script>
+```
+
+## Recipe 2 — Todo app with localStorage and filters
+
+```html
+<div data-component="todo-app">
+  <h1>Todo <small data-text="counterLabel()"></small></h1>
+
+  <div class="filters">
+    <button data-class="active:filter==='all'"    @click="setFilter('all')">All</button>
+    <button data-class="active:filter==='active'" @click="setFilter('active')">Active</button>
+    <button data-class="active:filter==='done'"   @click="setFilter('done')">Done</button>
+  </div>
+
+  <div class="row">
+    <input data-model="newTask" placeholder="New task..." @keydown="onKey" maxlength="200">
+    <button @click="addTask">Add</button>
+  </div>
+
+  <template data-each="filtered()" data-key="id">
+    <div class="item" data-class="done:item.done" data-bind="data-id:item.id">
+      <input type="checkbox" data-bind="checked:item.done" @change="toggle">
+      <span class="text" data-text="item.text"></span>
+      <button @click="remove">✕</button>
+    </div>
+  </template>
+
+  <p data-if="filtered().length === 0" data-text="emptyLabel()"></p>
+
+  <footer data-if="todos.length > 0">
+    <span data-text="leftLabel()"></span>
+    <button data-if="hasDone()" @click="clearDone">Clear done</button>
+  </footer>
+</div>
+
+<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script>
+  Micra.define('todo-app', {
+    state: {
+      todos: JSON.parse(localStorage.getItem('todos') || '[]'),
+      newTask: '',
+      filter: 'all',
+    },
+    // ── derived values: methods, never state fields ─────────────
+    filtered() {
+      const { todos, filter } = this.state
+      if (filter === 'active') return todos.filter(t => !t.done)
+      if (filter === 'done')   return todos.filter(t => t.done)
+      return todos
+    },
+    counterLabel() { return this.state.todos.length ? `(${this.state.todos.length})` : '' },
+    leftLabel()    { const n = this.state.todos.filter(t => !t.done).length
+                     return n ? `${n} left` : 'All done 🎉' },
+    hasDone()      { return this.state.todos.some(t => t.done) },
+    emptyLabel()   { return { all: 'No todos yet', active: 'No active todos', done: 'No done todos' }[this.state.filter] },
+    // ── persistence and id ──────────────────────────────────────
+    save() { localStorage.setItem('todos', JSON.stringify(this.state.todos)) },
+    nextId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6) },
+    itemId(e) { return e.currentTarget.closest('[data-id]').dataset.id },
+    // ── actions ─────────────────────────────────────────────────
+    addTask() {
+      const text = this.state.newTask.trim()
+      if (!text) return
+      this.state.todos = [{ id: this.nextId(), text, done: false }, ...this.state.todos]
+      this.state.newTask = ''
+      this.save()
+    },
+    toggle(e) {
+      const id = this.itemId(e)
+      this.state.todos = this.state.todos.map(t => t.id === id ? { ...t, done: !t.done } : t)
+      this.save()
+    },
+    remove(e) {
+      const id = this.itemId(e)
+      this.state.todos = this.state.todos.filter(t => t.id !== id)
+      this.save()
+    },
+    clearDone() { this.state.todos = this.state.todos.filter(t => !t.done); this.save() },
+    setFilter(f) { this.state.filter = f },
+    onKey(e) { if (e.key === 'Enter') this.addTask() },
+  })
+  Micra.start()
+</script>
+```
+
+## Recipe 3 — Data table with search
+
+```html
+<div data-component="users-table">
+  <input data-model="query" placeholder="Search users…">
+  <p data-text="summary()"></p>
+
+  <table>
+    <thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead>
+    <tbody>
+      <template data-each="filtered()" data-key="id">
+        <tr>
+          <td data-text="item.name"></td>
+          <td data-text="item.email"></td>
+          <td data-text="item.role"></td>
+        </tr>
+      </template>
+    </tbody>
+  </table>
+  <p data-if="filtered().length === 0">No matches.</p>
+</div>
+
+<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script>
+  Micra.define('users-table', {
+    state: {
+      query: '',
+      users: [
+        { id: 1, name: 'Ada Lovelace',     email: 'ada@example.com',    role: 'admin' },
+        { id: 2, name: 'Linus Torvalds',   email: 'linus@example.com',  role: 'dev'   },
+        { id: 3, name: 'Grace Hopper',     email: 'grace@example.com',  role: 'admin' },
+        { id: 4, name: 'Margaret Hamilton',email: 'maggie@example.com', role: 'dev'   },
+      ],
+    },
+    filtered() {
+      const q = this.state.query.toLowerCase().trim()
+      if (!q) return this.state.users
+      return this.state.users.filter(u =>
+        u.name.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        u.role.toLowerCase().includes(q),
+      )
+    },
+    summary() {
+      return `${this.filtered().length} of ${this.state.users.length} users`
+    },
+  })
+  Micra.start()
+</script>
+```
+
+## Recipe 4 — Form with validation and async submit
+
+```html
+<form data-component="invite-form" @submit.prevent="submit">
+  <input data-model="email" type="email" placeholder="Email">
+  <button data-bind="disabled:loading">
+    <span data-text="loading ? 'Sending…' : 'Send invite'"></span>
+  </button>
+  <p data-if="error" data-text="error" style="color:red"></p>
+  <p data-if="success">Invitation sent ✓</p>
+</form>
+
+<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script>
+  Micra.define('invite-form', {
+    state: { email: '', loading: false, error: '', success: false },
+    isValid() { return this.state.email.includes('@') && this.state.email.includes('.') },
+    async submit() {
+      if (!this.isValid()) { this.state.error = 'Invalid email'; return }
+      this.state.loading = true
+      this.state.error = ''
+      this.state.success = false
+      try {
+        await this.fetch('/api/invite', { method: 'POST', body: { email: this.state.email } })
+        this.state.success = true
+        this.state.email = ''
+      } catch (e) {
+        this.state.error = e.message
+      } finally {
+        this.state.loading = false
+      }
+    },
+  })
+  Micra.start()
+</script>
+```
+
+## Recipe 5 — Modal via event bus
+
+```html
+<!-- ANYWHERE on the page: -->
+<button data-component="open-modal-btn" @click="open">Delete account</button>
+
+<!-- The modal lives once, listens for events: -->
+<div data-component="confirm-modal">
+  <div data-if="show" class="backdrop" @click.self="close" style="position:fixed;inset:0;background:#0007;display:flex;align-items:center;justify-content:center">
+    <div class="dialog" style="background:white;padding:24px;border-radius:8px">
+      <p data-text="message"></p>
+      <button @click="confirm">Yes</button>
+      <button @click="close">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script>
+  Micra.define('open-modal-btn', {
+    open() {
+      this.emit('modal:confirm', {
+        message: 'Are you sure you want to delete your account?',
+        onYes: () => this.fetch('/api/account/delete', { method: 'DELETE' }),
+      })
+    },
+  })
+
+  Micra.define('confirm-modal', {
+    state: { show: false, message: '', onYes: null },
+    onCreate() {
+      this.on('modal:confirm', ({ message, onYes }) => {
+        this.state.message = message
+        this.state.onYes = onYes
+        this.state.show = true
+      })
+    },
+    async confirm() {
+      try { await this.state.onYes?.() } finally { this.close() }
+    },
+    close() {
+      this.state.show = false
+      this.state.onYes = null
+    },
+  })
+  Micra.start()
+</script>
+```
+
+## Recipe 6 — Tabs (multiple components on one page)
+
+```html
+<div data-component="tabs">
+  <nav>
+    <button @click="select" data-bind="data-tab:'overview'"
+            data-class="active:tab === 'overview'">Overview</button>
+    <button @click="select" data-bind="data-tab:'billing'"
+            data-class="active:tab === 'billing'">Billing</button>
+    <button @click="select" data-bind="data-tab:'security'"
+            data-class="active:tab === 'security'">Security</button>
+  </nav>
+  <section data-if="tab === 'overview'">Overview content</section>
+  <section data-if="tab === 'billing'">Billing content</section>
+  <section data-if="tab === 'security'">Security content</section>
+</div>
+
+<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script>
+  Micra.define('tabs', {
+    state: { tab: 'overview' },
+    select(e) { this.state.tab = e.currentTarget.dataset.tab },
+  })
+  Micra.start()
+</script>
+```
+
+## Recipe 7 — SSR component reading server-rendered props
+
+```html
+<!-- Server emits: -->
+<div data-component="user-card" data-user-id="42" data-plan="pro">
+  <h2 data-text="name"></h2>
+  <span data-text="plan"></span>
+  <button @click="upgrade" data-if="plan !== 'enterprise'">Upgrade</button>
+</div>
+
+<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script>
+  Micra.define('user-card', {
+    state: { name: '', plan: '' },
+    async onCreate() {
+      const userId = this.prop('userId')   // 42 (number)
+      this.state.plan = this.prop('plan', 'free')
+      const user = await this.fetch(`/api/users/${userId}`)
+      this.state.name = user.name
+    },
+    async upgrade() {
+      await this.fetch('/api/upgrade', { method: 'POST', body: { plan: 'enterprise' } })
+      this.state.plan = 'enterprise'
+    },
+  })
+  Micra.start()
+</script>
+```
+
+## Recipe 8 — Search with debounce
+
+```html
+<div data-component="search">
+  <input data-model="query" @input="debouncedSearch" placeholder="Search…">
+  <p data-if="loading">Searching…</p>
+  <template data-each="results" data-key="id">
+    <div data-text="item.title"></div>
+  </template>
+  <p data-if="!loading && results.length === 0 && query">No results.</p>
+</div>
+
+<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script>
+  Micra.define('search', {
+    state: { query: '', results: [], loading: false },
+    _timer: null,
+
+    debouncedSearch() {
+      clearTimeout(this._timer)
+      this._timer = setTimeout(() => this.search(), 250)
+    },
+    async search() {
+      const q = this.state.query.trim()
+      if (!q) { this.state.results = []; return }
+      this.state.loading = true
+      try {
+        this.state.results = await this.fetch('/api/search', { q })
+      } finally {
+        this.state.loading = false
+      }
+    },
+    onDestroy() { clearTimeout(this._timer) },
+  })
+  Micra.start()
+</script>
+```
+
+## Recipe 9 — Chart with `data-ref` (imperative third-party API)
+
+```html
+<div data-component="revenue-chart" data-endpoint="/api/revenue">
+  <canvas data-ref="canvas" width="600" height="300"></canvas>
+  <p data-if="loading">Loading chart…</p>
+</div>
+
+<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script>
+  Micra.define('revenue-chart', {
+    state: { loading: true },
+    _chart: null,
+    async onCreate() {
+      const endpoint = this.prop('endpoint', '/api/revenue')
+      const data = await this.fetch(endpoint)
+      this._chart = new Chart(this.refs.canvas, { type: 'line', data })
+      this.state.loading = false
+    },
+    onDestroy() { this._chart?.destroy() },
+  })
+  Micra.start()
+</script>
+```
+
+## Recipe 10 — Multiple islands on one page (cross-component coordination)
+
+```html
+<div data-component="search-bar">
+  <input data-model="query" @input="search" placeholder="Search products…">
+</div>
+
+<div data-component="results-table">
+  <p data-if="loading">Loading…</p>
+  <template data-each="rows" data-key="id">
+    <div class="row" data-text="item.title"></div>
+  </template>
+  <p data-if="!loading && rows.length === 0">No results.</p>
+</div>
+
+<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script>
+  Micra.define('search-bar', {
+    state: { query: '' },
+    search() { Micra.emit('search', { query: this.state.query }) },
+  })
+
+  Micra.define('results-table', {
+    state: { rows: [], loading: false },
+    onCreate() {
+      this.on('search', async ({ query }) => {
+        if (!query) { this.state.rows = []; return }
+        this.state.loading = true
+        try { this.state.rows = await this.fetch('/api/search', { q: query }) }
+        finally { this.state.loading = false }
+      })
+    },
+  })
+  Micra.start()
+</script>
+```
+
+---
+
+# Anti-pattern reference (what LLMs gravitate to — DO NOT)
+
+```js
+// ❌ Hand-rolled list rendering — defeats data-each
+document.getElementById('list').innerHTML = items.map(...).join('')
+
+// ❌ Derived state as field — diverges from source of truth
+state: { todos: [], totalCount: 0, hasDone: false }
+updateComputeds() { this.state.totalCount = this.state.todos.length }
+
+// ❌ addEventListener in render — leaks past destroy()
+createItem(item) {
+  const el = document.createElement('div')
+  el.addEventListener('click', () => this.toggle(item.id))
+}
+
+// ❌ Manual re-render after mutation — Micra already does this
+addTask() { this.state.todos = [...]; this.renderList() }
+
+// ❌ Nested state mutation — shallow proxy can't see it
+this.state.user.email = 'x'
+
+// ❌ Key modifier on @event — not supported
+<input @keydown.enter="add">
+
+// ❌ Nested path in data-model — writes literal flat key
+<input data-model="filters.search">
+
+// ❌ React/Vue/Alpine imports — not Micra
+import React, { useState } from 'react'
+import { ref, computed } from 'vue'
+import Alpine from 'alpinejs'
+```
+
+# Final checklist
+
+Before returning generated Micra code, verify ALL of these:
+
+- [ ] Every list uses `<template data-each>` with `data-key`. No `getElementById`/`innerHTML` for lists.
+- [ ] Every derived value (count, total, filtered, formatted) is a **method** on the component, called from a directive via `methodName()`. No state field for things that can be computed.
+- [ ] Every event handler is `@event` or `data-on`. No `addEventListener` inside methods.
+- [ ] No `this.renderList()` / `this.update()` / `this.refresh()` calls after mutations.
+- [ ] State writes are top-level: `state.x = …` or `state.user = { …state.user, … }`. Never `state.user.x = …`.
+- [ ] No `@keydown.enter` — branch on `e.key` in the method instead.
+- [ ] `Micra.start()` is at the end of the script.
+- [ ] No React/Vue/Alpine imports.
+- [ ] All timers / external listeners in `onCreate` are cleaned up in `onDestroy`.
+
+# Links
+
+- Full docs: https://denisfl.github.io/micra.js/
+- Source: https://github.com/denisfl/micra.js
+- npm: https://www.npmjs.com/package/micra.js
+- LLM short guide: https://github.com/denisfl/micra.js/blob/master/docs/llm-guide.md
+- Recipes directory: https://github.com/denisfl/micra.js/tree/master/docs/recipes
+- Short llms.txt: https://github.com/denisfl/micra.js/blob/master/llms.txt

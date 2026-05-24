@@ -13,6 +13,199 @@ This file helps LLMs generate correct Micra.js code. Read it before suggesting c
 | Complex client state + Redux/Zustand patterns | React |
 | Team already invested in React ecosystem | React |
 
+## Anti-patterns LLMs gravitate to (DO NOT)
+
+These are the most common ways LLMs misuse Micra. The "anti-pattern" code on the
+left **works** but defeats the purpose of the library. Always use the right column.
+
+### List rendering
+
+❌ **Don't** roll your own DOM:
+
+```js
+document.getElementById('list').innerHTML = items.map(i => `<li>${i.name}</li>`).join('')
+// ...or...
+items.forEach(item => {
+  const el = document.createElement('div')
+  el.textContent = item.name
+  list.appendChild(el)
+})
+```
+
+✅ **Do** use `data-each`:
+
+```html
+<template data-each="items" data-key="id">
+  <li data-text="item.name"></li>
+</template>
+```
+
+### Derived values (counts, totals, filters)
+
+❌ **Don't** store them as state fields synced manually:
+
+```js
+state: { todos: [], totalCount: 0, hasDone: false, filteredCount: 0 }
+updateComputeds() {
+  this.state.totalCount = this.state.todos.length          // ← spaghetti
+  this.state.hasDone = this.state.todos.some(t => t.done)  // ← can drift
+}
+```
+
+✅ **Do** make them methods, call them from directives:
+
+```js
+state: { todos: [] }                                         // single source of truth
+totalCount() { return this.state.todos.length }
+hasDone()    { return this.state.todos.some(t => t.done) }
+filtered()   { return this.state.todos.filter(...) }
+```
+
+```html
+<span data-text="totalCount()"></span>
+<button data-if="hasDone()">Clear done</button>
+```
+
+### Event handlers
+
+❌ **Don't** use `addEventListener` inside a render-like method:
+
+```js
+createItem(item) {
+  const el = document.createElement('div')
+  el.addEventListener('click', () => this.toggle(item.id))  // ← leaks on destroy
+  return el
+}
+```
+
+These listeners are NOT tracked by Micra and survive `instance.destroy()`,
+causing memory leaks and "zombie" handlers.
+
+✅ **Do** use `@event` / `data-on` — Micra tracks and cleans them up:
+
+```html
+<div @click="toggle" data-bind="data-id:item.id">...</div>
+```
+
+```js
+toggle(e) {
+  const id = e.currentTarget.dataset.id
+  // ...
+}
+```
+
+### After a state mutation
+
+❌ **Don't** manually trigger a re-render:
+
+```js
+addTask() {
+  this.state.todos = [...this.state.todos, x]
+  this.renderList()        // ← Micra already re-renders
+  this.updateComputeds()   // ← derived methods recompute on read
+  this.refresh()           // ← no such concept
+}
+```
+
+✅ **Do** only side effects (persistence, network, analytics):
+
+```js
+addTask() {
+  this.state.todos = [...this.state.todos, x]  // ← Micra re-renders
+  this.save()                                   // ← side effect OK
+}
+```
+
+### Nested paths in `data-model`
+
+❌ **Don't:**
+
+```html
+<input data-model="user.email">  <!-- writes to state["user.email"] literally -->
+<input data-model="filters[0]">  <!-- same: a literal flat key -->
+```
+
+✅ **Do** keep state flat at the directive boundary:
+
+```html
+<input data-model="email">
+```
+
+```js
+state: { email: '' }
+// If you need to write back to a nested object, do it in a method:
+save() {
+  this.state.user = { ...this.state.user, email: this.state.email }
+}
+```
+
+### Timers and external listeners in `onCreate`
+
+❌ **Don't** forget to clean up in `onDestroy`:
+
+```js
+onCreate() {
+  setInterval(() => this.tick(), 1000)         // ← never cleaned up
+  document.addEventListener('click', this.outside)  // ← never removed
+}
+```
+
+✅ **Do** keep references and clean up:
+
+```js
+onCreate() {
+  this._timer = setInterval(() => this.tick(), 1000)
+  this._outside = e => { /* ... */ }
+  document.addEventListener('click', this._outside)
+},
+onDestroy() {
+  clearInterval(this._timer)
+  document.removeEventListener('click', this._outside)
+}
+```
+
+(Subscriptions made with `this.on('event', fn)` are cleaned up automatically.
+`@event` / `data-on` / `data-model` listeners too — these are tracked by Micra.
+Only manual `addEventListener` / `setInterval` / `setTimeout` need explicit cleanup.)
+
+### React-style component model
+
+❌ **Don't** export a function:
+
+```js
+function Counter() { /* ... */ }                  // not a thing in Micra
+const Counter = ({ count }) => <span>{count}</span>  // not a thing
+```
+
+✅ **Do** define + mount:
+
+```js
+Micra.define('counter', {
+  state: { count: 0 },
+  inc() { this.state.count++ },
+})
+Micra.start()
+```
+
+```html
+<div data-component="counter">
+  <span data-text="count"></span>
+  <button @click="inc">+</button>
+</div>
+```
+
+### Imports
+
+❌ `import React`, `import { ref } from 'vue'`, `import Alpine`, `htmx`, etc.
+
+✅ Only Micra:
+
+```js
+import * as Micra from 'micra.js'
+// or via CDN: <script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+// Then use the global Micra.
+```
+
 ## Common mistakes LLMs make
 
 ### Wrong: React patterns

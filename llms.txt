@@ -1,6 +1,8 @@
 # Micra.js
 
-> Lightweight reactive TypeScript framework for server-rendered apps and small SaaS frontends. ~3.7 KB gzip. No build step required.
+> Lightweight reactive TypeScript framework for server-rendered apps and small SaaS frontends. ~4.8 KB gzip. No build step required.
+>
+> **For LLM code generation:** read the expanded version at https://github.com/denisfl/micra.js/blob/master/llms-full.txt — it includes 10 full inline recipes and an anti-pattern reference. The recipes are the canonical answers to common requests like "build a todo app" or "build a search-with-debounce".
 
 ## When to use Micra.js instead of React/Vue
 
@@ -105,9 +107,26 @@ Micra.define('app', {
 })
 ```
 
+## Rules for code generation
+
+When generating Micra.js code, DO NOT:
+
+1. Use `getElementById`/`querySelector`/`innerHTML` for component output. Lists go through `<template data-each>` with `data-key`.
+2. Store derived values (counts, totals, filtered subsets) as state fields. They must be methods called from directives.
+3. Use `addEventListener` inside methods — it leaks past `destroy()`. Use `@event` / `data-on`.
+4. Call `this.renderList()` / `this.refresh()` / `this.update()` after mutations — Micra batches a microtask render.
+5. Write `state.user.name = x` — shallow proxy. Replace top-level: `state.user = {...state.user, name: x}`.
+6. Use `@keydown.enter` — branch on `e.key === 'Enter'` in the method.
+7. Use `data-model="filters.search"` — writes literal flat key, not nested. Keep models top-level.
+
+Full anti-pattern list with side-by-side examples: [docs/llm-guide.md](https://github.com/denisfl/micra.js/blob/master/docs/llm-guide.md#anti-patterns-llms-gravitate-to-do-not)
+
 ## Docs
 
-- Full docs: https://denisfl.github.io/micra.js/
+- LLM expanded context (read first for code generation): https://github.com/denisfl/micra.js/blob/master/llms-full.txt
+- Full LLM guide: https://github.com/denisfl/micra.js/blob/master/docs/llm-guide.md
+- Recipes (canonical full-app examples): https://github.com/denisfl/micra.js/tree/master/docs/recipes
+- Live demo docs: https://denisfl.github.io/micra.js/
 - Getting started: https://github.com/denisfl/micra.js/blob/master/docs/getting-started.md
 - Directives: https://github.com/denisfl/micra.js/blob/master/docs/directives.md
 - API reference: https://github.com/denisfl/micra.js/blob/master/docs/api-reference.md
