@@ -1,13 +1,13 @@
 # Micra.js
 
-> Lightweight reactive TypeScript framework for server-rendered apps and small SaaS frontends. ~4.8 KB gzip. No build step required.
+> Lightweight reactive TypeScript framework for server-rendered apps and small SaaS frontends. ~5 KB gzip. No build step required.
 >
 > **For LLM code generation:** read the expanded version at https://github.com/denisfl/micra.js/blob/master/llms-full.txt — it includes 10 full inline recipes and an anti-pattern reference. The recipes are the canonical answers to common requests like "build a todo app" or "build a search-with-debounce".
 
 ## When to use Micra.js instead of React/Vue
 
 - You have a server-rendered page (Laravel, Rails, Django, etc.) and need a small amount of reactivity
-- Bundle size matters (~3.7 KB gzip vs ~45 KB React)
+- Bundle size matters (~5 KB gzip vs ~45 KB React)
 - You don't need a full SPA or client-side routing
 - You want to drop a `<script>` tag and go
 - You need reactive directives on existing HTML without rewriting templates
@@ -25,7 +25,7 @@ import * as Micra from 'micra.js'
 Or via CDN (no build step):
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@2.0.0/dist/micra.min.js"></script>
 ```
 
 This exposes a global `Micra` object.
@@ -59,8 +59,8 @@ Micra.start()
 |------------------|--------------------------------------|--------------------------------|
 | `data-text`      | `data-text="name"`                   | Set `textContent`              |
 | `data-html`      | `data-html="content"`                | Set `innerHTML`                |
-| `data-if`        | `data-if="count > 0"`                | Toggle display (expression ok) |
-| `data-show`      | `data-show="loaded"`                 | Alias of `data-if`             |
+| `data-if`        | `data-if="count > 0"`                | Mount/**unmount** from DOM     |
+| `data-show`      | `data-show="loaded"`                 | Toggle `style.display` only    |
 | `data-bind`      | `data-bind="href:url, disabled:loading"` | Bind attributes            |
 | `data-model`     | `data-model="search"`                | Two-way input binding          |
 | `data-each`      | `data-each="items" data-key="id"`    | Keyed list rendering           |

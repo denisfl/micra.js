@@ -90,50 +90,118 @@ describe('3.2 data-html', () => {
   })
 })
 
-// ── 3.3 data-if / data-show ───────────────────────────────────────────────────
+// ── 3.3 data-if (real unmount, 2.0) ───────────────────────────────────────────
 
-describe('3.3 data-if / data-show', () => {
-  it('data-if hides when falsy', () => {
+describe('3.3 data-if — detach/attach', () => {
+  it('detaches from parent when falsy', () => {
+    const root = document.createElement('div')
+    const el = document.createElement('p')
+    el.setAttribute('data-if', 'show')
+    root.appendChild(el)
+    apply(root, { show: false })
+    expect(el.parentNode).toBeNull()
+    expect(root.children.length).toBe(0)
+  })
+
+  it('stays in parent when truthy', () => {
+    const root = document.createElement('div')
+    const el = document.createElement('p')
+    el.setAttribute('data-if', 'show')
+    root.appendChild(el)
+    apply(root, { show: true })
+    expect(el.parentNode).toBe(root)
+  })
+
+  it('toggles detach → attach → detach', () => {
+    const root = document.createElement('div')
+    const el = document.createElement('p')
+    el.setAttribute('data-if', 'visible')
+    root.appendChild(el)
+
+    apply(root, { visible: true })
+    expect(el.parentNode).toBe(root)
+
+    apply(root, { visible: false })
+    expect(el.parentNode).toBeNull()
+    expect(root.childNodes.length).toBe(1)  // placeholder comment
+    expect(root.childNodes[0]?.nodeType).toBe(Node.COMMENT_NODE)
+
+    apply(root, { visible: true })
+    expect(el.parentNode).toBe(root)
+  })
+
+  it('works with expressions', () => {
+    const root = document.createElement('div')
+    const el = document.createElement('p')
+    el.setAttribute('data-if', 'count > 0')
+    root.appendChild(el)
+
+    apply(root, { count: 0 })
+    expect(el.parentNode).toBeNull()
+    apply(root, { count: 5 })
+    expect(el.parentNode).toBe(root)
+  })
+
+  it('does NOT touch style.display (display is data-show territory)', () => {
+    const root = document.createElement('div')
+    const el = document.createElement('p')
+    el.setAttribute('data-if', 'visible')
+    el.style.display = 'flex'
+    root.appendChild(el)
+    apply(root, { visible: true })
+    expect(el.style.display).toBe('flex')
+  })
+
+  it('preserves element identity across toggles', () => {
+    const root = document.createElement('div')
+    const el = document.createElement('p')
+    el.setAttribute('data-if', 'show')
+    el.textContent = 'preserved'
+    root.appendChild(el)
+
+    apply(root, { show: false })
+    apply(root, { show: true })
+
+    // Same node identity — listeners and attrs survive
+    expect(root.firstElementChild).toBe(el)
+    expect(el.textContent).toBe('preserved')
+  })
+
+  it('with no parent — no-op (unit-test friendly)', () => {
     const el = document.createElement('div')
     el.setAttribute('data-if', 'show')
+    // No throw, element is not attached anywhere
+    expect(() => apply(el, { show: false })).not.toThrow()
+    expect(el.parentNode).toBeNull()
+  })
+})
+
+// ── 3.3.bis data-show — display toggle ────────────────────────────────────────
+
+describe('3.3.bis data-show — display toggle', () => {
+  it('hides via display:none when falsy', () => {
+    const el = document.createElement('div')
+    el.setAttribute('data-show', 'show')
     apply(el, { show: false })
     expect((el as HTMLElement).style.display).toBe('none')
   })
 
-  it('data-if shows when truthy', () => {
-    const el = document.createElement('div')
-    el.setAttribute('data-if', 'show')
-    apply(el, { show: true })
-    expect((el as HTMLElement).style.display).toBe('')
-  })
-
-  it('data-if toggles true→false→true', () => {
-    const el = document.createElement('div')
-    el.setAttribute('data-if', 'visible')
-    apply(el, { visible: true })
-    expect((el as HTMLElement).style.display).toBe('')
-    apply(el, { visible: false })
-    expect((el as HTMLElement).style.display).toBe('none')
-    apply(el, { visible: true })
-    expect((el as HTMLElement).style.display).toBe('')
-  })
-
-  it('data-if works with expressions', () => {
-    const el = document.createElement('div')
-    el.setAttribute('data-if', 'count > 0')
-    apply(el, { count: 0 })
-    expect((el as HTMLElement).style.display).toBe('none')
-    apply(el, { count: 5 })
-    expect((el as HTMLElement).style.display).toBe('')
-  })
-
-  it('data-show alias behaves identically to data-if', () => {
+  it('shows when truthy', () => {
     const el = document.createElement('div')
     el.setAttribute('data-show', 'active')
     apply(el, { active: false })
     expect((el as HTMLElement).style.display).toBe('none')
     apply(el, { active: true })
     expect((el as HTMLElement).style.display).toBe('')
+  })
+
+  it('keeps element in DOM (does NOT detach)', () => {
+    const root = document.createElement('div')
+    const el = document.createElement('p')
+    el.setAttribute('data-show', 'show')
+    root.appendChild(el)
+    apply(root, { show: false })
+    expect(el.parentNode).toBe(root)
   })
 })
 

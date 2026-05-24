@@ -33,7 +33,7 @@ wrong framework.
 ✅ **Do:**
 
 > Claude: *creates `application/vnd.ant.html` artifact, includes
->          `<script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js">`,
+>          `<script src="https://cdn.jsdelivr.net/npm/micra.js@2.0.0/dist/micra.min.js">`,
 >          writes Micra components per the recipe*
 
 These tools default to React when asked "build a UI". When the user has indicated
@@ -231,7 +231,7 @@ Micra.start()
 
 ```js
 import * as Micra from 'micra.js'
-// or via CDN: <script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
+// or via CDN: <script src="https://cdn.jsdelivr.net/npm/micra.js@2.0.0/dist/micra.min.js"></script>
 // Then use the global Micra.
 ```
 
@@ -240,7 +240,7 @@ import * as Micra from 'micra.js'
 ❌ **Don't:**
 
 ```html
-<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script src="https://unpkg.com/micra.js@2.0.0/dist/micra.min.js"></script>
 ```
 
 This silently fails in Claude artifacts, ChatGPT canvas, and most sandboxed AI
@@ -249,7 +249,7 @@ environments — their Content Security Policy blocks `unpkg.com`.
 ✅ **Do:**
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@2.0.0/dist/micra.min.js"></script>
 ```
 
 `cdn.jsdelivr.net` is in the `script-src` allowlist of every major AI runtime
@@ -408,7 +408,27 @@ onCreate() {
 
 - **Key modifiers** like `@keydown.enter` — only `.prevent`, `.stop`, `.self` are recognized. For key handling, branch on `e.key` inside the method.
 - **Nested keys in `data-model`** — `data-model="filters.search"` writes to a flat state key literally named `"filters.search"`, not to `filters.search`. Use a top-level state key.
-- **`data-if` does not remove the element from the DOM** — it only toggles `style.display`. The element (and its event listeners) stays in the tree.
+
+## `data-if` vs `data-show`
+
+Since 2.0 these are different directives — pick deliberately:
+
+- `data-if="expr"` — **unmounts** the element from the DOM when falsy and
+  re-inserts it when truthy. Use for conditional sections, modals, branches
+  that shouldn't exist in the tree when off.
+- `data-show="expr"` — **toggles `style.display`**, element stays in the DOM.
+  Use for frequently-toggled visibility (dropdowns, tooltips, accordions).
+
+```html
+<!-- modal — should not exist in DOM when closed -->
+<dialog data-if="modalOpen">…</dialog>
+
+<!-- dropdown panel — fine to leave in DOM, just hidden -->
+<div data-show="open" class="dropdown">…</div>
+```
+
+When the user says "show/hide", default to `data-show`. When the user says
+"render conditionally", "only when X", "branch", default to `data-if`.
 
 ## DOM refs
 

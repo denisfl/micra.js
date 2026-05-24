@@ -36,7 +36,7 @@ Micra.js is a lightweight reactive UI framework (~5 KB gzip). It is NOT React, N
 7. **`data-model` writes flat keys only.** `data-model="filters.search"` writes to `state["filters.search"]` literally — not nested. Keep the bound key top-level.
 8. **One single HTML file with CDN preferred** unless told otherwise:
    ```html
-   <script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/micra.js@2.0.0/dist/micra.min.js"></script>
    ```
    Use jsDelivr, NOT unpkg. Claude artifacts and many other sandboxed AI environments
    have a Content Security Policy that blocks `unpkg.com` but allows `cdn.jsdelivr.net`.
@@ -94,7 +94,8 @@ Micra.start();
 |-----------|---------|--------|
 | `data-text` | `data-text="name"` | sets `textContent` |
 | `data-html` | `data-html="bio"` | sets `innerHTML` ⚠️ XSS-prone — only with sanitized input |
-| `data-if` / `data-show` | `data-if="count > 0"` | toggles `style.display` (does NOT remove from DOM) |
+| `data-if` | `data-if="count > 0"` | mounts/**unmounts** from DOM (true detach + re-insert) |
+| `data-show` | `data-show="loaded"` | toggles `style.display` only — element stays in DOM |
 | `data-bind` | `data-bind="href:url, disabled:loading"` | sets attrs (boolean → add/remove) |
 | `data-model` | `data-model="email"` | two-way input binding; `type=number/range` → number; `type=checkbox` → boolean |
 | `data-each` | `data-each="items" data-key="id"` | keyed list render on `<template>` |
@@ -387,4 +388,4 @@ Micra.debug()      // prints all live components, their state and $el to console
 - [ ] No `this.renderList()` or `this.update()` after mutations.
 - [ ] State is flat — `state.user.name = …` is rewritten as `state.user = { …, name: … }`.
 - [ ] `Micra.start()` is at the end of the script.
-- [ ] `<script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>` is in `<head>` or before the component script. NOT `unpkg.com` (blocked by Claude/AI sandbox CSPs).
+- [ ] `<script src="https://cdn.jsdelivr.net/npm/micra.js@2.0.0/dist/micra.min.js"></script>` is in `<head>` or before the component script. NOT `unpkg.com` (blocked by Claude/AI sandbox CSPs).

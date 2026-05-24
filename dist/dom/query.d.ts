@@ -21,3 +21,9 @@ export declare function queryAll(root: ParentNode, sel: string): Element[];
  * owned by that nested component, not by root's component — so we skip it.
  */
 export declare function queryOwn(root: Element, attr: string): Element[];
+/**
+ * Like queryOwn but accepts an arbitrary CSS selector. Used by bindAtEvents
+ * which scans `*` for `@`-prefixed attribute names (no attribute selector exists
+ * for those).
+ */
+export declare function queryOwnAll(root: Element, sel: string): Element[];

@@ -164,3 +164,6 @@ this.on(event, handler)
 - [SSR](./docs/ssr.md)
 - [Examples](./docs/examples.md)
 - [API reference](./docs/api-reference.md)
+- Recipes:
+  - [Todo app](./docs/recipes/todo-app.md)
+  - [Server-sent events (SSE)](./docs/recipes/sse.md)

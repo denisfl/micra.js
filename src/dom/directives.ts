@@ -15,6 +15,7 @@
 
 import type {
   CachedBinding,
+  CachedIfBinding,
   CachedPairBinding,
   DirectiveCache,
   InternalInstance,
@@ -44,7 +45,39 @@ function applyHtml(el: Element, expr: string, state: StateRecord): void {
   el.innerHTML = String(evalExpr(expr, state) ?? '')
 }
 
-function applyIf(el: Element, expr: string, state: StateRecord): void {
+/**
+ * data-if — true mount/unmount. When the expression is falsy, the element is
+ * detached from the DOM and a Comment placeholder takes its slot. When truthy,
+ * the element is re-inserted where the placeholder is.
+ *
+ * Side effect: when an element is detached, its `data-ref` is gone from
+ * `this.refs` and its `data-model` listener still exists on the (detached)
+ * node — listeners survive detach.
+ *
+ * Use `data-show` when you want the cheap display:none toggle instead.
+ */
+function applyIf(binding: CachedIfBinding, state: StateRecord): void {
+  const el = binding.el as HTMLElement
+  const truthy = !!evalExpr(binding.expr, state)
+  if (truthy) {
+    // If a placeholder is currently in the DOM in the element's slot, swap back.
+    const ph = binding.placeholder
+    if (ph && ph.parentNode) ph.parentNode.replaceChild(el, ph)
+  } else {
+    // Only detach if currently attached somewhere. Standalone elements
+    // (no parent — common in unit tests) are a no-op.
+    const parent = el.parentNode
+    if (parent) {
+      if (!binding.placeholder) binding.placeholder = document.createComment('if')
+      parent.replaceChild(binding.placeholder, el)
+    }
+  }
+}
+
+/**
+ * data-show — visibility toggle via `style.display`. Element stays in the DOM.
+ */
+function applyShow(el: Element, expr: string, state: StateRecord): void {
   (el as HTMLElement).style.display = evalExpr(expr, state) ? '' : 'none'
 }
 
@@ -141,7 +174,7 @@ function buildCache(root: Element): DirectiveCache {
   return {
     text:  pick('data-text'),
     html:  pick('data-html'),
-    if:    pick('data-if'),
+    if:    pick('data-if') as CachedIfBinding[],
     show:  pick('data-show'),
     bind:  pickPairs('data-bind'),
     model: pick('data-model'),
@@ -188,10 +221,12 @@ function applyFromList(
   state: StateRecord,
   rawState: StateRecord,
 ): void {
+  // data-if runs first so subsequent directives don't write into a tree that's
+  // about to be detached this tick.
+  cache.if.forEach(b => applyIf(b, state))
   cache.text.forEach(b => applyText(b.el, b.expr, state))
   cache.html.forEach(b => applyHtml(b.el, b.expr, state))
-  cache.if.forEach(b => applyIf(b.el, b.expr, state))
-  cache.show.forEach(b => applyIf(b.el, b.expr, state))
+  cache.show.forEach(b => applyShow(b.el, b.expr, state))
   cache.bind.forEach(b => applyBind(b.el, b.pairs, state))
   cache.model.forEach(b => applyModel(b.el, b.expr.trim(), rawState))
   cache.class.forEach(b => applyClass(b.el, b.pairs, state))
@@ -208,7 +243,7 @@ function buildFragmentList(frag: DocumentFragment): DirectiveCache {
   return {
     text:  pick('data-text'),
     html:  pick('data-html'),
-    if:    pick('data-if'),
+    if:    pick('data-if') as CachedIfBinding[],
     show:  pick('data-show'),
     bind:  pickPairs('data-bind'),
     model: pick('data-model'),

@@ -62,21 +62,47 @@ Output: `<strong>Hi</strong>` rendered as HTML.
 
 ## `data-if`
 
-Shows or hides an element by toggling `style.display`.
+Mounts or **unmounts** the element from the DOM. When the expression is falsy,
+the element is removed from the document and replaced with a comment placeholder.
+When it becomes truthy again, the same element is re-inserted at the same spot.
 
 ```html
 <p data-if="count > 0">Visible when count is positive</p>
 ```
 
+Notes:
+
+- DOM listeners and attributes on the detached element survive — re-mount keeps
+  identity, no rebinding needed.
+- `this.refs.X` is **undefined** while the element is detached.
+- A `<template data-each>` inside a `data-if=false` subtree is suspended — it
+  re-renders correctly when the parent comes back.
+
+> Element is *gone* from the DOM, not just hidden. For accessibility (screen
+> readers, focus traps) this is the right default. If you only want a cheap
+> hide/show toggle on a small, frequently-toggled element, use `data-show`
+> instead.
+
 ## `data-show`
 
-Shows or hides an element by toggling `style.display`. Works identically to `data-if`.
+Toggles `style.display`. The element **stays in the DOM** — only its visibility
+changes.
 
 ```html
 <div data-show="loaded">Content is ready</div>
 ```
 
-Use `data-show` when you prefer the semantic name, or `data-if` — they are interchangeable.
+Use `data-show` for cheap visibility toggling. Use `data-if` for conditional
+mounting.
+
+| | `data-if` | `data-show` |
+|---|---|---|
+| Element in DOM when falsy | no | yes |
+| `style.display` modified | no | yes (`none`) |
+| Listeners survive | yes (on the detached node) | yes |
+| `this.refs.X` available when hidden | no | yes |
+| Toggle cost | DOM mutation | one style write |
+| Best for | conditional sections, a11y | toggling a tooltip / dropdown |
 
 ## `data-bind`
 

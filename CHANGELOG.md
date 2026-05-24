@@ -4,6 +4,54 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] — 2026-05-24
+
+### Breaking
+
+- **`data-if` now truly unmounts the element from the DOM.** Previously
+  `data-if` and `data-show` were aliases — both toggled `style.display`.
+  Now `data-if` detaches the element (replacing it with a Comment placeholder)
+  when falsy and re-inserts it when truthy. `data-show` keeps the old
+  `style.display` behaviour and is the way to express cheap visibility
+  toggling.
+  - Side effect: `this.refs.X` is `undefined` while the element is detached.
+  - DOM listeners on the detached node survive — re-insert preserves identity.
+  - `<template data-each>` inside a `data-if=false` subtree is suspended and
+    re-renders cleanly when the ancestor returns.
+  - **Migration:** if you relied on `data-if` keeping the element in the DOM
+    (e.g. you were reading `this.refs.X` while hidden, or animating
+    `display` transitions), replace those `data-if` attributes with
+    `data-show`.
+
+### Fixed
+
+- **`@event` shorthand no longer crosses nested `data-component` boundaries.**
+  `bindAtEvents` previously walked all descendants via `queryAll('*')`,
+  attaching parent-component handlers to elements owned by a nested child
+  component. It now uses `queryOwnAll` like `data-on`/`data-model` already do.
+- **`this.fetch(url, { method: 'POST' })` without a `body` no longer sends
+  the options object as the body.** Previously `body` was set to
+  `JSON.stringify(options)` (which serialized `{"method":"POST"}` to the
+  server). Now the body is omitted unless `options.body` is provided.
+
+### Added
+
+- **`queryOwnAll(root, selector)`** in `src/dom/query.ts` — selector variant
+  of `queryOwn` for cases where there is no attribute to query by (e.g.
+  scanning `*` for `@`-prefixed attribute names).
+- **Recipe: `docs/recipes/sse.md`** — server-sent events pattern using
+  `onCreate` + native `EventSource` + `onDestroy` cleanup. No new library
+  surface; just the canonical pattern for live data on top of Micra.
+
+### Docs
+
+- `docs/directives.md` — full split between `data-if` (unmount) and
+  `data-show` (display).
+- `docs/llm-guide.md`, `PROMPT.md`, `llms.txt`, `llms-full.txt` — updated
+  the directive table and added a "when to pick which" rule for AI agents.
+
+---
+
 ## [1.1.0] — 2026-05-24
 
 ### Security

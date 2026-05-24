@@ -139,6 +139,15 @@ export interface CachedBinding {
 }
 
 /**
+ * @internal data-if binding — like CachedBinding but also carries the
+ * placeholder Comment that takes the element's slot in the DOM while the
+ * element is detached (unmounted).
+ */
+export interface CachedIfBinding extends CachedBinding {
+  placeholder?: Comment
+}
+
+/**
  * @internal Per-element directive binding with pre-parsed pairs.
  * Used by `data-bind` and `data-class` — both share the
  * `name:expression[, name:expression…]` syntax.
@@ -159,7 +168,7 @@ export interface CachedPairBinding {
 export interface DirectiveCache {
   text:  CachedBinding[]
   html:  CachedBinding[]
-  if:    CachedBinding[]
+  if:    CachedIfBinding[]
   show:  CachedBinding[]
   bind:  CachedPairBinding[]
   model: CachedBinding[]

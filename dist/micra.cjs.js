@@ -66,9 +66,9 @@ async function micraFetch(url, options = {}) {
     }
     if (Object.keys(params).length)
       finalUrl += (url.includes("?") ? "&" : "?") + new URLSearchParams(params);
-  } else {
+  } else if (options.body !== void 0) {
     headers["Content-Type"] = "application/json";
-    body = JSON.stringify(options.body !== void 0 ? options.body : options);
+    body = JSON.stringify(options.body);
   }
   const res = await fetch(finalUrl, {
     method,
@@ -259,7 +259,13 @@ function queryAll(root, sel) {
   return Array.from(root.querySelectorAll(sel));
 }
 function queryOwn(root, attr) {
-  return queryAll(root, `[${attr}]`).filter((el) => {
+  return filterOwn(root, queryAll(root, `[${attr}]`));
+}
+function queryOwnAll(root, sel) {
+  return filterOwn(root, queryAll(root, sel));
+}
+function filterOwn(root, els) {
+  return els.filter((el) => {
     let node = el.parentElement;
     while (node && node !== root) {
       if (node.hasAttribute("data-component")) return false;
@@ -279,7 +285,21 @@ function applyHtml(el, expr, state) {
   var _a;
   el.innerHTML = String((_a = evalExpr(expr, state)) != null ? _a : "");
 }
-function applyIf(el, expr, state) {
+function applyIf(binding, state) {
+  const el = binding.el;
+  const truthy = !!evalExpr(binding.expr, state);
+  if (truthy) {
+    const ph = binding.placeholder;
+    if (ph && ph.parentNode) ph.parentNode.replaceChild(el, ph);
+  } else {
+    const parent = el.parentNode;
+    if (parent) {
+      if (!binding.placeholder) binding.placeholder = document.createComment("if");
+      parent.replaceChild(binding.placeholder, el);
+    }
+  }
+}
+function applyShow(el, expr, state) {
   el.style.display = evalExpr(expr, state) ? "" : "none";
 }
 function applyBind(el, pairs, state) {
@@ -354,10 +374,10 @@ function applyDirectives(root, state, rawState, _instance) {
   applyFromList(el.__micraCache, state, rawState);
 }
 function applyFromList(cache, state, rawState) {
+  cache.if.forEach((b) => applyIf(b, state));
   cache.text.forEach((b) => applyText(b.el, b.expr, state));
   cache.html.forEach((b) => applyHtml(b.el, b.expr, state));
-  cache.if.forEach((b) => applyIf(b.el, b.expr, state));
-  cache.show.forEach((b) => applyIf(b.el, b.expr, state));
+  cache.show.forEach((b) => applyShow(b.el, b.expr, state));
   cache.bind.forEach((b) => applyBind(b.el, b.pairs, state));
   cache.model.forEach((b) => applyModel(b.el, b.expr.trim(), rawState));
   cache.class.forEach((b) => applyClass(b.el, b.pairs, state));
@@ -432,7 +452,7 @@ function bindDataOn(root, instance) {
 }
 function bindAtEvents(root, instance) {
   const isFragment = root.nodeType === 11;
-  const all = isFragment ? queryAll(root, "*") : queryAll(root, "*");
+  const all = isFragment ? queryAll(root, "*") : queryOwnAll(root, "*");
   if (!isFragment && !all.includes(root)) all.unshift(root);
   for (const el of all) {
     const mEl = el;
@@ -503,6 +523,7 @@ function renderList(root, state, rawState, instance) {
     const marker = tmpl.__micraMarker;
     const keyMap = tmpl.__micraNodes;
     const parent = marker.parentNode;
+    if (!parent) return;
     if (!Array.isArray(items)) {
       tmpl.__micraList.forEach((n) => n.remove());
       tmpl.__micraList = [];

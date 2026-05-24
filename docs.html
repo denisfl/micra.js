@@ -70,7 +70,7 @@
               <div class="hero-code">
                 &lt;script src="https://cdn.jsdelivr.net/npm/micra.js/dist/micra.min.js"&gt;&lt;/script&gt;
               </div>
-              <span class="size-badge">&lt; 4 KB gzip</span>
+              <span class="size-badge">~5 KB gzip</span>
             </div>
             <div class="hero-grid">
               <div class="hero-card">
@@ -162,7 +162,7 @@
               <div class="vs-badge">
                 <strong>vs Alpine.js</strong>
                 <span
-                  >&lt; 4 KB vs ~14 KB gzip — ~3× smaller. Standard
+                  >~5 KB vs ~14 KB gzip — ~3× smaller. Standard
                   <span class="inline-code">data-*</span> attributes instead of
                   custom <span class="inline-code">x-*</span>. Built-in
                   cross-component event bus — no stores needed.</span
@@ -267,8 +267,9 @@ Micra.define('reactive-demo', {
               a proxy that resolves state properties and component methods.
               <span class="inline-code">data-text</span> and
               <span class="inline-code">data-html</span> set content;
-              <span class="inline-code">data-if</span> /
-              <span class="inline-code">data-show</span> toggle visibility;
+              <span class="inline-code">data-if</span> mounts/unmounts from the
+              DOM; <span class="inline-code">data-show</span> toggles
+              <span class="inline-code">display:none</span>;
               <span class="inline-code">data-bind</span> sets attributes;
               <span class="inline-code">data-model</span> wires two-way input
               binding; <span class="inline-code">data-class</span> toggles
@@ -305,10 +306,15 @@ Micra.define('reactive-demo', {
                       data-text="open ? 'Hide panel' : 'Show panel'"
                     ></button>
                     <div class="panel" data-if="open">
-                      This panel uses
-                      <span class="inline-code">data-if</span> to toggle
-                      display.
+                      This panel is
+                      <strong>removed from the DOM</strong> when hidden — a
+                      Comment placeholder takes its slot.
                     </div>
+                    <p class="hint">
+                      <span class="inline-code">data-if</span> = mount / unmount.
+                      Inspect the DOM while toggling to see the element appear
+                      and disappear.
+                    </p>
                   </div>
                 </div>
 
@@ -321,7 +327,12 @@ Micra.define('reactive-demo', {
                     <div class="status-pill" data-show="visible">
                       Visible with data-show
                     </div>
-                    <p class="hint">Same as data-if — toggles display:none</p>
+                    <p class="hint">
+                      <span class="inline-code">data-show</span> only flips
+                      <span class="inline-code">style.display</span>. The
+                      element stays in the DOM — use this for cheap visibility
+                      toggling.
+                    </p>
                   </div>
                 </div>
 
@@ -1047,7 +1058,7 @@ instance?.destroy()</code></pre>
                       <span data-text="selectedLabel || label"></span>
                       <span data-text="open ? '▴' : '▾'"></span>
                     </button>
-                    <div class="dropdown-menu" data-if="open">
+                    <div class="dropdown-menu" data-show="open">
                       <template data-each="options" data-key="value">
                         <button
                           class="menu-item"
@@ -1070,7 +1081,7 @@ instance?.destroy()</code></pre>
                       <span data-text="selectedLabel || label"></span>
                       <span data-text="open ? '▴' : '▾'"></span>
                     </button>
-                    <div class="dropdown-menu" data-if="open">
+                    <div class="dropdown-menu" data-show="open">
                       <template data-each="options" data-key="value">
                         <button
                           class="menu-item"
@@ -1093,7 +1104,7 @@ instance?.destroy()</code></pre>
                       <span data-text="selectedLabel || label"></span>
                       <span data-text="open ? '▴' : '▾'"></span>
                     </button>
-                    <div class="dropdown-menu" data-if="open">
+                    <div class="dropdown-menu" data-show="open">
                       <template data-each="options" data-key="value">
                         <button
                           class="menu-item"

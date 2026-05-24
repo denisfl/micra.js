@@ -256,6 +256,41 @@ describe('5.1 Non-keyed — full re-render', () => {
   })
 })
 
+// ── 4.5 data-each inside data-if (2.0) ───────────────────────────────────────
+
+describe('4.5 data-each inside data-if survives detach/attach', () => {
+  it('list re-renders after parent toggles back from data-if=false', async () => {
+    const { mount } = await import('../src/core/mount')
+    const { instances } = await import('../src/core/registry')
+    ;(instances() as Map<HTMLElement, unknown>).clear()
+
+    const root = document.createElement('div')
+    root.innerHTML = `
+      <section data-if="show">
+        <template data-each="items" data-key="id">
+          <p data-text="item.name"></p>
+        </template>
+      </section>
+    `
+    document.body.appendChild(root)
+
+    const inst = mount(root, {
+      state: { show: true, items: [{ id: 1, name: 'A' }, { id: 2, name: 'B' }] },
+    })!
+    expect(root.querySelectorAll('p').length).toBe(2)
+
+    inst.state.show = false
+    await Promise.resolve()
+    expect(root.querySelectorAll('p').length).toBe(0)
+
+    inst.state.show = true
+    await Promise.resolve()
+    expect(root.querySelectorAll('p').length).toBe(2)
+
+    document.body.removeChild(root)
+  })
+})
+
 describe('5.2 Non-keyed — correctness', () => {
   it('preserves item order', () => {
     const { root, state } = makeNoKeyRoot([
@@ -289,8 +324,8 @@ describe('5.2 Non-keyed — correctness', () => {
     expect(spans[0]?.textContent).toBe('X')
     expect(spans[1]?.textContent).toBe('Y')
 
+    // data-if (2.0): inactive item's <i> is detached, so only one remains in DOM
     const icons = root.querySelectorAll('i')
-    expect((icons[0] as HTMLElement).style.display).toBe('')
-    expect((icons[1] as HTMLElement).style.display).toBe('none')
+    expect(icons.length).toBe(1)
   })
 })

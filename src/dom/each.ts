@@ -53,7 +53,10 @@ export function renderList<S extends StateRecord>(
 
     const marker = tmpl.__micraMarker
     const keyMap = tmpl.__micraNodes
-    const parent = marker.parentNode!
+    const parent = marker.parentNode
+    // The template (and its marker) is currently detached — likely a data-if
+    // ancestor unmounted this subtree. Nothing to do until it returns.
+    if (!parent) return
 
     // Empty / non-array: clear all rendered rows
     if (!Array.isArray(items)) {
