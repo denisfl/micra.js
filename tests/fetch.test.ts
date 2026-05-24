@@ -83,6 +83,21 @@ describe('8.2 POST', () => {
     const init = (fetch as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as RequestInit
     expect(init.method).toBe('DELETE')
   })
+
+  it('POST without body sends no body, not the options object', async () => {
+    mockFetch(200, {})
+    await micraFetch('/api/ping', { method: 'POST' })
+    const init = (fetch as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as RequestInit
+    // Previously body was JSON.stringify(options) → '{"method":"POST"}' — wrong.
+    expect(init.body).toBeUndefined()
+  })
+
+  it('DELETE without body sends no body', async () => {
+    mockFetch(200, {})
+    await micraFetch('/api/resource/1', { method: 'DELETE' })
+    const init = (fetch as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as RequestInit
+    expect(init.body).toBeUndefined()
+  })
 })
 
 // ── 8.3 Error handling ────────────────────────────────────────────────────────

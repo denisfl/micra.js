@@ -189,6 +189,26 @@ describe('10.1.ter @event — per-element rebind on new DOM', () => {
     btn.click()
     expect(handler).toHaveBeenCalledTimes(1)
   })
+
+  it('does NOT bind @event inside nested data-component subtree', async () => {
+    const { bindAtEvents } = await import('../src/dom/events')
+    const parentHandler = vi.fn()
+    const parentInst = makeInstance({ handle: parentHandler })
+
+    const root = document.createElement('div')
+    // Nested child component — parent must NOT bind its @click
+    const child = document.createElement('div')
+    child.setAttribute('data-component', 'child')
+    const btn = document.createElement('button')
+    btn.setAttribute('@click', 'handle')
+    child.appendChild(btn)
+    root.appendChild(child)
+
+    bindAtEvents(root, parentInst)
+    btn.click()
+    // Parent must not have been notified — that button belongs to the child component.
+    expect(parentHandler).not.toHaveBeenCalled()
+  })
 })
 
 // ── 10.3 __micraNodes ─────────────────────────────────────────────────────────

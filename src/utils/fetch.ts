@@ -81,9 +81,9 @@ export async function micraFetch(url: string, options: FetchOptions = {}): Promi
     }
     if (Object.keys(params).length)
       finalUrl += (url.includes('?') ? '&' : '?') + new URLSearchParams(params)
-  } else {
+  } else if (options.body !== undefined) {
     headers['Content-Type'] = 'application/json'
-    body = JSON.stringify(options.body !== undefined ? options.body : options)
+    body = JSON.stringify(options.body)
   }
 
   const res = await fetch(finalUrl, {

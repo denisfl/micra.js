@@ -13,7 +13,7 @@
 
 import type { InternalInstance, MicraElement, StateRecord } from '../types'
 import { warn } from '../utils/expr'
-import { queryOwn, queryAll } from './query'
+import { queryOwn, queryOwnAll, queryAll } from './query'
 
 /** @internal Attach a DOM listener and track it on the instance for destroy(). */
 function track<S extends StateRecord>(
@@ -94,7 +94,7 @@ export function bindAtEvents<S extends StateRecord>(
   const isFragment = root.nodeType === 11
   const all = isFragment
     ? queryAll(root as unknown as ParentNode, '*')
-    : queryAll(root, '*')
+    : queryOwnAll(root, '*')
 
   // Include root itself for the regular-element case
   if (!isFragment && !all.includes(root)) all.unshift(root)

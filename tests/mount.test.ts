@@ -295,6 +295,30 @@ describe("6.3 Lifecycle", () => {
     expect(handler2).toHaveBeenCalledTimes(1);
   });
 
+  it("destroy() then re-mount rebinds @event listeners on keyed each rows", () => {
+    const handler1 = vi.fn();
+    const handler2 = vi.fn();
+    const el = document.createElement("div");
+    el.innerHTML = `
+      <template data-each="items" data-key="id">
+        <button @click="handle" data-text="item.name"></button>
+      </template>
+    `;
+    document.body.appendChild(el);
+
+    const items = [{ id: 1, name: "A" }];
+    const inst1 = mount(el, { state: { items }, handle: handler1 })!;
+    el.querySelector("button")!.click();
+    expect(handler1).toHaveBeenCalledTimes(1);
+    inst1.destroy();
+
+    const inst2 = mount(el, { state: { items }, handle: handler2 })!;
+    expect(inst2).not.toBe(inst1);
+    el.querySelector("button")!.click();
+    expect(handler1).toHaveBeenCalledTimes(1); // no leak from old instance
+    expect(handler2).toHaveBeenCalledTimes(1); // new instance is wired up
+  });
+
   it("destroy() unsubscribes all bus subscriptions", async () => {
     const el = document.createElement("div");
     document.body.appendChild(el);
