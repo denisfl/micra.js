@@ -17,8 +17,11 @@ Micra.js is a lightweight reactive UI framework (~5 KB gzip). It is NOT React, N
 7. **`data-model` writes flat keys only.** `data-model="filters.search"` writes to `state["filters.search"]` literally — not nested. Keep the bound key top-level.
 8. **One single HTML file with CDN preferred** unless told otherwise:
    ```html
-   <script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
    ```
+   Use jsDelivr, NOT unpkg. Claude artifacts and many other sandboxed AI environments
+   have a Content Security Policy that blocks `unpkg.com` but allows `cdn.jsdelivr.net`.
+   jsDelivr auto-mirrors every npm package so the URL just works.
 
 If you find yourself reaching for any of these, **stop and rewrite**:
 
@@ -364,4 +367,4 @@ Micra.debug()      // prints all live components, their state and $el to console
 - [ ] No `this.renderList()` or `this.update()` after mutations.
 - [ ] State is flat — `state.user.name = …` is rewritten as `state.user = { …, name: … }`.
 - [ ] `Micra.start()` is at the end of the script.
-- [ ] `<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>` is in `<head>` or before the component script.
+- [ ] `<script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>` is in `<head>` or before the component script. NOT `unpkg.com` (blocked by Claude/AI sandbox CSPs).

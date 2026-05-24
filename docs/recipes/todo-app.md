@@ -4,6 +4,10 @@ A complete, idiomatic Micra.js todo. **Read this before generating any todo-like
 
 It is the canonical answer to "build me a todo app". Copy it verbatim and adjust as needed — do NOT roll your own DOM, do NOT store derived values in state, do NOT call `addEventListener` manually.
 
+> **CDN:** uses `cdn.jsdelivr.net` because Claude artifacts (and most AI sandboxes)
+> block `unpkg.com` via Content Security Policy. jsDelivr auto-mirrors npm and is in
+> the allowlist of every major AI runtime.
+
 ## What you get
 
 - Add / toggle / delete / clear-done
@@ -62,7 +66,7 @@ It is the canonical answer to "build me a todo app". Copy it verbatim and adjust
     </footer>
   </div>
 
-  <script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
   <script>
     Micra.define('todo-app', {
       state: {

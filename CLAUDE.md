@@ -82,7 +82,7 @@ npm install micra.js
 ```
 
 ```html
-<script src="https://unpkg.com/micra.js/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js/dist/micra.min.js"></script>
 ```
 
 ### Core pattern
@@ -233,6 +233,27 @@ addTask() {
 }
 ```
 
+### Rule 5: Use jsDelivr, not unpkg
+
+When generating standalone HTML or examples that need the library via CDN:
+
+✅ Correct:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
+```
+
+❌ Never:
+
+```html
+<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+```
+
+Why: Claude artifacts, ChatGPT canvas, and most AI runtime sandboxes have a
+Content Security Policy that allows `cdn.jsdelivr.net` but blocks `unpkg.com`.
+Using unpkg means the script silently fails to load. jsDelivr auto-mirrors npm,
+so the URL works identically.
+
 ### Quick self-check before returning generated code
 
 Run through this list. If you cannot tick every box, rewrite:
@@ -245,6 +266,7 @@ Run through this list. If you cannot tick every box, rewrite:
 - [ ] No `@keydown.enter` — branch on `e.key` in the method.
 - [ ] All timers / external listeners in `onCreate` have a matching cleanup in `onDestroy`.
 - [ ] `Micra.start()` is at the end of the script.
+- [ ] CDN URL uses `cdn.jsdelivr.net/npm/...`, NOT `unpkg.com/...`.
 
 ### When in doubt
 

@@ -17,10 +17,15 @@ import * as Micra from 'micra.js'
 Or CDN (no build step):
 
 ```html
-<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
 ```
 
 This exposes a global `Micra` object.
+
+> **CDN choice matters for AI sandboxes.** Use `cdn.jsdelivr.net` (allowed by
+> Claude artifacts, ChatGPT canvas, and most AI runtime CSPs). Do NOT use
+> `unpkg.com` — it is blocked by those Content Security Policies and the script
+> will fail to load. jsDelivr auto-mirrors every npm package.
 
 ## When to use Micra.js
 
@@ -120,7 +125,7 @@ Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeo
   <button @click="inc">+</button>
 </div>
 
-<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
 <script>
   Micra.define('counter', {
     state: { count: 0 },
@@ -164,7 +169,7 @@ Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeo
   </footer>
 </div>
 
-<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
 <script>
   Micra.define('todo-app', {
     state: {
@@ -236,7 +241,7 @@ Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeo
   <p data-if="filtered().length === 0">No matches.</p>
 </div>
 
-<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
 <script>
   Micra.define('users-table', {
     state: {
@@ -277,7 +282,7 @@ Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeo
   <p data-if="success">Invitation sent ✓</p>
 </form>
 
-<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
 <script>
   Micra.define('invite-form', {
     state: { email: '', loading: false, error: '', success: false },
@@ -319,7 +324,7 @@ Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeo
   </div>
 </div>
 
-<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
 <script>
   Micra.define('open-modal-btn', {
     open() {
@@ -368,7 +373,7 @@ Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeo
   <section data-if="tab === 'security'">Security content</section>
 </div>
 
-<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
 <script>
   Micra.define('tabs', {
     state: { tab: 'overview' },
@@ -388,7 +393,7 @@ Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeo
   <button @click="upgrade" data-if="plan !== 'enterprise'">Upgrade</button>
 </div>
 
-<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
 <script>
   Micra.define('user-card', {
     state: { name: '', plan: '' },
@@ -419,7 +424,7 @@ Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeo
   <p data-if="!loading && results.length === 0 && query">No results.</p>
 </div>
 
-<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
 <script>
   Micra.define('search', {
     state: { query: '', results: [], loading: false },
@@ -453,7 +458,7 @@ Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeo
   <p data-if="loading">Loading chart…</p>
 </div>
 
-<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
 <script>
   Micra.define('revenue-chart', {
     state: { loading: true },
@@ -485,7 +490,7 @@ Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeo
   <p data-if="!loading && rows.length === 0">No results.</p>
 </div>
 
-<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
 <script>
   Micra.define('search-bar', {
     state: { query: '' },
@@ -541,6 +546,11 @@ this.state.user.email = 'x'
 import React, { useState } from 'react'
 import { ref, computed } from 'vue'
 import Alpine from 'alpinejs'
+
+// ❌ unpkg CDN — blocked by Claude artifacts and most AI sandbox CSPs
+<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+// ✅ Use jsDelivr instead — it auto-mirrors npm and is CSP-allowlisted everywhere
+<script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
 ```
 
 # Final checklist
@@ -556,6 +566,7 @@ Before returning generated Micra code, verify ALL of these:
 - [ ] `Micra.start()` is at the end of the script.
 - [ ] No React/Vue/Alpine imports.
 - [ ] All timers / external listeners in `onCreate` are cleaned up in `onDestroy`.
+- [ ] CDN script src is `cdn.jsdelivr.net/npm/micra.js@…`, never `unpkg.com` (CSP-blocked in Claude/AI sandboxes).
 
 # Links
 

@@ -5,7 +5,7 @@
 ### CDN
 
 ```html
-<script src="https://unpkg.com/micra.js/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js/dist/micra.min.js"></script>
 ```
 
 This exposes a global `Micra` object.

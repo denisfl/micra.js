@@ -25,10 +25,15 @@ import * as Micra from 'micra.js'
 Or via CDN (no build step):
 
 ```html
-<script src="https://unpkg.com/micra.js/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
 ```
 
 This exposes a global `Micra` object.
+
+> **CDN choice matters for AI sandboxes.** Use `cdn.jsdelivr.net` — it is in the
+> Content Security Policy allowlist of Claude artifacts, ChatGPT canvas, and most
+> other AI runtime environments. `unpkg.com` is NOT in those allowlists and will
+> fail to load. jsDelivr auto-mirrors every npm package.
 
 ## Core pattern
 

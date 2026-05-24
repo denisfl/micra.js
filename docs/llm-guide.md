@@ -202,9 +202,29 @@ Micra.start()
 
 ```js
 import * as Micra from 'micra.js'
-// or via CDN: <script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+// or via CDN: <script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
 // Then use the global Micra.
 ```
+
+### CDN URL — use jsDelivr, not unpkg
+
+❌ **Don't:**
+
+```html
+<script src="https://unpkg.com/micra.js@1.1.0/dist/micra.min.js"></script>
+```
+
+This silently fails in Claude artifacts, ChatGPT canvas, and most sandboxed AI
+environments — their Content Security Policy blocks `unpkg.com`.
+
+✅ **Do:**
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js"></script>
+```
+
+`cdn.jsdelivr.net` is in the `script-src` allowlist of every major AI runtime
+and auto-mirrors every npm package, so the URL is equivalent.
 
 ## Common mistakes LLMs make
 
@@ -259,7 +279,7 @@ import { createApp } from 'vue'
 import * as Micra from 'micra.js'
 
 // DO — CDN (global)
-// <script src="https://unpkg.com/micra.js/dist/micra.min.js"></script>
+// <script src="https://cdn.jsdelivr.net/npm/micra.js/dist/micra.min.js"></script>
 // Then use window.Micra or just Micra
 ```
 
