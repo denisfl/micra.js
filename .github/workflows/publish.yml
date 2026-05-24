@@ -1,14 +1,11 @@
 name: Publish to npm
 
 # Staged publishing:
-#   push to main     → npm publish --tag next   (install with: npm i micra@next)
+#   push to main     → npm publish --tag next   (install with: npm i micra.js@next)
 #   push tag v*.*.*  → npm publish              (promotes to @latest)
 #
-# Before pushing to main, bump the version in package.json so npm
-# doesn't reject a duplicate. Before tagging, ensure @next was tested.
-#
-# Required secret: NPM_TOKEN  (Settings → Secrets → Actions)
-# Required npm scope: provenance needs id-token: write permission below.
+# Uses npm Trusted Publishing (OIDC) — no NPM_TOKEN secret needed.
+# Setup: npmjs.com → package Settings → Trusted Publishers → add this workflow.
 
 on:
   push:
@@ -19,7 +16,7 @@ on:
 
 permissions:
   contents: read
-  id-token: write   # required for npm provenance attestation
+  id-token: write   # required for OIDC trusted publishing
 
 jobs:
   publish:
@@ -29,7 +26,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
@@ -41,13 +38,9 @@ jobs:
       # ── Staged: push to main publishes as @next ───────────────────
       - name: Publish @next (staged)
         if: github.ref == 'refs/heads/main'
-        run: npm publish --tag next --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --tag next --access public
 
       # ── Release: version tag promotes to @latest ──────────────────
       - name: Publish @latest (release)
         if: startsWith(github.ref, 'refs/tags/v')
-        run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
