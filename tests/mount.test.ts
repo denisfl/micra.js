@@ -216,6 +216,24 @@ describe("6.3 Lifecycle", () => {
     expect(span.textContent).toBe("0");
   });
 
+  it("instance method called from a directive expression has `this` bound", () => {
+    const el = document.createElement("div");
+    const span = document.createElement("span");
+    span.setAttribute("data-text", "summary()");
+    el.appendChild(span);
+    document.body.appendChild(el);
+
+    mount(el, {
+      state: { items: [1, 2, 3] },
+      summary() {
+        // If `this` is not bound, `this.state` throws → silent undefined.
+        return `count=${(this.state.items as number[]).length}`;
+      },
+    });
+
+    expect(span.textContent).toBe("count=3");
+  });
+
   it("re-entrant render() inside a method is dropped with a warn", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const el = document.createElement("div");

@@ -625,10 +625,17 @@ var Micra = (() => {
     let isRendering = false;
     const schedule = createScheduler(() => instance.render());
     instance.state = createReactiveState(rawState, schedule);
+    const boundMethods = /* @__PURE__ */ new Map();
     const exprState = new Proxy(rawState, {
       get(target, key) {
         if (Object.prototype.hasOwnProperty.call(target, key)) return target[key];
-        if (Object.prototype.hasOwnProperty.call(instance, key) && typeof instance[key] === "function") return instance[key];
+        if (Object.prototype.hasOwnProperty.call(instance, key) && typeof instance[key] === "function") {
+          const cached = boundMethods.get(key);
+          if (cached) return cached;
+          const bound = instance[key].bind(instance);
+          boundMethods.set(key, bound);
+          return bound;
+        }
         return void 0;
       },
       has(target, key) {

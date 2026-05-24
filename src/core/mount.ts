@@ -99,14 +99,25 @@ export function mount<S extends StateRecord>(
   // Expression state: proxy that falls back to instance methods so expressions
   // like `data-text="formatDate(item.date)"` can call component methods.
   //
+  // Instance methods are returned BOUND to the instance — directive expressions
+  // call them as bare identifiers via `with()`, which would normally lose `this`.
+  // Bound copies are memoized per method name so repeated reads are cheap.
+  //
   // Both traps reject Object.prototype names ('constructor', 'toString', ...) —
   // accessing them via a directive expression returns undefined instead of
   // leaking the prototype.
+  const boundMethods = new Map<string, Function>()
   const exprState = new Proxy(rawState, {
     get(target, key: string) {
       if (Object.prototype.hasOwnProperty.call(target, key)) return target[key]
       if (Object.prototype.hasOwnProperty.call(instance, key) &&
-          typeof instance[key] === 'function') return instance[key]
+          typeof instance[key] === 'function') {
+        const cached = boundMethods.get(key)
+        if (cached) return cached
+        const bound = (instance[key] as Function).bind(instance)
+        boundMethods.set(key, bound)
+        return bound
+      }
       return undefined
     },
     has(target, key: string) {
