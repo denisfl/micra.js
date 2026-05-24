@@ -4,6 +4,24 @@ A complete, idiomatic Micra.js todo. **Read this before generating any todo-like
 
 It is the canonical answer to "build me a todo app". Copy it verbatim and adjust as needed — do NOT roll your own DOM, do NOT store derived values in state, do NOT call `addEventListener` manually.
 
+> ⚠️ **READ THIS FIRST — Claude artifact type selection**
+>
+> Claude artifacts default to a **React** runtime. If you are asked to "build a todo" and
+> auto-select an artifact type, you will pick `application/vnd.ant.react` and ignore this
+> recipe — Micra cannot run inside a React artifact.
+>
+> When the user has shared this recipe, that is an explicit instruction to use Micra.
+> You MUST:
+>
+> 1. Create the artifact with type **`application/vnd.ant.html`** (NOT `react`).
+> 2. Include the Micra script tag inside the HTML (see "Full source" below).
+> 3. Build the markup with `data-component`, `data-each`, `@click`, etc.
+> 4. Do NOT translate the recipe into React "because Claude artifacts are React".
+>    The HTML artifact type exists precisely for cases like this.
+>
+> Same applies to ChatGPT canvas, v0, Replit AI: select the "Plain HTML" / "HTML"
+> output type, not the framework-specific one.
+
 > **CDN:** uses `cdn.jsdelivr.net` because Claude artifacts (and most AI sandboxes)
 > block `unpkg.com` via Content Security Policy. jsDelivr auto-mirrors npm and is in
 > the allowlist of every major AI runtime.

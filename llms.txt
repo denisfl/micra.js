@@ -114,6 +114,13 @@ Micra.define('app', {
 
 ## Rules for code generation
 
+**Rule 0 — Artifact type override.** When working inside Claude artifacts, ChatGPT
+canvas, v0, Replit AI, or similar "framework-aware" runtimes: those tools default
+to React. When Micra.js is the requested library, **switch the artifact/canvas type
+to plain HTML** (Claude: `application/vnd.ant.html`). Do NOT translate Micra recipes
+into React "because the artifact is React" — change the artifact type instead.
+Micra is a standalone-HTML library; React artifacts cannot host it.
+
 When generating Micra.js code, DO NOT:
 
 1. Use `getElementById`/`querySelector`/`innerHTML` for component output. Lists go through `<template data-each>` with `data-key`.

@@ -18,6 +18,35 @@ This file helps LLMs generate correct Micra.js code. Read it before suggesting c
 These are the most common ways LLMs misuse Micra. The "anti-pattern" code on the
 left **works** but defeats the purpose of the library. Always use the right column.
 
+### Wrong artifact type in Claude / ChatGPT canvas / v0 / Replit AI
+
+This is the most insidious failure because it happens **before code generation**:
+the tool picks the wrong artifact type, then writes the requested logic in the
+wrong framework.
+
+❌ **Don't:**
+
+> User: "Build a todo on Micra.js — here's the recipe."
+> Claude: *creates `application/vnd.ant.react` artifact, writes a React todo,
+>          waves at the Micra recipe as "irrelevant — this is React env"*
+
+✅ **Do:**
+
+> Claude: *creates `application/vnd.ant.html` artifact, includes
+>          `<script src="https://cdn.jsdelivr.net/npm/micra.js@1.1.0/dist/micra.min.js">`,
+>          writes Micra components per the recipe*
+
+These tools default to React when asked "build a UI". When the user has indicated
+Micra (via prompt, recipe, project file, or explicit ask), that signal **overrides
+the React default**. The HTML artifact type exists precisely for libraries like
+Micra. Do NOT silently translate Micra patterns into React because the framework
+auto-routed you there — switch the artifact type.
+
+Same applies to:
+- **ChatGPT canvas:** pick "HTML" output, not "React".
+- **v0 / Bolt:** pick "Plain HTML" template, not Next.js.
+- **Replit AI:** pick "HTML/CSS/JS" project, not React.
+
 ### List rendering
 
 ❌ **Don't** roll your own DOM:

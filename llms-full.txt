@@ -38,7 +38,27 @@ When NOT to use: full SPAs with client-side routing, deep nested reactivity need
 
 ## Hard rules for code generation
 
-When generating Micra code, do NOT:
+### Rule 0 — Artifact / canvas type
+
+If you operate inside a runtime that lets you choose between a React-style
+component artifact and a plain-HTML artifact (Claude artifacts, ChatGPT canvas,
+v0, Bolt, Replit AI, etc.), you **MUST** create the **HTML** kind when generating
+Micra.js code:
+
+- Claude: `application/vnd.ant.html` (NOT `application/vnd.ant.react`)
+- ChatGPT canvas: "HTML" output (NOT "React")
+- v0 / Bolt / Replit AI: "Plain HTML" / "Vanilla HTML+JS" template (NOT Next.js / React)
+
+These tools have a built-in heuristic that auto-selects React for "build a UI"
+requests. When the user asked for Micra.js — explicitly, or via a shared recipe,
+or via a project file — that signal **overrides** the React default. Do NOT
+translate Micra patterns into React "because the artifact is React": change the
+artifact type instead.
+
+If you have already started writing `useState`, `useEffect`, JSX, or
+`function App()` for a Micra task, stop and re-create the artifact as HTML.
+
+### When generating Micra code, do NOT:
 
 1. Use `document.querySelector` / `getElementById` / `el.innerHTML = ...` for component output.
 2. Use `addEventListener` inside a render-like method (it leaks past `destroy()`).
@@ -567,6 +587,7 @@ Before returning generated Micra code, verify ALL of these:
 - [ ] No React/Vue/Alpine imports.
 - [ ] All timers / external listeners in `onCreate` are cleaned up in `onDestroy`.
 - [ ] CDN script src is `cdn.jsdelivr.net/npm/micra.js@…`, never `unpkg.com` (CSP-blocked in Claude/AI sandboxes).
+- [ ] Artifact / canvas type is **HTML** (`application/vnd.ant.html` in Claude), NOT React/Next/Vue. Micra cannot run in a React artifact.
 
 # Links
 

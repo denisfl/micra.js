@@ -4,6 +4,25 @@ Copy-paste this entire file into the top of an LLM chat session before asking it
 
 ---
 
+## Rule 0 — Artifact type (Claude / ChatGPT canvas / v0 / Replit AI)
+
+If your runtime offers an "artifact" or "canvas" abstraction that can be either a
+React component or a standalone HTML page, **you MUST create the HTML kind**.
+
+- **Claude artifacts:** create with type `application/vnd.ant.html`, NOT `application/vnd.ant.react`.
+- **ChatGPT canvas:** choose "HTML" output, not "React".
+- **v0 / Bolt / Replit AI:** select "Plain HTML" or "Vanilla HTML+JS" template, not Next.js / React.
+
+Default heuristics in these tools auto-route "build me a UI" to React. When the
+user has indicated Micra.js (via this prompt, a shared recipe, or a project file),
+that signal **overrides** the React default. Do NOT translate Micra patterns into
+React "because the artifact is React" — switch the artifact type instead.
+
+If you find yourself writing `useState` / `useEffect` / JSX / `function App()` for
+a task that was asked in Micra terms, stop and re-create the artifact as HTML.
+
+---
+
 ## Hard rules (DO NOT violate)
 
 Micra.js is a lightweight reactive UI framework (~5 KB gzip). It is NOT React, NOT Vue, NOT Alpine, NOT jQuery. When generating code:
@@ -360,6 +379,7 @@ Micra.debug()      // prints all live components, their state and $el to console
 
 ## Final checklist before sending generated code
 
+- [ ] Artifact / canvas type is **HTML**, NOT React/Next/Vue. (`application/vnd.ant.html` in Claude.)
 - [ ] Every list is `<template data-each>` with `data-key`.
 - [ ] Every derived value (counts/totals/filtered/formatted) is a method called from a directive, NOT a state field.
 - [ ] Every event handler is `@event` or `data-on`, NOT `addEventListener`.
