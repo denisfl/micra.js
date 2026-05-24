@@ -53,6 +53,9 @@
           <a href="#multiple-instances" @click="close"
             ><span class="dot"></span>Multiple Instances</a
           >
+          <a href="#performance" @click="close"
+            ><span class="dot"></span>Performance</a
+          >
         </nav>
       </aside>
 
@@ -68,7 +71,8 @@
             </p>
             <div class="hero-install-row">
               <div class="hero-code">
-                &lt;script src="https://cdn.jsdelivr.net/npm/micra.js/dist/micra.min.js"&gt;&lt;/script&gt;
+                &lt;script
+                src="https://cdn.jsdelivr.net/npm/micra.js/dist/micra.min.js"&gt;&lt;/script&gt;
               </div>
               <span class="size-badge">~5 KB gzip</span>
             </div>
@@ -109,7 +113,9 @@
             <div class="install-tabs">
               <div class="install-tab">
                 <span class="caption">CDN</span>
-                <pre class="install-pre">&lt;script src="https://cdn.jsdelivr.net/npm/micra.js/dist/micra.min.js"&gt;&lt;/script&gt;</pre>
+                <pre class="install-pre">
+&lt;script src="https://cdn.jsdelivr.net/npm/micra.js/dist/micra.min.js"&gt;&lt;/script&gt;</pre
+                >
               </div>
               <div class="install-tab">
                 <span class="caption">npm</span>
@@ -311,9 +317,9 @@ Micra.define('reactive-demo', {
                       Comment placeholder takes its slot.
                     </div>
                     <p class="hint">
-                      <span class="inline-code">data-if</span> = mount / unmount.
-                      Inspect the DOM while toggling to see the element appear
-                      and disappear.
+                      <span class="inline-code">data-if</span> = mount /
+                      unmount. Inspect the DOM while toggling to see the element
+                      appear and disappear.
                     </p>
                   </div>
                 </div>
@@ -1282,16 +1288,144 @@ Micra.define('filter-table', {
               </div>
             </div>
           </section>
+
+          <section id="performance" class="doc-section">
+            <h2>Performance</h2>
+            <p>
+              Micra ships an in-browser benchmark page that measures the hot
+              paths: mount cost, keyed diff under inserts / removes / reorders,
+              full re-render of non-keyed lists, scheduler batching, and the
+              expression evaluator (cold vs warm cache).
+            </p>
+            <p class="hint">
+              Numbers below are indicative — measured on a recent M-class Mac in
+              the previewed window. Run
+              <a href="./bench.html" class="footer-link">bench.html</a>
+              on your own hardware for the truth.
+            </p>
+            <div class="bench-grid">
+              <div class="bench-card">
+                <span class="bench-label">Mount empty component</span>
+                <strong class="bench-value"
+                  >0.018 <span class="bench-unit">ms</span></strong
+                >
+                <span class="bench-foot">~55k mounts / sec</span>
+              </div>
+              <div class="bench-card">
+                <span class="bench-label">First render — 100 items</span>
+                <strong class="bench-value"
+                  >0.36 <span class="bench-unit">ms</span></strong
+                >
+                <span class="bench-foot"
+                  >keyed <code>&lt;template data-each&gt;</code></span
+                >
+              </div>
+              <div class="bench-card">
+                <span class="bench-label">Keyed patch (1000 items)</span>
+                <strong class="bench-value"
+                  >2.06 <span class="bench-unit">ms</span></strong
+                >
+                <span class="bench-foot">no-op diff over 1000 keys</span>
+              </div>
+              <div class="bench-card">
+                <span class="bench-label">Batched state update</span>
+                <strong class="bench-value"
+                  >0.009 <span class="bench-unit">ms</span></strong
+                >
+                <span class="bench-foot">10 mutations → 1 render</span>
+              </div>
+              <div class="bench-card">
+                <span class="bench-label">Warm expression eval</span>
+                <strong class="bench-value"
+                  >0.010 <span class="bench-unit">ms</span></strong
+                >
+                <span class="bench-foot">20 cached exprs / render</span>
+              </div>
+              <div class="bench-card">
+                <span class="bench-label">Bundle size</span>
+                <strong class="bench-value"
+                  >~5 <span class="bench-unit">KB</span></strong
+                >
+                <span class="bench-foot">gzipped, no build step</span>
+              </div>
+            </div>
+            <p style="margin-top: var(--sp-5, 24px)">
+              <a
+                href="./bench.html"
+                class="btn btn-primary"
+                target="_blank"
+                rel="noopener"
+                >Open benchmarks ↗</a
+              >
+            </p>
+          </section>
         </main>
         <footer class="doc-footer">
-          <span class="hint">
+          <div class="footer-left">
             <button class="btn" onclick="Micra.debug()">🛠 Debug</button>
-            prints all live components and their state to the console.
-          </span>
-          <span class="footer-links">
-            <a href="https://github.com/denisfl/micra.js" class="footer-link">GitHub</a>
-            <a href="https://www.npmjs.com/package/micra.js" class="footer-link">npm</a>
-          </span>
+            <span class="hint">
+              prints all live components and their state to the console.
+            </span>
+          </div>
+          <nav class="footer-links" aria-label="Project links">
+            <a
+              href="https://github.com/denisfl/micra.js"
+              class="footer-icon"
+              aria-label="GitHub"
+              title="GitHub"
+              target="_blank"
+              rel="noopener"
+            >
+              <svg
+                viewBox="0 0 16 16"
+                width="20"
+                height="20"
+                aria-hidden="true"
+              >
+                <path
+                  fill="currentColor"
+                  d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.42 7.42 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"
+                />
+              </svg>
+            </a>
+            <a
+              href="https://www.npmjs.com/package/micra.js"
+              class="footer-icon"
+              aria-label="npm"
+              title="npm"
+              target="_blank"
+              rel="noopener"
+            >
+              <svg viewBox="0 0 780 250" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M240,250h100v-50h100V0H240V250z M340,50h50v100h-50V50z M480,0v200h100V50h50v150h50V50h50v150h50V0H480z M0,200h100V50h50v150h50V0H0V200z"
+                  stroke-width="5"
+                  stroke="#f7f7f7"
+                ></path>
+              </svg>
+            </a>
+            <a
+              href="https://bsky.app/profile/fedosov.me"
+              class="footer-icon"
+              aria-label="Bluesky"
+              title="Bluesky — @fedosov.me"
+              target="_blank"
+              rel="noopener"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                aria-hidden="true"
+              >
+                <path
+                  fill="currentColor"
+                  d="M5.7 3.6c2.5 1.9 5.2 5.7 6.3 7.7 1.1-2 3.8-5.8 6.3-7.7 1.8-1.4 4.7-2.4 4.7.9 0 .7-.4 5.6-.6 6.4-.8 2.8-3.6 3.5-6.1 3.1 4.4.7 5.5 3.2 3.1 5.7-4.6 4.7-6.6-1.2-7.1-2.7-.1-.3-.1-.4-.1-.3 0-.1 0 0-.1.3-.5 1.5-2.5 7.4-7.1 2.7-2.4-2.5-1.3-5 3.1-5.7-2.5.4-5.3-.3-6.1-3.1-.2-.8-.6-5.7-.6-6.4 0-3.3 2.9-2.3 4.3-.9z"
+                />
+              </svg>
+            </a>
+          </nav>
         </footer>
       </div>
     </div>
