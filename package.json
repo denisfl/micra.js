@@ -1,5 +1,5 @@
 {
-  "name": "micra",
+  "name": "micra.js",
   "version": "1.0.0",
   "description": "Lightweight reactive UI framework for server-rendered pages — reactive state, directives, event bus. < 4 KB gzip.",
   "type": "module",

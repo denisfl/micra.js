@@ -27,7 +27,7 @@ Use it when you want:
   <button @click="increment">+</button>
 </div>
 
-<script src="https://unpkg.com/micra/dist/micra.min.js"></script>
+<script src="https://unpkg.com/micra.js/dist/micra.min.js"></script>
 <script>
   Micra.define('counter', {
     state: { count: 0 },
@@ -44,13 +44,13 @@ Use it when you want:
 ### CDN
 
 ```html
-<script src="https://unpkg.com/micra/dist/micra.min.js"></script>
+<script src="https://unpkg.com/micra.js/dist/micra.min.js"></script>
 ```
 
 ### npm
 
 ```bash
-npm install micra
+npm install micra.js
 ```
 
 ```ts
