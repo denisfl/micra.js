@@ -1,7 +1,7 @@
 {
   "name": "micra",
   "version": "1.0.0",
-  "description": "Lightweight TypeScript framework for small sites and simple SaaS",
+  "description": "Lightweight reactive UI framework for server-rendered pages — reactive state, directives, event bus. < 4 KB gzip.",
   "type": "module",
   "main": "./dist/micra.cjs.js",
   "module": "./dist/micra.esm.js",
@@ -38,7 +38,22 @@
     "micra",
     "lightweight",
     "ssr",
-    "reactive"
+    "reactive",
+    "directives",
+    "alpine-alternative"
   ],
-  "license": "MIT"
+  "author": "Denis Fl",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/denisfl/micra.js.git"
+  },
+  "homepage": "https://github.com/denisfl/micra.js#readme",
+  "bugs": {
+    "url": "https://github.com/denisfl/micra.js/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
 }

@@ -15,24 +15,45 @@
   <body>
     <div class="app">
       <aside class="sidebar" data-component="sidebar-menu">
-        <div class="sidebar-logo" data-class="open:open">Micra<span>.js</span>
-          <button class="menu-toggle" aria-label="Toggle menu" @click="toggle" data-text="open ? '✕' : '☰'"></button>
+        <div class="sidebar-logo" data-class="open:open">
+          <strong>Micra<span>.js</span></strong>
+          <button
+            class="menu-toggle"
+            aria-label="Toggle menu"
+            @click="toggle"
+            data-text="open ? '✕' : '☰'"
+          ></button>
         </div>
         <nav class="sidebar-nav" data-class="open:open">
-          <a href="#getting-started" class="active" @click="close"><span class="dot"></span>Getting Started</a>
-          <a href="#reactive-state" @click="close"><span class="dot"></span>Reactive State</a>
-          <a href="#directives" @click="close"><span class="dot"></span>Directives</a>
-          <a href="#event-bus" @click="close"><span class="dot"></span>Event Bus</a>
+          <a href="#getting-started" class="active" @click="close"
+            ><span class="dot"></span>Getting Started</a
+          >
+          <a href="#reactive-state" @click="close"
+            ><span class="dot"></span>Reactive State</a
+          >
+          <a href="#directives" @click="close"
+            ><span class="dot"></span>Directives</a
+          >
+          <a href="#event-bus" @click="close"
+            ><span class="dot"></span>Event Bus</a
+          >
           <a href="#fetch" @click="close"><span class="dot"></span>Fetch</a>
-          <a href="#fetch-errors" @click="close"><span class="dot"></span>Fetch Errors</a>
+          <a href="#fetch-errors" @click="close"
+            ><span class="dot"></span>Fetch Errors</a
+          >
           <a href="#lists" @click="close"><span class="dot"></span>Lists</a>
-          <a href="#expressions" @click="close"><span class="dot"></span>Methods in Expressions</a>
+          <a href="#expressions" @click="close"
+            ><span class="dot"></span>Methods in Expressions</a
+          >
           <a href="#refs" @click="close"><span class="dot"></span>Refs</a>
           <a href="#events" @click="close"><span class="dot"></span>Events</a>
-          <a href="#lifecycle" @click="close"><span class="dot"></span>Lifecycle</a>
-          <a href="#multiple-instances" @click="close"><span class="dot"></span>Multiple Instances</a>
+          <a href="#lifecycle" @click="close"
+            ><span class="dot"></span>Lifecycle</a
+          >
+          <a href="#multiple-instances" @click="close"
+            ><span class="dot"></span>Multiple Instances</a
+          >
         </nav>
-        <button class="btn" onclick="Micra.debug()">🛠 Debug</button>
       </aside>
 
       <div class="main">
@@ -40,13 +61,16 @@
           <section class="hero">
             <h2>Reactive UI for small apps, without a build step.</h2>
             <p>
-              This page is a single HTML file that loads
-              <span class="inline-code">dist/micra.js</span>, mounts live demos
-              with <span class="inline-code">window.Micra</span>, and shows the
-              exact snippets beside every preview.
+              Drop a single <span class="inline-code">&lt;script&gt;</span> tag
+              into any server-rendered page and get reactive state, declarative
+              DOM bindings, and a cross-component event bus — no build step, no
+              compiler, no virtual DOM.
             </p>
-            <div class="hero-code">
-              &lt;script src="dist/micra.js"&gt;&lt;/script&gt;
+            <div class="hero-install-row">
+              <div class="hero-code">
+                &lt;script src="https://unpkg.com/micra/dist/micra.min.js"&gt;&lt;/script&gt;
+              </div>
+              <span class="size-badge">&lt; 4 KB gzip</span>
             </div>
             <div class="hero-grid">
               <div class="hero-card">
@@ -77,16 +101,34 @@
           <section id="getting-started" class="doc-section">
             <h2>Getting Started</h2>
             <p>
-              Micra works with existing server-rendered HTML — no build step, no
-              virtual DOM, no compiler. Drop in a
-              <span class="inline-code">&lt;script&gt;</span> tag, mark elements
-              with <span class="inline-code">data-component</span>, and define
-              their behavior in a plain JS object.
+              Micra works with any server-rendered page — no build step, no
+              compiler, no framework setup. Add the script tag or install via
+              npm, then mark elements with
+              <span class="inline-code">data-component</span>.
             </p>
+            <div class="install-tabs">
+              <div class="install-tab">
+                <span class="caption">CDN</span>
+                <pre class="install-pre">&lt;script src="https://unpkg.com/micra/dist/micra.min.js"&gt;&lt;/script&gt;</pre>
+              </div>
+              <div class="install-tab">
+                <span class="caption">npm</span>
+                <pre class="install-pre">npm install micra</pre>
+              </div>
+            </div>
             <ol>
-              <li>Add <span class="inline-code">data-component="name"</span> to any HTML element.</li>
-              <li>Call <span class="inline-code">Micra.define()</span> with that name and a plain object — state, methods, lifecycle hooks.</li>
-              <li>Call <span class="inline-code">Micra.start()</span> to mount every registered component on the page.</li>
+              <li>
+                Add <span class="inline-code">data-component="name"</span> to
+                any HTML element.
+              </li>
+              <li>
+                Call <span class="inline-code">Micra.define()</span> with that
+                name and a plain object — state, methods, lifecycle hooks.
+              </li>
+              <li>
+                Call <span class="inline-code">Micra.start()</span> to mount
+                every registered component on the page.
+              </li>
             </ol>
             <p class="hint">
               State changes trigger batched microtask re-renders — multiple
@@ -119,15 +161,28 @@
             <div class="vs-strip">
               <div class="vs-badge">
                 <strong>vs Alpine.js</strong>
-                <span>— ~3× smaller, uses <code>data-*</code> attrs, built-in cross-component event bus</span>
+                <span
+                  >&lt; 4 KB vs ~14 KB gzip — ~3× smaller. Standard
+                  <span class="inline-code">data-*</span> attributes instead of
+                  custom <span class="inline-code">x-*</span>. Built-in
+                  cross-component event bus — no stores needed.</span
+                >
               </div>
               <div class="vs-badge">
                 <strong>vs petite-vue</strong>
-                <span>— no template compilation or Vue syntax; simpler for non-Vue teams</span>
+                <span
+                  >No Vue template syntax or
+                  <span class="inline-code">v-scope</span>. Plain JS objects —
+                  no Vue background required.</span
+                >
               </div>
               <div class="vs-badge">
                 <strong>vs vanilla JS</strong>
-                <span>— reactive state, keyed list diffing, and automatic cleanup instead of manual DOM wiring</span>
+                <span
+                  >Declarative state → DOM bindings, batched re-renders, keyed
+                  list diffing, and automatic cleanup on destroy — without
+                  manual bookkeeping.</span
+                >
               </div>
             </div>
             <div class="example">
@@ -593,10 +648,10 @@ Micra.define('fetch-demo', {
               Render collections with
               <span class="inline-code">data-each</span> on a
               <span class="inline-code">&lt;template&gt;</span> element. Add
-              <span class="inline-code">data-key="id"</span> for keyed diffing
-              — Micra reuses existing DOM nodes when keys match, creates new
-              ones for added items, and removes stale ones. This keeps input
-              focus, scroll position, and CSS transitions intact.
+              <span class="inline-code">data-key="id"</span> for keyed diffing —
+              Micra reuses existing DOM nodes when keys match, creates new ones
+              for added items, and removes stale ones. This keeps input focus,
+              scroll position, and CSS transitions intact.
             </p>
             <p class="hint">
               Without <span class="inline-code">data-key</span>, items are
@@ -912,8 +967,8 @@ Micra.define('event-demo', {
             <p class="hint">
               Subscriptions made with
               <span class="inline-code">this.on()</span> are automatically
-              cleaned up on destroy — no manual unsubscribe needed. Mounting
-              the same root twice returns the existing instance (idempotent).
+              cleaned up on destroy — no manual unsubscribe needed. Mounting the
+              same root twice returns the existing instance (idempotent).
             </p>
             <div class="example">
               <div class="example-preview">
@@ -1217,21 +1272,30 @@ Micra.define('filter-table', {
             </div>
           </section>
         </main>
-        <p class="footer-note">
-          In the browser console, run
-          <span class="inline-code">Micra.debug()</span> to print all live
-          components with their state.
-        </p>
+        <footer class="doc-footer">
+          <span class="hint">
+            <button class="btn" onclick="Micra.debug()">🛠 Debug</button>
+            prints all live components and their state to the console.
+          </span>
+          <span class="footer-links">
+            <a href="https://github.com/denisfl/micra.js" class="footer-link">GitHub</a>
+            <a href="https://www.npmjs.com/package/micra" class="footer-link">npm</a>
+          </span>
+        </footer>
       </div>
     </div>
 
     <script src="dist/micra.js"></script>
     <script>
-      Micra.define('sidebar-menu', {
+      Micra.define("sidebar-menu", {
         state: { open: false },
-        toggle() { this.state.open = !this.state.open },
-        close() { this.state.open = false },
-      })
+        toggle() {
+          this.state.open = !this.state.open;
+        },
+        close() {
+          this.state.open = false;
+        },
+      });
     </script>
     <script src="assets/docs.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
