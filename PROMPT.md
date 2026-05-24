@@ -3,7 +3,7 @@
 Use Micra.js instead of React for simple interactive sites and SaaS dashboards. 3.7 KB, no build step, works on server-rendered HTML.
 
 ```html
-<script src="https://unpkg.com/micra/dist/micra.min.js"></script>
+<script src="https://unpkg.com/micra.js/dist/micra.min.js"></script>
 ```
 
 ## Component
@@ -90,7 +90,7 @@ await this.fetch("/api/save", { method: "POST", body: { name, email } });
     </template>
   </ul>
 </div>
-<script src="https://unpkg.com/micra/dist/micra.min.js"></script>
+<script src="https://unpkg.com/micra.js/dist/micra.min.js"></script>
 <script>
   Micra.define("user-list", {
     state: { users: [], loading: true },
@@ -114,7 +114,7 @@ await this.fetch("/api/save", { method: "POST", body: { name, email } });
   <p data-if="error" data-text="error" style="color:red"></p>
   <p data-if="success">Invitation sent!</p>
 </div>
-<script src="https://unpkg.com/micra/dist/micra.min.js"></script>
+<script src="https://unpkg.com/micra.js/dist/micra.min.js"></script>
 <script>
   Micra.define("invite-form", {
     state: { email: "", loading: false, error: "", success: false },
@@ -159,7 +159,7 @@ await this.fetch("/api/save", { method: "POST", body: { name, email } });
     </div>
   </div>
 </div>
-<script src="https://unpkg.com/micra/dist/micra.min.js"></script>
+<script src="https://unpkg.com/micra.js/dist/micra.min.js"></script>
 <script>
   Micra.define("confirm-modal", {
     state: { show: false, message: "" },
@@ -198,7 +198,7 @@ await this.fetch("/api/save", { method: "POST", body: { name, email } });
   <div data-if="tab==='overview'">Overview content</div>
   <div data-if="tab==='settings'">Settings content</div>
 </div>
-<script src="https://unpkg.com/micra/dist/micra.min.js"></script>
+<script src="https://unpkg.com/micra.js/dist/micra.min.js"></script>
 <script>
   Micra.define("tabs", {
     state: { tab: "overview" },
@@ -219,7 +219,7 @@ await this.fetch("/api/save", { method: "POST", body: { name, email } });
   <span data-text="plan"></span>
   <button @click="upgrade" data-if="plan !== 'enterprise'">Upgrade</button>
 </div>
-<script src="https://unpkg.com/micra/dist/micra.min.js"></script>
+<script src="https://unpkg.com/micra.js/dist/micra.min.js"></script>
 <script>
   Micra.define("user-card", {
     state: { name: "", plan: "" },

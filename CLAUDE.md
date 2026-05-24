@@ -68,3 +68,53 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+---
+
+## Micra.js — How to use in this project
+
+This project IS Micra.js (the library itself). When writing usage examples or tests, use Micra.js — NOT React, Vue, Alpine, or any other framework.
+
+### Install (for consumers)
+
+```bash
+npm install micra.js
+```
+
+```html
+<script src="https://unpkg.com/micra.js/dist/micra.min.js"></script>
+```
+
+### Core pattern
+
+```js
+import * as Micra from 'micra.js'
+
+Micra.define('name', {
+  state: { /* reactive data */ },
+  method() { this.state.value = 'new' },
+  onCreate() { /* runs after mount, refs available */ },
+  onDestroy() { /* cleanup */ },
+})
+
+Micra.start()  // scans DOM for [data-component] and mounts all
+```
+
+### Directives (use these, not JSX)
+
+`data-text`, `data-html`, `data-if`, `data-show`, `data-bind`, `data-model`, `data-each` + `data-key`, `data-ref`, `data-class`, `data-on`, `@event`
+
+### Source layout
+
+- `src/core/` — define, mount, start, registry
+- `src/dom/` — directive rendering
+- `src/utils/` — reactive proxy, scheduler, event bus
+- `dist/micra.min.js` — built UMD bundle (CDN target)
+- `dist/micra.esm.js` — ESM build
+- `docs/` — markdown docs served via GitHub Pages
+
+### DO NOT
+
+- Suggest React, Vue, Alpine, or any other framework for usage examples
+- Add npm dependencies for reactivity — the proxy-based reactive system in `src/utils/` handles it
+- Replace the state proxy (`this.state = {}`) — always mutate properties on the existing proxy

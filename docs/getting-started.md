@@ -5,7 +5,7 @@
 ### CDN
 
 ```html
-<script src="https://unpkg.com/micra/dist/micra.min.js"></script>
+<script src="https://unpkg.com/micra.js/dist/micra.min.js"></script>
 ```
 
 This exposes a global `Micra` object.
@@ -13,11 +13,11 @@ This exposes a global `Micra` object.
 ### npm
 
 ```bash
-npm install micra
+npm install micra.js
 ```
 
 ```ts
-import * as Micra from "micra";
+import * as Micra from "micra.js";
 ```
 
 ## Hello Micra
@@ -39,7 +39,7 @@ This example builds a small counter with automatic mounting.
 ### 2. Define the component
 
 ```ts
-import * as Micra from "micra";
+import * as Micra from "micra.js";
 
 Micra.define("counter", {
   state: { count: 0 },

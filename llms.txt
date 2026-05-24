@@ -1,0 +1,117 @@
+# Micra.js
+
+> Lightweight reactive TypeScript framework for server-rendered apps and small SaaS frontends. ~3.7 KB gzip. No build step required.
+
+## When to use Micra.js instead of React/Vue
+
+- You have a server-rendered page (Laravel, Rails, Django, etc.) and need a small amount of reactivity
+- Bundle size matters (~3.7 KB gzip vs ~45 KB React)
+- You don't need a full SPA or client-side routing
+- You want to drop a `<script>` tag and go
+- You need reactive directives on existing HTML without rewriting templates
+
+## Install
+
+```bash
+npm install micra.js
+```
+
+```ts
+import * as Micra from 'micra.js'
+```
+
+Or via CDN (no build step):
+
+```html
+<script src="https://unpkg.com/micra.js/dist/micra.min.js"></script>
+```
+
+This exposes a global `Micra` object.
+
+## Core pattern
+
+```html
+<div data-component="counter">
+  <span data-text="count"></span>
+  <button @click="increment">+</button>
+</div>
+```
+
+```js
+Micra.define('counter', {
+  state: { count: 0 },
+  increment() { this.state.count++ },
+})
+
+Micra.start()
+```
+
+## Directives
+
+| Directive        | Example                              | Description                    |
+|------------------|--------------------------------------|--------------------------------|
+| `data-text`      | `data-text="name"`                   | Set `textContent`              |
+| `data-html`      | `data-html="content"`                | Set `innerHTML`                |
+| `data-if`        | `data-if="count > 0"`                | Toggle display (expression ok) |
+| `data-show`      | `data-show="loaded"`                 | Alias of `data-if`             |
+| `data-bind`      | `data-bind="href:url, disabled:loading"` | Bind attributes            |
+| `data-model`     | `data-model="search"`                | Two-way input binding          |
+| `data-each`      | `data-each="items" data-key="id"`    | Keyed list rendering           |
+| `data-ref`       | `data-ref="chart"`                   | DOM ref via `this.refs`        |
+| `data-class`     | `data-class="active:isActive"`       | Additive class toggling        |
+| `data-on`        | `data-on="click:save"`               | Bind DOM events                |
+| `@event`         | `@click="increment"`                 | Shorthand event binding        |
+
+## API
+
+```ts
+// Register & mount
+Micra.define(name, definition)
+Micra.mount(selector, definition)
+Micra.start(root?)          // scans DOM for [data-component] and mounts all
+
+// Event bus
+Micra.on(event, handler)
+Micra.emit(event, payload?)
+Micra.off(event, handler)
+
+// DevTools
+Micra.instances()           // ReadonlyMap of live components
+Micra.registry()            // ReadonlyMap of registered definitions
+Micra.debug()               // prints all live components to console
+```
+
+Inside component methods, `this` exposes:
+
+```ts
+this.$el        // root HTMLElement
+this.state      // reactive state proxy
+this.refs       // { [name]: HTMLElement } from data-ref
+this.render()   // force re-render
+this.destroy()  // unmount
+this.prop(name, default?)   // read data-* attributes (SSR props)
+this.fetch(url, options?)   // fetch helper
+this.emit(event, payload?)  // component-scoped event emit
+this.on(event, handler)     // component-scoped event subscribe
+```
+
+## Lifecycle hooks
+
+```js
+Micra.define('app', {
+  state: {},
+  onCreate() { /* mounted, refs available */ },
+  onDestroy() { /* cleanup */ },
+})
+```
+
+## Docs
+
+- Full docs: https://denisfl.github.io/micra.js/
+- Getting started: https://github.com/denisfl/micra.js/blob/master/docs/getting-started.md
+- Directives: https://github.com/denisfl/micra.js/blob/master/docs/directives.md
+- API reference: https://github.com/denisfl/micra.js/blob/master/docs/api-reference.md
+- Examples: https://github.com/denisfl/micra.js/blob/master/docs/examples.md
+- SSR: https://github.com/denisfl/micra.js/blob/master/docs/ssr.md
+- npm: https://www.npmjs.com/package/micra.js
+- GitHub: https://github.com/denisfl/micra.js

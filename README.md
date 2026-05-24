@@ -54,7 +54,7 @@ npm install micra.js
 ```
 
 ```ts
-import * as Micra from 'micra'
+import * as Micra from 'micra.js'
 ```
 
 ## Basic usage
@@ -71,7 +71,7 @@ A counter mounted automatically from `data-component`:
 ```
 
 ```ts
-import * as Micra from 'micra'
+import * as Micra from 'micra.js'
 
 Micra.define('counter', {
   state: { count: 0 },

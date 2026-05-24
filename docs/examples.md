@@ -16,7 +16,7 @@
 ### JS
 
 ```ts
-import * as Micra from 'micra'
+import * as Micra from 'micra.js'
 
 Micra.define('counter', {
   state: { count: 0 },
@@ -66,7 +66,7 @@ Micra.start()
 ### JS
 
 ```ts
-import * as Micra from 'micra'
+import * as Micra from 'micra.js'
 
 Micra.define('users-table', {
   state: {
@@ -134,7 +134,7 @@ Micra.start()
 ### JS
 
 ```ts
-import * as Micra from 'micra'
+import * as Micra from 'micra.js'
 
 Micra.define('user-loader', {
   state: {
@@ -184,7 +184,7 @@ Micra.start()
 ### JS
 
 ```ts
-import * as Micra from 'micra'
+import * as Micra from 'micra.js'
 
 Micra.define('modal-button', {
   open() {
@@ -234,7 +234,7 @@ One definition, many instances — each with its own `data-*` props.
 ### JS
 
 ```ts
-import * as Micra from 'micra'
+import * as Micra from 'micra.js'
 
 Micra.define('dropdown', {
   state: {

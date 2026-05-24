@@ -21,7 +21,7 @@ Server HTML:
 Client code:
 
 ```ts
-import * as Micra from 'micra'
+import * as Micra from 'micra.js'
 
 Micra.define('users-page', {
   state: {

@@ -62,7 +62,7 @@ Think of state as a flat set of reactive entry points.
 `defineComponent()` returns the definition unchanged, but helps TypeScript infer the state shape.
 
 ```ts
-import * as Micra from 'micra'
+import * as Micra from 'micra.js'
 
 const counter = Micra.defineComponent({
   state: { count: 0 },
