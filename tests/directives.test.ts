@@ -213,6 +213,24 @@ describe('3.5 data-model', () => {
     apply(root, { search: null })
     expect(input.value).toBe('')
   })
+
+  it('programmatic clear syncs even when input is focused', () => {
+    const root = document.createElement('div')
+    const input = document.createElement('input')
+    input.setAttribute('data-model', 'q')
+    root.appendChild(input)
+    document.body.appendChild(root)
+
+    apply(root, { q: 'task' })
+    expect(input.value).toBe('task')
+
+    input.focus()
+    expect(document.activeElement).toBe(input)
+
+    // Simulate the docs each-demo: code resets state.q to '' while input has focus.
+    apply(root, { q: '' })
+    expect(input.value).toBe('')
+  })
 })
 
 // ── 3.5.bis validateDirectives — class binding conflict ──────────────────────

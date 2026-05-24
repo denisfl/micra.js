@@ -100,9 +100,12 @@ function applyModel(
   rawState: StateRecord,
 ): void {
   const html = el as HTMLInputElement
-  if (document.activeElement !== el) {
-    html.value = rawState[key] == null ? '' : String(rawState[key])
-  }
+  const stateVal = rawState[key]
+  const desired = stateVal == null ? '' : String(stateVal)
+  // Only write when out of sync. This is a no-op during live typing (the input
+  // event already drove state to match el.value) but still propagates
+  // programmatic resets such as `this.state.q = ''` on focused inputs.
+  if (html.value !== desired) html.value = desired
   // listener is attached separately in events.ts — this only syncs the value
 }
 

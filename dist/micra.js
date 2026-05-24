@@ -318,9 +318,9 @@ var Micra = (() => {
   }
   function applyModel(el, key, rawState) {
     const html = el;
-    if (document.activeElement !== el) {
-      html.value = rawState[key] == null ? "" : String(rawState[key]);
-    }
+    const stateVal = rawState[key];
+    const desired = stateVal == null ? "" : String(stateVal);
+    if (html.value !== desired) html.value = desired;
   }
   function buildCache(root) {
     const pick = (attr) => {
