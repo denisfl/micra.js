@@ -31,6 +31,13 @@ function applyText(el: Element, expr: string, state: StateRecord): void {
   if (el.textContent !== text) el.textContent = text
 }
 
+/**
+ * data-html — writes the expression value as innerHTML.
+ *
+ * ⚠️ XSS WARNING: the value is rendered as raw HTML. Never bind untrusted
+ * input here — use `data-text` (textContent) instead. See docs/directives.md
+ * for the full security model.
+ */
 function applyHtml(el: Element, expr: string, state: StateRecord): void {
   el.innerHTML = String(evalExpr(expr, state) ?? '')
 }
@@ -201,6 +208,18 @@ export function validateDirectives(root: Element): void {
       warn(`data-each="${el.getAttribute('data-each')}" has no data-key — keyed diff disabled. Add data-key="id" for better performance.`)
     }
   })
+
+  // data-bind="class:..." replaces className wholesale, which fights with
+  // data-class on the same element. Warn so the developer picks one.
+  const bindEls = queryOwn(root, 'data-bind')
+  if ((root as HTMLElement).hasAttribute?.('data-bind') && !bindEls.includes(root)) bindEls.unshift(root)
+  for (const el of bindEls) {
+    const spec = el.getAttribute('data-bind') ?? ''
+    const hasClassBind = spec.split(',').some(p => p.trim().split(':')[0]?.trim() === 'class')
+    if (hasClassBind && el.hasAttribute('data-class')) {
+      warn(`element has both data-bind="class:..." and data-class — they fight on every render. Use one.`)
+    }
+  }
 }
 
 // Re-export warn for use in other modules

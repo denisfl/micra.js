@@ -91,10 +91,18 @@ export type ComponentDefinition<S extends StateRecord = StateRecord> = {
 export interface MicraElement extends HTMLElement {
     __micraModel?: true;
     __micraEvents?: true;
-    __micraAtScanned?: true;
+    __micraAtBound?: true;
     __micraKey?: unknown;
     __micraEach?: true;
     __micraCache?: DirectiveCache;
+}
+/**
+ * @internal A DOM listener tracked for cleanup on destroy().
+ */
+export interface TrackedListener {
+    el: Element;
+    type: string;
+    fn: EventListener;
 }
 /**
  * @internal Extended HTMLTemplateElement with keyed-diff state.
@@ -134,5 +142,7 @@ export interface DirectiveCache {
  */
 export interface InternalInstance<S extends StateRecord = StateRecord> extends ComponentInstance<S> {
     __micraSubs?: UnsubFn[];
+    __micraListeners?: TrackedListener[];
+    __micraDestroyed?: true;
     [key: string]: unknown;
 }

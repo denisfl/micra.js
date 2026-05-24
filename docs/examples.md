@@ -371,9 +371,11 @@ Micra.define('autocomplete', {
 ```html
 <div data-component="inline-edit" data-value="Alice Liddell">
   <span data-if="!editing" data-text="value" @click="startEdit"></span>
-  <input data-if="editing" data-model="value" @blur="save" @keydown.enter="save">
+  <input data-ref="input" data-if="editing" data-model="value" @blur="save" @keydown="onKey">
 </div>
 ```
+
+Micra has no built-in key modifier (`@keydown.enter`); branch on the event yourself.
 
 ```ts
 Micra.define('inline-edit', {
@@ -387,6 +389,10 @@ Micra.define('inline-edit', {
     this.state.editing = true
     // focus the input after render
     setTimeout(() => this.refs['input']?.focus(), 0)
+  },
+
+  onKey(e: KeyboardEvent) {
+    if (e.key === 'Enter') this.save()
   },
 
   save() {

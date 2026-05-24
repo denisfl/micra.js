@@ -196,6 +196,36 @@ describe('4.4 Keyed — edge cases', () => {
     expect(warnSpy).toHaveBeenCalled()
     warnSpy.mockRestore()
   })
+
+  it('duplicate key → warns once per render', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { root, state } = makeKeyedRoot([
+      { id: 1, name: 'A' },
+      { id: 1, name: 'B' },
+      { id: 1, name: 'C' },
+    ])
+    render(root, state)
+    const dupCalls = warnSpy.mock.calls.filter(c =>
+      String(c[0]).includes('duplicate'),
+    )
+    expect(dupCalls.length).toBe(1) // not 2 — deduped within one render
+    warnSpy.mockRestore()
+  })
+
+  it('null keys are deduped — only one warn even with many nulls', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { root, state } = makeKeyedRoot([
+      { id: null, name: 'A' },
+      { id: null, name: 'B' },
+      { id: null, name: 'C' },
+    ])
+    render(root, state)
+    const nullWarns = warnSpy.mock.calls.filter(c =>
+      String(c[0]).includes('null/undefined'),
+    )
+    expect(nullWarns.length).toBe(1)
+    warnSpy.mockRestore()
+  })
 })
 
 // ── 5. Non-keyed list ─────────────────────────────────────────────────────────

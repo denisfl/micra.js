@@ -149,6 +149,134 @@ describe("6.3 Lifecycle", () => {
     expect(instances().has(el)).toBe(false);
   });
 
+  it("destroy() removes data-on click listeners", () => {
+    const handler = vi.fn();
+    const el = document.createElement("div");
+    el.innerHTML = '<button data-on="click:handle">x</button>';
+    document.body.appendChild(el);
+
+    const inst = mount(el, { state: {}, handle: handler })!;
+    const btn = el.querySelector("button")!;
+    btn.click();
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    inst.destroy();
+    btn.click();
+    expect(handler).toHaveBeenCalledTimes(1); // no second call
+  });
+
+  it("destroy() removes @event click listeners", () => {
+    const handler = vi.fn();
+    const el = document.createElement("div");
+    el.innerHTML = '<button @click="handle">x</button>';
+    document.body.appendChild(el);
+
+    const inst = mount(el, { state: {}, handle: handler })!;
+    const btn = el.querySelector("button")!;
+    btn.click();
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    inst.destroy();
+    btn.click();
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it("destroy() removes data-model input listener", async () => {
+    const el = document.createElement("div");
+    el.innerHTML = '<input data-model="q">';
+    document.body.appendChild(el);
+
+    const inst = mount(el, { state: { q: "" } })!;
+    const input = el.querySelector("input")!;
+    input.value = "a";
+    input.dispatchEvent(new Event("input"));
+    expect(inst.state.q).toBe("a");
+
+    inst.destroy();
+    input.value = "b";
+    input.dispatchEvent(new Event("input"));
+    // listener gone — state.q does not advance
+    expect(inst.state.q).toBe("a");
+  });
+
+  it("destroy() blocks scheduled re-renders", async () => {
+    const el = document.createElement("div");
+    const span = document.createElement("span");
+    span.setAttribute("data-text", "count");
+    el.appendChild(span);
+    document.body.appendChild(el);
+
+    const inst = mount(el, { state: { count: 0 } })!;
+    expect(span.textContent).toBe("0");
+
+    inst.state.count = 5;
+    inst.destroy();
+    await Promise.resolve();
+    // Scheduled render fires after destroy — must be a no-op
+    expect(span.textContent).toBe("0");
+  });
+
+  it("re-entrant render() inside a method is dropped with a warn", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const el = document.createElement("div");
+    const span = document.createElement("span");
+    span.setAttribute("data-text", "reentry()");
+    el.appendChild(span);
+    document.body.appendChild(el);
+
+    // Method calls captured render synchronously during the initial render.
+    // `this` is not bound when calling from a `with()` scope, so we close over
+    // the instance reference instead.
+    let captured: { render: () => void } | null = null;
+    const inst = mount(el, {
+      state: { x: 1 },
+      reentry() {
+        captured?.render();
+        return "";
+      },
+    })!;
+    captured = inst;
+
+    // Initial render already ran with captured=null. Force another render to
+    // trigger the re-entry path now that captured points at the instance.
+    inst.render();
+
+    const reentryWarns = warnSpy.mock.calls.filter(c =>
+      String(c[0]).includes("re-entry"),
+    );
+    expect(reentryWarns.length).toBeGreaterThanOrEqual(1);
+    warnSpy.mockRestore();
+  });
+
+  it("destroy() is idempotent", () => {
+    const onDestroy = vi.fn();
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    const inst = mount(el, { state: {}, onDestroy })!;
+    inst.destroy();
+    inst.destroy();
+    expect(onDestroy).toHaveBeenCalledTimes(1);
+  });
+
+  it("destroy() then re-mount on same DOM rebinds listeners", () => {
+    const handler1 = vi.fn();
+    const handler2 = vi.fn();
+    const el = document.createElement("div");
+    el.innerHTML = '<button data-on="click:handle">x</button>';
+    document.body.appendChild(el);
+
+    const inst1 = mount(el, { state: {}, handle: handler1 })!;
+    el.querySelector("button")!.click();
+    expect(handler1).toHaveBeenCalledTimes(1);
+    inst1.destroy();
+
+    const inst2 = mount(el, { state: {}, handle: handler2 })!;
+    expect(inst2).not.toBe(inst1);
+    el.querySelector("button")!.click();
+    expect(handler1).toHaveBeenCalledTimes(1); // no leak from old instance
+    expect(handler2).toHaveBeenCalledTimes(1);
+  });
+
   it("destroy() unsubscribes all bus subscriptions", async () => {
     const el = document.createElement("div");
     document.body.appendChild(el);

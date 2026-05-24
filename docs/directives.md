@@ -55,6 +55,11 @@ Sets `innerHTML`.
 
 Output: `<strong>Hi</strong>` rendered as HTML.
 
+> ⚠️ **XSS warning.** `data-html` writes the expression value directly as HTML.
+> If the value comes from user input or any untrusted source, it can inject
+> `<script>` / `<img onerror=...>` / etc. Sanitize on the server before
+> rendering, or use `data-text` (which sets `textContent`) instead.
+
 ## `data-if`
 
 Shows or hides an element by toggling `style.display`.
@@ -209,3 +214,18 @@ The same modifiers are supported:
 - `.prevent`
 - `.stop`
 - `.self`
+
+## Security model
+
+Directive expressions (`data-text`, `data-if`, etc.) are evaluated as JavaScript via `new Function`. Identifiers resolve in this order:
+
+1. Component state keys
+2. Component methods on the instance
+3. A small set of whitelisted globals: `Math`, `JSON`, `Date`, `String`, `Number`, `Boolean`, `Array`, `Object`, `parseInt`, `parseFloat`, `isNaN`, `isFinite`, `NaN`, `Infinity`, `undefined`
+
+Everything else — `window`, `document`, `fetch`, `eval`, `setTimeout`, `constructor`, etc. — is shadowed and resolves to `undefined`. This blocks the common `constructor.constructor("...")()` chain and accidental access to browser globals.
+
+Two caveats apply regardless of the shadowing:
+
+1. **`data-html`** writes raw HTML — see the warning above.
+2. **Templates must be trusted.** The shadowing prevents accidental footguns, but it is not a full sandbox. If an attacker can inject the directive *string itself* (not just its value), they can write a method-call chain that escapes through any method you exposed on the component. Treat directive markup the same way you treat the rest of your server-rendered HTML.

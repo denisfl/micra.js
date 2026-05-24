@@ -80,10 +80,68 @@ function debug() {
 
 // src/utils/expr.ts
 var exprCache = /* @__PURE__ */ new Map();
+var warnedRuntime = /* @__PURE__ */ new Set();
 var SIMPLE_PATH = /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/;
+var ALLOWED_GLOBALS = /* @__PURE__ */ new Set([
+  "Math",
+  "JSON",
+  "Date",
+  "String",
+  "Number",
+  "Boolean",
+  "Array",
+  "Object",
+  "parseInt",
+  "parseFloat",
+  "isNaN",
+  "isFinite",
+  "NaN",
+  "Infinity",
+  "undefined"
+]);
+var PARAM_S = "$s";
+var PARAM_SAFE = "$safe";
+var SAFE_OUTER = new Proxy(/* @__PURE__ */ Object.create(null), {
+  has(_target, key) {
+    if (typeof key !== "string") return false;
+    if (key === PARAM_S || key === PARAM_SAFE) return false;
+    return !ALLOWED_GLOBALS.has(key);
+  },
+  get() {
+    return void 0;
+  }
+});
+var safeWrapCache = /* @__PURE__ */ new WeakMap();
+function safeStateWrap(state) {
+  const cached = safeWrapCache.get(state);
+  if (cached) return cached;
+  const wrapped = new Proxy(state, {
+    has(target, key) {
+      return safeStateHas(target, key);
+    },
+    get(target, key) {
+      return Reflect.get(target, key);
+    }
+  });
+  safeWrapCache.set(state, wrapped);
+  return wrapped;
+}
+function safeStateHas(state, key) {
+  if (typeof key !== "string") return false;
+  if (!Reflect.has(state, key)) return false;
+  if (!Object.prototype.hasOwnProperty.call(Object.prototype, key)) return true;
+  let obj = state;
+  while (obj && obj !== Object.prototype) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) return true;
+    obj = Object.getPrototypeOf(obj);
+  }
+  return false;
+}
 function evalExpr(expr, state) {
   if (SIMPLE_PATH.test(expr)) {
-    return expr.split(".").reduce(
+    const parts = expr.split(".");
+    if (!safeStateHas(state, parts[0])) return void 0;
+    return parts.reduce(
       (obj, key) => obj != null ? obj[key] : void 0,
       state
     );
@@ -92,7 +150,7 @@ function evalExpr(expr, state) {
     try {
       exprCache.set(
         expr,
-        new Function("$s", `with($s){return (${expr})}`)
+        new Function("$s", "$safe", `with($safe){with($s){return (${expr})}}`)
       );
     } catch {
       warn(`invalid expression "${expr}"`);
@@ -100,8 +158,12 @@ function evalExpr(expr, state) {
     }
   }
   try {
-    return exprCache.get(expr)(state);
-  } catch {
+    return exprCache.get(expr)(safeStateWrap(state), SAFE_OUTER);
+  } catch (e) {
+    if (!warnedRuntime.has(expr)) {
+      warnedRuntime.add(expr);
+      warn(`runtime error in "${expr}": ${e.message}`);
+    }
     return void 0;
   }
 }
@@ -117,8 +179,10 @@ function on(event, handler) {
   return () => off(event, handler);
 }
 function off(event, handler) {
-  var _a;
-  (_a = _bus.get(event)) == null ? void 0 : _a.delete(handler);
+  const set = _bus.get(event);
+  if (!set) return;
+  set.delete(handler);
+  if (set.size === 0) _bus.delete(event);
 }
 function emit(event, payload) {
   var _a;
@@ -271,14 +335,32 @@ function buildFragmentList(frag) {
   };
 }
 function validateDirectives(root) {
+  var _a, _b;
   queryOwn(root, "data-each").forEach((el) => {
     if (!el.hasAttribute("data-key")) {
       warn(`data-each="${el.getAttribute("data-each")}" has no data-key \u2014 keyed diff disabled. Add data-key="id" for better performance.`);
     }
   });
+  const bindEls = queryOwn(root, "data-bind");
+  if (((_a = root.hasAttribute) == null ? void 0 : _a.call(root, "data-bind")) && !bindEls.includes(root)) bindEls.unshift(root);
+  for (const el of bindEls) {
+    const spec = (_b = el.getAttribute("data-bind")) != null ? _b : "";
+    const hasClassBind = spec.split(",").some((p) => {
+      var _a2;
+      return ((_a2 = p.trim().split(":")[0]) == null ? void 0 : _a2.trim()) === "class";
+    });
+    if (hasClassBind && el.hasAttribute("data-class")) {
+      warn(`element has both data-bind="class:..." and data-class \u2014 they fight on every render. Use one.`);
+    }
+  }
 }
 
 // src/dom/events.ts
+function track(instance, el, type, fn) {
+  var _a;
+  el.addEventListener(type, fn);
+  ((_a = instance.__micraListeners) != null ? _a : instance.__micraListeners = []).push({ el, type, fn });
+}
 function bindDataOn(root, instance) {
   var _a, _b;
   const isFragment = root.nodeType === 11;
@@ -294,7 +376,7 @@ function bindDataOn(root, instance) {
       const [evSpec, method] = part.trim().split(":");
       if (!evSpec || !method) continue;
       const [evName, ...mods] = evSpec.split(".");
-      el.addEventListener(evName, (e) => {
+      track(instance, el, evName, (e) => {
         if (mods.includes("prevent")) e.preventDefault();
         if (mods.includes("stop")) e.stopPropagation();
         if (mods.includes("self") && e.target !== el) return;
@@ -306,16 +388,18 @@ function bindDataOn(root, instance) {
   }
 }
 function bindAtEvents(root, instance) {
-  const mRoot = root;
-  if (mRoot.__micraAtScanned) return;
-  mRoot.__micraAtScanned = true;
-  const all = queryAll(root, "*");
+  const isFragment = root.nodeType === 11;
+  const all = isFragment ? queryAll(root, "*") : queryAll(root, "*");
+  if (!isFragment && !all.includes(root)) all.unshift(root);
   for (const el of all) {
+    const mEl = el;
+    if (mEl.__micraAtBound) continue;
+    let bound = false;
     for (const attr of Array.from(el.attributes)) {
       if (!attr.name.startsWith("@")) continue;
       const [evSpec, ...rest] = attr.name.slice(1).split(".");
       const method = attr.value.trim();
-      el.addEventListener(evSpec, (e) => {
+      track(instance, el, evSpec, (e) => {
         if (rest.includes("prevent")) e.preventDefault();
         if (rest.includes("stop")) e.stopPropagation();
         if (rest.includes("self") && e.target !== el) return;
@@ -323,7 +407,9 @@ function bindAtEvents(root, instance) {
         if (typeof fn === "function") fn.call(instance, e);
         else warn(`method "${method}" not found`);
       });
+      bound = true;
     }
+    if (bound) mEl.__micraAtBound = true;
   }
 }
 function bindModels(root, instance) {
@@ -336,14 +422,22 @@ function bindModels(root, instance) {
     mEl.__micraModel = true;
     const key = (_a = el.dataset["model"]) != null ? _a : "";
     const tag = el.tagName;
+    const inputEl = el;
+    const inputType = inputEl.type;
     const update = () => {
-      const val = tag === "INPUT" && el.type === "checkbox" ? el.checked : el.value;
+      let val;
+      if (tag === "INPUT" && inputType === "checkbox") {
+        val = inputEl.checked;
+      } else if (tag === "INPUT" && (inputType === "number" || inputType === "range")) {
+        val = inputEl.value === "" ? null : inputEl.valueAsNumber;
+      } else {
+        val = inputEl.value;
+      }
+      ;
       instance.state[key] = val;
     };
-    el.addEventListener(
-      tag === "SELECT" || el.type === "radio" ? "change" : "input",
-      update
-    );
+    const evType = tag === "SELECT" || inputType === "radio" ? "change" : "input";
+    track(instance, el, evType, update);
   }
 }
 
@@ -382,9 +476,18 @@ function renderList(root, state, rawState, instance) {
 function renderKeyed(tmpl, items, keyAttr, marker, keyMap, parent, state, rawState, instance) {
   const nextKeys = /* @__PURE__ */ new Set();
   const nextNodes = [];
+  let warnedNullKey = false;
+  let warnedDupKey = false;
   for (const [index, item] of items.entries()) {
     const key = item[keyAttr];
-    if (key == null) warn(`data-key="${keyAttr}" is null/undefined on item at index ${index}`);
+    if (key == null && !warnedNullKey) {
+      warn(`data-key="${keyAttr}" is null/undefined on item at index ${index}`);
+      warnedNullKey = true;
+    }
+    if (nextKeys.has(key) && !warnedDupKey) {
+      warn(`data-key="${keyAttr}" has duplicate value ${JSON.stringify(key)} \u2014 rows will collide`);
+      warnedDupKey = true;
+    }
     nextKeys.add(key);
     let node = keyMap.get(key);
     if (!node) {
@@ -489,13 +592,26 @@ function mount(selector, definition) {
   instance.state = createReactiveState(rawState, schedule);
   const exprState = new Proxy(rawState, {
     get(target, key) {
-      if (key in target) return target[key];
-      if (key in instance) return instance[key];
+      if (Object.prototype.hasOwnProperty.call(target, key)) return target[key];
+      if (Object.prototype.hasOwnProperty.call(instance, key) && typeof instance[key] === "function") return instance[key];
       return void 0;
+    },
+    has(target, key) {
+      if (typeof key !== "string") return false;
+      if (Object.prototype.hasOwnProperty.call(target, key)) return true;
+      return Object.prototype.hasOwnProperty.call(instance, key) && typeof instance[key] === "function";
     }
   });
+  let warnedReentry = false;
   instance.render = function() {
-    if (isRendering) return;
+    if (instance.__micraDestroyed) return;
+    if (isRendering) {
+      if (!warnedReentry) {
+        warn("render() re-entry detected \u2014 mutation inside a directive expression is ignored. Move state writes to a method.");
+        warnedReentry = true;
+      }
+      return;
+    }
     isRendering = true;
     try {
       applyDirectives(root, exprState, rawState, instance);
@@ -509,8 +625,22 @@ function mount(selector, definition) {
     }
   };
   instance.destroy = function() {
-    var _a2;
-    (_a2 = instance.__micraSubs) == null ? void 0 : _a2.forEach((unsub) => unsub());
+    var _a2, _b;
+    if (instance.__micraDestroyed) return;
+    instance.__micraDestroyed = true;
+    (_a2 = instance.__micraListeners) == null ? void 0 : _a2.forEach(({ el, type, fn }) => el.removeEventListener(type, fn));
+    instance.__micraListeners = [];
+    const clearFlags = (el) => {
+      const m = el;
+      delete m.__micraEvents;
+      delete m.__micraAtBound;
+      delete m.__micraModel;
+      delete m.__micraCache;
+    };
+    clearFlags(root);
+    root.querySelectorAll("*").forEach(clearFlags);
+    (_b = instance.__micraSubs) == null ? void 0 : _b.forEach((unsub) => unsub());
+    instance.__micraSubs = [];
     if (typeof definition.onDestroy === "function")
       definition.onDestroy.call(instance);
     _instances.delete(root);

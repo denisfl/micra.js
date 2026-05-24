@@ -3,10 +3,12 @@
  *
  * Responsibilities:
  *   - Bind `data-on="event:method"` listeners (once per element)
- *   - Bind `@event="method"` shorthand (scanned once per component root)
+ *   - Bind `@event="method"` shorthand (once per element)
+ *   - Bind `data-model` two-way input listeners (once per element)
  *
- * LLM NOTE: Listeners are attached exactly once. The `__micraEvents` and
- * `__micraAtScanned` flags prevent duplicate bindings on re-renders.
+ * LLM NOTE: Every listener attached here is also recorded in
+ * instance.__micraListeners so destroy() can remove it cleanly.
+ * Re-render skips already-bound elements via per-element __micra* flags.
  */
 import type { InternalInstance, StateRecord } from '../types';
 /**
@@ -22,7 +24,7 @@ import type { InternalInstance, StateRecord } from '../types';
 export declare function bindDataOn<S extends StateRecord>(root: Element, instance: InternalInstance<S>): void;
 /**
  * Bind `@event="method"` shorthand attributes (Stimulus-style).
- * Scanned once per component root (guarded by `__micraAtScanned`).
+ * Bound once per element via `__micraAtBound` — re-renders are no-ops.
  * Supports the same modifiers as data-on: `@click.prevent="submit"`.
  *
  * @example
@@ -33,6 +35,9 @@ export declare function bindAtEvents<S extends StateRecord>(root: Element, insta
 /**
  * Two-way binding: `data-model="key"` wires <input>/<select>/<textarea>
  * to `state[key]`. Binding is attached once per element.
+ *
+ * Numeric inputs (`type="number"` / `type="range"`) write numbers, not strings.
+ * Checkbox inputs write booleans. Everything else writes strings.
  *
  * @example
  * <input data-model="search">   // updates state.search on every keystroke

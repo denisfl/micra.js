@@ -52,6 +52,75 @@ describe('10.1 __micraEvents — no duplicate listeners', () => {
   })
 })
 
+// ── 10.1.bis data-model coercion ──────────────────────────────────────────────
+
+describe('10.1.bis data-model — type coercion', () => {
+  it('input[type=number] writes a number to state, not a string', () => {
+    const inst = makeInstance()
+    inst.state = { age: 0 } as StateRecord
+    const root = document.createElement('div')
+    const input = document.createElement('input')
+    input.type = 'number'
+    input.setAttribute('data-model', 'age')
+    root.appendChild(input)
+
+    bindModels(root, inst)
+    input.value = '42'
+    input.dispatchEvent(new Event('input'))
+
+    expect((inst.state as StateRecord)['age']).toBe(42)
+    expect(typeof (inst.state as StateRecord)['age']).toBe('number')
+  })
+
+  it('input[type=number] with empty value writes null', () => {
+    const inst = makeInstance()
+    inst.state = { age: 1 } as StateRecord
+    const root = document.createElement('div')
+    const input = document.createElement('input')
+    input.type = 'number'
+    input.setAttribute('data-model', 'age')
+    root.appendChild(input)
+
+    bindModels(root, inst)
+    input.value = ''
+    input.dispatchEvent(new Event('input'))
+
+    expect((inst.state as StateRecord)['age']).toBeNull()
+  })
+
+  it('input[type=checkbox] writes a boolean', () => {
+    const inst = makeInstance()
+    inst.state = { agree: false } as StateRecord
+    const root = document.createElement('div')
+    const input = document.createElement('input')
+    input.type = 'checkbox'
+    input.setAttribute('data-model', 'agree')
+    root.appendChild(input)
+
+    bindModels(root, inst)
+    input.checked = true
+    input.dispatchEvent(new Event('input'))
+
+    expect((inst.state as StateRecord)['agree']).toBe(true)
+  })
+
+  it('input[type=text] (default) writes a string', () => {
+    const inst = makeInstance()
+    inst.state = { q: '' } as StateRecord
+    const root = document.createElement('div')
+    const input = document.createElement('input')
+    input.setAttribute('data-model', 'q')
+    root.appendChild(input)
+
+    bindModels(root, inst)
+    input.value = '42'
+    input.dispatchEvent(new Event('input'))
+
+    expect((inst.state as StateRecord)['q']).toBe('42')
+    expect(typeof (inst.state as StateRecord)['q']).toBe('string')
+  })
+})
+
 // ── 10.2 __micraModel ─────────────────────────────────────────────────────────
 
 describe('10.2 __micraModel — no duplicate listeners', () => {
@@ -71,6 +140,54 @@ describe('10.2 __micraModel — no duplicate listeners', () => {
 
     // Despite two bindModels calls, state should only have 'hello' once
     expect((inst.state as StateRecord)['text']).toBe('hello')
+  })
+})
+
+// ── 10.1.ter @event per-element binding ───────────────────────────────────────
+
+describe('10.1.ter @event — per-element rebind on new DOM', () => {
+  it('binds @click on root element itself', async () => {
+    const { bindAtEvents } = await import('../src/dom/events')
+    const handler = vi.fn()
+    const inst = makeInstance({ handle: handler })
+    const root = document.createElement('button')
+    root.setAttribute('@click', 'handle')
+
+    bindAtEvents(root, inst)
+    root.click()
+    expect(handler).toHaveBeenCalledTimes(1)
+  })
+
+  it('second bindAtEvents on same root does not duplicate bindings', async () => {
+    const { bindAtEvents } = await import('../src/dom/events')
+    const handler = vi.fn()
+    const inst = makeInstance({ handle: handler })
+    const root = document.createElement('div')
+    const btn = document.createElement('button')
+    btn.setAttribute('@click', 'handle')
+    root.appendChild(btn)
+
+    bindAtEvents(root, inst)
+    bindAtEvents(root, inst)
+    btn.click()
+    expect(handler).toHaveBeenCalledTimes(1)
+  })
+
+  it('new element added after first bind gets bound on next call', async () => {
+    const { bindAtEvents } = await import('../src/dom/events')
+    const handler = vi.fn()
+    const inst = makeInstance({ handle: handler })
+    const root = document.createElement('div')
+
+    bindAtEvents(root, inst) // no children yet
+
+    const btn = document.createElement('button')
+    btn.setAttribute('@click', 'handle')
+    root.appendChild(btn)
+
+    bindAtEvents(root, inst) // pick up the new element
+    btn.click()
+    expect(handler).toHaveBeenCalledTimes(1)
   })
 })
 

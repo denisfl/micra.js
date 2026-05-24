@@ -147,6 +147,9 @@ Micra.emit('cart:updated', { count: 3 })
 Micra.on('cart:updated', ({ count }) => {
   this.state.cartCount = count
 })
+
+// Manual unsubscribe (rare — prefer this.on() inside components)
+Micra.off('cart:updated', handler)
 ```
 
 Component-scoped versions auto-unsubscribe on destroy:
@@ -158,6 +161,12 @@ onCreate() {
   })
 }
 ```
+
+## Things Micra does NOT support
+
+- **Key modifiers** like `@keydown.enter` — only `.prevent`, `.stop`, `.self` are recognized. For key handling, branch on `e.key` inside the method.
+- **Nested keys in `data-model`** — `data-model="filters.search"` writes to a flat state key literally named `"filters.search"`, not to `filters.search`. Use a top-level state key.
+- **`data-if` does not remove the element from the DOM** — it only toggles `style.display`. The element (and its event listeners) stays in the tree.
 
 ## DOM refs
 
@@ -197,6 +206,17 @@ const instance = Micra.mount('#my-element', {
 ```
 
 Returns the instance or `null` if the selector matches nothing.
+
+## Security model
+
+Directive expressions execute as JavaScript via `new Function`. Identifiers resolve to: state keys → instance methods → a small whitelist of globals (`Math`, `JSON`, `Date`, `String`, `Number`, `Boolean`, `Array`, `Object`, `parseInt`, `parseFloat`, `isNaN`, `isFinite`, `NaN`, `Infinity`, `undefined`).
+
+Everything else — `window`, `document`, `fetch`, `eval`, `setTimeout`, `constructor`, `__proto__`, ... — is shadowed and returns `undefined`. So `data-text="constructor.constructor('alert(1)')()"` is blocked.
+
+Two things this does NOT do:
+
+1. **`data-html` is still XSS-prone.** It writes `innerHTML` directly. Never bind unsanitized user input — use `data-text` if you can.
+2. **It's not a full sandbox.** Directive markup itself must be trusted. Methods you put on the component can do anything (they're your code).
 
 ## Destroy / cleanup
 

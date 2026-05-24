@@ -33,7 +33,10 @@ export function on<T = unknown>(event: string, handler: EventHandler<T>): UnsubF
  * Unsubscribe a specific handler from an event.
  */
 export function off(event: string, handler: EventHandler): void {
-  _bus.get(event)?.delete(handler)
+  const set = _bus.get(event)
+  if (!set) return
+  set.delete(handler)
+  if (set.size === 0) _bus.delete(event)
 }
 
 /**

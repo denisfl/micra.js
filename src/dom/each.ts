@@ -86,10 +86,19 @@ function renderKeyed<S extends StateRecord>(
 ): void {
   const nextKeys  = new Set<unknown>()
   const nextNodes: MicraElement[] = []
+  let warnedNullKey = false
+  let warnedDupKey  = false
 
   for (const [index, item] of items.entries()) {
     const key = item[keyAttr]
-    if (key == null) warn(`data-key="${keyAttr}" is null/undefined on item at index ${index}`)
+    if (key == null && !warnedNullKey) {
+      warn(`data-key="${keyAttr}" is null/undefined on item at index ${index}`)
+      warnedNullKey = true
+    }
+    if (nextKeys.has(key) && !warnedDupKey) {
+      warn(`data-key="${keyAttr}" has duplicate value ${JSON.stringify(key)} — rows will collide`)
+      warnedDupKey = true
+    }
     nextKeys.add(key)
 
     let node = keyMap.get(key) as MicraElement | undefined

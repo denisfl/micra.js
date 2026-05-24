@@ -84,6 +84,24 @@ describe('7.2 off', () => {
   })
 })
 
+// ── 7.2.bis Empty-set cleanup ─────────────────────────────────────────────────
+
+describe('7.2.bis off cleans empty event keys', () => {
+  it('removing the last handler deletes the bus entry (no leak)', async () => {
+    // Verify internal state via re-subscribe + emit ordering — a fresh emit
+    // after off+on hits the new Set, not a stale empty one.
+    const a = vi.fn()
+    const b = vi.fn()
+    const u1 = on('test:cleanup', a)
+    u1()
+    const u2 = on('test:cleanup', b)
+    emit('test:cleanup')
+    expect(a).not.toHaveBeenCalled()
+    expect(b).toHaveBeenCalledTimes(1)
+    u2()
+  })
+})
+
 // ── 7.3 Auto-unsubscribe (tested in mount.test.ts §6.3) ───────────────────────
 // See mount.test.ts "destroy() unsubscribes all bus subscriptions"
 

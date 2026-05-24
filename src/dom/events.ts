@@ -3,15 +3,28 @@
  *
  * Responsibilities:
  *   - Bind `data-on="event:method"` listeners (once per element)
- *   - Bind `@event="method"` shorthand (scanned once per component root)
+ *   - Bind `@event="method"` shorthand (once per element)
+ *   - Bind `data-model` two-way input listeners (once per element)
  *
- * LLM NOTE: Listeners are attached exactly once. The `__micraEvents` and
- * `__micraAtScanned` flags prevent duplicate bindings on re-renders.
+ * LLM NOTE: Every listener attached here is also recorded in
+ * instance.__micraListeners so destroy() can remove it cleanly.
+ * Re-render skips already-bound elements via per-element __micra* flags.
  */
 
 import type { InternalInstance, MicraElement, StateRecord } from '../types'
-import { evalExpr, warn } from '../utils/expr'
+import { warn } from '../utils/expr'
 import { queryOwn, queryAll } from './query'
+
+/** @internal Attach a DOM listener and track it on the instance for destroy(). */
+function track<S extends StateRecord>(
+  instance: InternalInstance<S>,
+  el: Element,
+  type: string,
+  fn: EventListener,
+): void {
+  el.addEventListener(type, fn)
+  ;(instance.__micraListeners ??= []).push({ el, type, fn })
+}
 
 // ── data-on ───────────────────────────────────────────────────────────────────
 
@@ -50,7 +63,7 @@ export function bindDataOn<S extends StateRecord>(
 
       const [evName, ...mods] = evSpec.split('.')
 
-      el.addEventListener(evName!, (e: Event) => {
+      track(instance, el, evName!, (e: Event) => {
         if (mods.includes('prevent')) e.preventDefault()
         if (mods.includes('stop')) e.stopPropagation()
         if (mods.includes('self') && e.target !== el) return
@@ -67,7 +80,7 @@ export function bindDataOn<S extends StateRecord>(
 
 /**
  * Bind `@event="method"` shorthand attributes (Stimulus-style).
- * Scanned once per component root (guarded by `__micraAtScanned`).
+ * Bound once per element via `__micraAtBound` — re-renders are no-ops.
  * Supports the same modifiers as data-on: `@click.prevent="submit"`.
  *
  * @example
@@ -78,18 +91,25 @@ export function bindAtEvents<S extends StateRecord>(
   root: Element,
   instance: InternalInstance<S>,
 ): void {
-  const mRoot = root as MicraElement
-  if (mRoot.__micraAtScanned) return
-  mRoot.__micraAtScanned = true
+  const isFragment = root.nodeType === 11
+  const all = isFragment
+    ? queryAll(root as unknown as ParentNode, '*')
+    : queryAll(root, '*')
 
-  const all = queryAll(root, '*')
+  // Include root itself for the regular-element case
+  if (!isFragment && !all.includes(root)) all.unshift(root)
+
   for (const el of all) {
+    const mEl = el as MicraElement
+    if (mEl.__micraAtBound) continue
+
+    let bound = false
     for (const attr of Array.from(el.attributes)) {
       if (!attr.name.startsWith('@')) continue
       const [evSpec, ...rest] = attr.name.slice(1).split('.')
       const method = attr.value.trim()
 
-      el.addEventListener(evSpec!, (e: Event) => {
+      track(instance, el, evSpec!, (e: Event) => {
         if (rest.includes('prevent')) e.preventDefault()
         if (rest.includes('stop')) e.stopPropagation()
         if (rest.includes('self') && e.target !== el) return
@@ -98,7 +118,9 @@ export function bindAtEvents<S extends StateRecord>(
         if (typeof fn === 'function') (fn as (e: Event) => void).call(instance, e)
         else warn(`method "${method}" not found`)
       })
+      bound = true
     }
+    if (bound) mEl.__micraAtBound = true
   }
 }
 
@@ -107,6 +129,9 @@ export function bindAtEvents<S extends StateRecord>(
 /**
  * Two-way binding: `data-model="key"` wires <input>/<select>/<textarea>
  * to `state[key]`. Binding is attached once per element.
+ *
+ * Numeric inputs (`type="number"` / `type="range"`) write numbers, not strings.
+ * Checkbox inputs write booleans. Everything else writes strings.
  *
  * @example
  * <input data-model="search">   // updates state.search on every keystroke
@@ -128,18 +153,23 @@ export function bindModels<S extends StateRecord>(
 
     const key = (el as HTMLInputElement).dataset['model'] ?? ''
     const tag = el.tagName
+    const inputEl = el as HTMLInputElement
+    const inputType = inputEl.type
 
     const update = () => {
-      const val = tag === 'INPUT' && (el as HTMLInputElement).type === 'checkbox'
-        ? (el as HTMLInputElement).checked
-        : (el as HTMLInputElement).value
+      let val: unknown
+      if (tag === 'INPUT' && inputType === 'checkbox') {
+        val = inputEl.checked
+      } else if (tag === 'INPUT' && (inputType === 'number' || inputType === 'range')) {
+        // Empty string → NaN; preserve raw empty as null so state stays "unfilled"
+        val = inputEl.value === '' ? null : inputEl.valueAsNumber
+      } else {
+        val = inputEl.value
+      }
       ;(instance.state as StateRecord)[key] = val
     }
 
-    el.addEventListener(tag === 'SELECT' || (el as HTMLInputElement).type === 'radio'
-      ? 'change'
-      : 'input',
-      update,
-    )
+    const evType = tag === 'SELECT' || inputType === 'radio' ? 'change' : 'input'
+    track(instance, el, evType, update)
   }
 }

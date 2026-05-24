@@ -17,6 +17,7 @@ import type {
   ComponentInstance,
   EventHandler,
   InternalInstance,
+  MicraElement,
   StateRecord,
   UnsubFn,
 } from '../types'
@@ -97,16 +98,35 @@ export function mount<S extends StateRecord>(
 
   // Expression state: proxy that falls back to instance methods so expressions
   // like `data-text="formatDate(item.date)"` can call component methods.
+  //
+  // Both traps reject Object.prototype names ('constructor', 'toString', ...) —
+  // accessing them via a directive expression returns undefined instead of
+  // leaking the prototype.
   const exprState = new Proxy(rawState, {
     get(target, key: string) {
-      if (key in target)   return target[key]
-      if (key in instance) return instance[key]
+      if (Object.prototype.hasOwnProperty.call(target, key)) return target[key]
+      if (Object.prototype.hasOwnProperty.call(instance, key) &&
+          typeof instance[key] === 'function') return instance[key]
       return undefined
+    },
+    has(target, key: string) {
+      if (typeof key !== 'string') return false
+      if (Object.prototype.hasOwnProperty.call(target, key)) return true
+      return Object.prototype.hasOwnProperty.call(instance, key) &&
+             typeof instance[key] === 'function'
     },
   })
 
+  let warnedReentry = false
   instance.render = function () {
-    if (isRendering) return
+    if (instance.__micraDestroyed) return
+    if (isRendering) {
+      if (!warnedReentry) {
+        warn('render() re-entry detected — mutation inside a directive expression is ignored. Move state writes to a method.')
+        warnedReentry = true
+      }
+      return
+    }
     isRendering = true
     try {
       applyDirectives(root, exprState, rawState, instance)
@@ -122,7 +142,27 @@ export function mount<S extends StateRecord>(
 
   // ── Destroy ───────────────────────────────────────────────────────────────
   instance.destroy = function () {
+    if (instance.__micraDestroyed) return
+    instance.__micraDestroyed = true
+
+    // Remove every DOM listener attached by bindDataOn / bindAtEvents / bindModels.
+    instance.__micraListeners?.forEach(({ el, type, fn }) => el.removeEventListener(type, fn))
+    instance.__micraListeners = []
+
+    // Clear per-element flags & cached directive scan so a future re-mount of the same DOM works.
+    const clearFlags = (el: Element) => {
+      const m = el as MicraElement
+      delete m.__micraEvents
+      delete m.__micraAtBound
+      delete m.__micraModel
+      delete m.__micraCache
+    }
+    clearFlags(root)
+    root.querySelectorAll('*').forEach(clearFlags)
+
     instance.__micraSubs?.forEach(unsub => unsub())
+    instance.__micraSubs = []
+
     if (typeof (definition as Record<string, unknown>).onDestroy === 'function')
       (definition.onDestroy as () => void).call(instance)
     _instances.delete(root)

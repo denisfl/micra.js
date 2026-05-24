@@ -215,6 +215,42 @@ describe('3.5 data-model', () => {
   })
 })
 
+// ── 3.5.bis validateDirectives — class binding conflict ──────────────────────
+
+describe('3.5.bis class conflict warning', () => {
+  it('warns when data-bind class: and data-class are on the same element', async () => {
+    const { validateDirectives } = await import('../src/dom/directives')
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = document.createElement('div')
+    el.setAttribute('data-bind', 'class:cls')
+    el.setAttribute('data-class', 'active:isActive')
+    validateDirectives(el)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('data-class'))
+    warnSpy.mockRestore()
+  })
+
+  it('does NOT warn when only data-bind has class', async () => {
+    const { validateDirectives } = await import('../src/dom/directives')
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = document.createElement('div')
+    el.setAttribute('data-bind', 'class:cls')
+    validateDirectives(el)
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
+
+  it('does NOT warn for unrelated data-bind keys + data-class', async () => {
+    const { validateDirectives } = await import('../src/dom/directives')
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const el = document.createElement('div')
+    el.setAttribute('data-bind', 'href:url')
+    el.setAttribute('data-class', 'active:isActive')
+    validateDirectives(el)
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
+})
+
 // ── 3.6 data-class ────────────────────────────────────────────────────────────
 
 describe('3.6 data-class', () => {
