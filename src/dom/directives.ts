@@ -15,9 +15,11 @@
 
 import type {
   CachedBinding,
+  CachedPairBinding,
   DirectiveCache,
   InternalInstance,
   MicraElement,
+  MicraTemplate,
   StateRecord,
 } from '../types'
 import { evalExpr, warn } from '../utils/expr'
@@ -46,13 +48,13 @@ function applyIf(el: Element, expr: string, state: StateRecord): void {
   (el as HTMLElement).style.display = evalExpr(expr, state) ? '' : 'none'
 }
 
-function applyBind(el: Element, expr: string, state: StateRecord): void {
-  for (const pair of expr.split(',')) {
-    const colonIdx = pair.indexOf(':')
-    if (colonIdx === -1) continue
-    const attr    = pair.slice(0, colonIdx).trim()
-    const valExpr = pair.slice(colonIdx + 1).trim()
-    const val     = evalExpr(valExpr, state)
+function applyBind(
+  el: Element,
+  pairs: ReadonlyArray<readonly [string, string]>,
+  state: StateRecord,
+): void {
+  for (const [attr, valExpr] of pairs) {
+    const val = evalExpr(valExpr, state)
 
     if (attr === 'class') {
       (el as HTMLElement).className = String(val ?? '')
@@ -83,15 +85,28 @@ function applyBind(el: Element, expr: string, state: StateRecord): void {
  * @example
  * <div data-class="active:tab === 'home', hidden:!loaded">
  */
-function applyClass(el: Element, expr: string, state: StateRecord): void {
-  for (const pair of expr.split(',')) {
-    const colonIdx = pair.indexOf(':')
-    if (colonIdx === -1) continue
-    const cls     = pair.slice(0, colonIdx).trim()
-    const valExpr = pair.slice(colonIdx + 1).trim()
-    if (!cls) continue
+function applyClass(
+  el: Element,
+  pairs: ReadonlyArray<readonly [string, string]>,
+  state: StateRecord,
+): void {
+  for (const [cls, valExpr] of pairs) {
     el.classList.toggle(cls, Boolean(evalExpr(valExpr, state)))
   }
+}
+
+/** @internal Parse a comma+colon spec like `href:url, disabled:loading` once. */
+function parsePairs(expr: string): Array<readonly [string, string]> {
+  const out: Array<readonly [string, string]> = []
+  for (const part of expr.split(',')) {
+    const colonIdx = part.indexOf(':')
+    if (colonIdx === -1) continue
+    const left  = part.slice(0, colonIdx).trim()
+    const right = part.slice(colonIdx + 1).trim()
+    if (!left) continue
+    out.push([left, right])
+  }
+  return out
 }
 
 function applyModel(
@@ -121,14 +136,16 @@ function buildCache(root: Element): DirectiveCache {
       .filter(el => !el.closest('template'))
       .map(el => ({ el, expr: el.getAttribute(attr)! }))
   }
+  const pickPairs = (attr: string): CachedPairBinding[] =>
+    pick(attr).map(b => ({ ...b, pairs: parsePairs(b.expr) }))
   return {
     text:  pick('data-text'),
     html:  pick('data-html'),
     if:    pick('data-if'),
     show:  pick('data-show'),
-    bind:  pick('data-bind'),
+    bind:  pickPairs('data-bind'),
     model: pick('data-model'),
-    class: pick('data-class'),
+    class: pickPairs('data-class'),
   }
 }
 
@@ -175,9 +192,9 @@ function applyFromList(
   cache.html.forEach(b => applyHtml(b.el, b.expr, state))
   cache.if.forEach(b => applyIf(b.el, b.expr, state))
   cache.show.forEach(b => applyIf(b.el, b.expr, state))
-  cache.bind.forEach(b => applyBind(b.el, b.expr, state))
+  cache.bind.forEach(b => applyBind(b.el, b.pairs, state))
   cache.model.forEach(b => applyModel(b.el, b.expr.trim(), rawState))
-  cache.class.forEach(b => applyClass(b.el, b.expr, state))
+  cache.class.forEach(b => applyClass(b.el, b.pairs, state))
 }
 
 /** @internal Scan a DocumentFragment (no-key each clone) — returns a DirectiveCache. */
@@ -186,14 +203,16 @@ function buildFragmentList(frag: DocumentFragment): DirectiveCache {
     queryAll(frag, `[${attr}]`)
       .filter(el => !el.closest('template'))
       .map(el => ({ el, expr: el.getAttribute(attr)! }))
+  const pickPairs = (attr: string): CachedPairBinding[] =>
+    pick(attr).map(b => ({ ...b, pairs: parsePairs(b.expr) }))
   return {
     text:  pick('data-text'),
     html:  pick('data-html'),
     if:    pick('data-if'),
     show:  pick('data-show'),
-    bind:  pick('data-bind'),
+    bind:  pickPairs('data-bind'),
     model: pick('data-model'),
-    class: pick('data-class'),
+    class: pickPairs('data-class'),
   }
 }
 
@@ -207,7 +226,9 @@ function buildFragmentList(frag: DocumentFragment): DirectiveCache {
  */
 export function validateDirectives(root: Element): void {
   queryOwn(root, 'data-each').forEach(el => {
-    if (!el.hasAttribute('data-key')) {
+    const tmpl = el as MicraTemplate
+    if (!el.hasAttribute('data-key') && !tmpl.__micraNoKeyWarned) {
+      tmpl.__micraNoKeyWarned = true
       warn(`data-each="${el.getAttribute('data-each')}" has no data-key — keyed diff disabled. Add data-key="id" for better performance.`)
     }
   })

@@ -111,6 +111,7 @@ export interface MicraTemplate extends HTMLTemplateElement {
     __micraMarker?: Comment;
     __micraNodes: Map<unknown, MicraElement>;
     __micraList: ChildNode[];
+    __micraNoKeyWarned?: true;
 }
 /**
  * @internal Per-element directive binding (element + expression string).
@@ -118,6 +119,16 @@ export interface MicraTemplate extends HTMLTemplateElement {
 export interface CachedBinding {
     el: Element;
     expr: string;
+}
+/**
+ * @internal Per-element directive binding with pre-parsed pairs.
+ * Used by `data-bind` and `data-class` — both share the
+ * `name:expression[, name:expression…]` syntax.
+ */
+export interface CachedPairBinding {
+    el: Element;
+    expr: string;
+    pairs: ReadonlyArray<readonly [string, string]>;
 }
 /**
  * @internal Directive scan result — built once per Element, reused every render.
@@ -131,9 +142,9 @@ export interface DirectiveCache {
     html: CachedBinding[];
     if: CachedBinding[];
     show: CachedBinding[];
-    bind: CachedBinding[];
+    bind: CachedPairBinding[];
     model: CachedBinding[];
-    class: CachedBinding[];
+    class: CachedPairBinding[];
 }
 /**
  * @internal Full instance as seen inside the runtime — extends the public

@@ -79,6 +79,13 @@ const SAFE_OUTER: object = new Proxy(Object.create(null) as object, {
 const safeWrapCache = new WeakMap<object, object>()
 
 /**
+ * @internal Pre-computed names that live on `Object.prototype`
+ * (constructor, toString, hasOwnProperty, ...). Used by safeStateHas to detect
+ * built-in keys without re-walking the chain on every call.
+ */
+const OBJ_PROTO_KEYS = new Set<string>(Object.getOwnPropertyNames(Object.prototype))
+
+/**
  * Wrap a state object so its `has` trap reports only "real" keys — own
  * properties or keys reachable up to (but not including) `Object.prototype`.
  * This blocks `'constructor' in state` from leaking the prototype.
@@ -108,7 +115,7 @@ function safeStateHas(state: object, key: PropertyKey): boolean {
   if (!Reflect.has(state, key)) return false
   // Identifiers that are NOT on Object.prototype are always safe — accept them
   // immediately without walking the chain.
-  if (!Object.prototype.hasOwnProperty.call(Object.prototype, key)) return true
+  if (!OBJ_PROTO_KEYS.has(key)) return true
   // Built-in Object.prototype names (constructor, toString, hasOwnProperty, ...)
   // are only accepted when they have been explicitly placed on the state chain.
   let obj: object | null = state

@@ -1,4 +1,4 @@
-/* Micra.js v1.0.0 — https://github.com/micra-js/micra — MIT */
+/* Micra.js v1.1.0 — https://github.com/micra-js/micra — MIT */
 "use strict";
 var Micra = (() => {
   var __defProp = Object.defineProperty;
@@ -147,6 +147,7 @@ var Micra = (() => {
     }
   });
   var safeWrapCache = /* @__PURE__ */ new WeakMap();
+  var OBJ_PROTO_KEYS = new Set(Object.getOwnPropertyNames(Object.prototype));
   function safeStateWrap(state) {
     const cached = safeWrapCache.get(state);
     if (cached) return cached;
@@ -164,7 +165,7 @@ var Micra = (() => {
   function safeStateHas(state, key) {
     if (typeof key !== "string") return false;
     if (!Reflect.has(state, key)) return false;
-    if (!Object.prototype.hasOwnProperty.call(Object.prototype, key)) return true;
+    if (!OBJ_PROTO_KEYS.has(key)) return true;
     let obj = state;
     while (obj && obj !== Object.prototype) {
       if (Object.prototype.hasOwnProperty.call(obj, key)) return true;
@@ -281,12 +282,8 @@ var Micra = (() => {
   function applyIf(el, expr, state) {
     el.style.display = evalExpr(expr, state) ? "" : "none";
   }
-  function applyBind(el, expr, state) {
-    for (const pair of expr.split(",")) {
-      const colonIdx = pair.indexOf(":");
-      if (colonIdx === -1) continue;
-      const attr = pair.slice(0, colonIdx).trim();
-      const valExpr = pair.slice(colonIdx + 1).trim();
+  function applyBind(el, pairs, state) {
+    for (const [attr, valExpr] of pairs) {
       const val = evalExpr(valExpr, state);
       if (attr === "class") {
         el.className = String(val != null ? val : "");
@@ -306,15 +303,22 @@ var Micra = (() => {
       }
     }
   }
-  function applyClass(el, expr, state) {
-    for (const pair of expr.split(",")) {
-      const colonIdx = pair.indexOf(":");
-      if (colonIdx === -1) continue;
-      const cls = pair.slice(0, colonIdx).trim();
-      const valExpr = pair.slice(colonIdx + 1).trim();
-      if (!cls) continue;
+  function applyClass(el, pairs, state) {
+    for (const [cls, valExpr] of pairs) {
       el.classList.toggle(cls, Boolean(evalExpr(valExpr, state)));
     }
+  }
+  function parsePairs(expr) {
+    const out = [];
+    for (const part of expr.split(",")) {
+      const colonIdx = part.indexOf(":");
+      if (colonIdx === -1) continue;
+      const left = part.slice(0, colonIdx).trim();
+      const right = part.slice(colonIdx + 1).trim();
+      if (!left) continue;
+      out.push([left, right]);
+    }
+    return out;
   }
   function applyModel(el, key, rawState) {
     const html = el;
@@ -329,14 +333,15 @@ var Micra = (() => {
       if ((_a = root.hasAttribute) == null ? void 0 : _a.call(root, attr)) els.unshift(root);
       return els.filter((el) => !el.closest("template")).map((el) => ({ el, expr: el.getAttribute(attr) }));
     };
+    const pickPairs = (attr) => pick(attr).map((b) => ({ ...b, pairs: parsePairs(b.expr) }));
     return {
       text: pick("data-text"),
       html: pick("data-html"),
       if: pick("data-if"),
       show: pick("data-show"),
-      bind: pick("data-bind"),
+      bind: pickPairs("data-bind"),
       model: pick("data-model"),
-      class: pick("data-class")
+      class: pickPairs("data-class")
     };
   }
   function applyDirectives(root, state, rawState, _instance) {
@@ -353,26 +358,29 @@ var Micra = (() => {
     cache.html.forEach((b) => applyHtml(b.el, b.expr, state));
     cache.if.forEach((b) => applyIf(b.el, b.expr, state));
     cache.show.forEach((b) => applyIf(b.el, b.expr, state));
-    cache.bind.forEach((b) => applyBind(b.el, b.expr, state));
+    cache.bind.forEach((b) => applyBind(b.el, b.pairs, state));
     cache.model.forEach((b) => applyModel(b.el, b.expr.trim(), rawState));
-    cache.class.forEach((b) => applyClass(b.el, b.expr, state));
+    cache.class.forEach((b) => applyClass(b.el, b.pairs, state));
   }
   function buildFragmentList(frag) {
     const pick = (attr) => queryAll(frag, `[${attr}]`).filter((el) => !el.closest("template")).map((el) => ({ el, expr: el.getAttribute(attr) }));
+    const pickPairs = (attr) => pick(attr).map((b) => ({ ...b, pairs: parsePairs(b.expr) }));
     return {
       text: pick("data-text"),
       html: pick("data-html"),
       if: pick("data-if"),
       show: pick("data-show"),
-      bind: pick("data-bind"),
+      bind: pickPairs("data-bind"),
       model: pick("data-model"),
-      class: pick("data-class")
+      class: pickPairs("data-class")
     };
   }
   function validateDirectives(root) {
     var _a, _b;
     queryOwn(root, "data-each").forEach((el) => {
-      if (!el.hasAttribute("data-key")) {
+      const tmpl = el;
+      if (!el.hasAttribute("data-key") && !tmpl.__micraNoKeyWarned) {
+        tmpl.__micraNoKeyWarned = true;
         warn(`data-each="${el.getAttribute("data-each")}" has no data-key \u2014 keyed diff disabled. Add data-key="id" for better performance.`);
       }
     });
