@@ -62,7 +62,8 @@ async function micraFetch(url, options = {}) {
   if (method === "GET" || method === "HEAD") {
     const params = {};
     for (const [k, v] of Object.entries(options)) {
-      if (k !== "method" && k !== "headers" && v != null) params[k] = String(v);
+      if (k !== "method" && k !== "headers" && k !== "signal" && v != null)
+        params[k] = String(v);
     }
     if (Object.keys(params).length)
       finalUrl += (url.includes("?") ? "&" : "?") + new URLSearchParams(params);
@@ -73,6 +74,7 @@ async function micraFetch(url, options = {}) {
   const res = await fetch(finalUrl, {
     method,
     headers,
+    ...options.signal !== void 0 ? { signal: options.signal } : {},
     ...body !== void 0 ? { body } : {}
   });
   if (!res.ok)

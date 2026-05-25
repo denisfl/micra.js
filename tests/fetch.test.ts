@@ -142,3 +142,42 @@ describe('8.3 Fetch errors', () => {
     }
   })
 })
+
+// ── 8.4 AbortSignal passthrough ───────────────────────────────────────────────
+
+describe('8.4 AbortSignal', () => {
+  it('forwards AbortSignal to native fetch', async () => {
+    mockFetch(200, {})
+    const ctrl = new AbortController()
+    await micraFetch('/api/data', { signal: ctrl.signal })
+    const init = (fetch as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as RequestInit
+    expect(init.signal).toBe(ctrl.signal)
+  })
+
+  it('does NOT put signal into GET querystring', async () => {
+    mockFetch(200, {})
+    const ctrl = new AbortController()
+    await micraFetch('/api/search', { q: 'ger', signal: ctrl.signal })
+    const url = (fetch as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as string
+    expect(url).toContain('q=ger')
+    expect(url).not.toContain('signal')
+  })
+
+  it('abort actually rejects', async () => {
+    // Use a real abort flow rather than the static mock — we need fetch to wire
+    // up the abort listener itself.
+    vi.stubGlobal('fetch', vi.fn((_url: string, init: RequestInit) =>
+      new Promise((_, reject) => {
+        init.signal?.addEventListener('abort', () => {
+          const err = new Error('aborted')
+          err.name = 'AbortError'
+          reject(err)
+        })
+      }),
+    ))
+    const ctrl = new AbortController()
+    const p = micraFetch('/api/slow', { signal: ctrl.signal })
+    ctrl.abort()
+    await expect(p).rejects.toMatchObject({ name: 'AbortError' })
+  })
+})

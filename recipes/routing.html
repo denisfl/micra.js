@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../assets/styles.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css" />
+    <title>Routing + URL sync recipe — Micra.js</title>
+  </head>
+  <body>
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+      <symbol id="icon-bars-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" /></symbol>
+      <symbol id="icon-x-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18 18 6M6 6l12 12" /></symbol>
+      <symbol id="icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></symbol>
+    </svg>
+
+    <div class="app">
+      <aside class="sidebar" data-component="sidebar-menu">
+        <div class="sidebar-logo" data-class="open:open">
+          <strong>Micra<span>.js</span></strong>
+          <button class="menu-toggle" aria-label="Toggle menu" @click="toggle">
+            <svg class="icon" aria-hidden="true" data-if="!open"><use href="#icon-bars-3"></use></svg>
+            <svg class="icon" aria-hidden="true" data-if="open"><use href="#icon-x-mark"></use></svg>
+          </button>
+        </div>
+        <nav class="sidebar-nav" data-class="open:open">
+          <a href="../docs.html" class="sidebar-section-link">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+            Back to docs
+          </a>
+          <span class="sidebar-group">Recipes</span>
+          <a href="./todo-app.html"><span class="dot"></span>Todo app</a>
+          <a href="./sse.html"><span class="dot"></span>Server-Sent Events</a>
+          <a href="./form-validation.html"><span class="dot"></span>Form validation</a>
+          <a href="./search-debounce.html"><span class="dot"></span>Search + debounce</a>
+          <a href="./optimistic-updates.html"><span class="dot"></span>Optimistic updates</a>
+          <a href="./routing.html" class="active"><span class="dot"></span>Routing + URL sync</a>
+        </nav>
+      </aside>
+
+      <div class="main">
+        <main class="content">
+          <section class="hero">
+            <h2>Recipe: Routing + URL sync</h2>
+            <p>
+              Hash-based routing for small SPA islands inside a
+              server-rendered page, with filters persisted to the
+              querystring. The URL is the source of truth — state mirrors
+              it. Browser back / forward works, copy-pasted links restore
+              the same view.
+            </p>
+            <div class="recipe-meta">
+              <span class="tag">hash routing</span>
+              <span class="tag">URLSearchParams</span>
+              <span class="tag">popstate / hashchange</span>
+              <span class="tag">no library</span>
+            </div>
+          </section>
+
+          <section class="recipe-section">
+            <h3>Live preview</h3>
+            <div class="component-preview preview-left" style="flex-direction: column; align-items: stretch">
+              <p class="field-hint">
+                Switch tabs and filters, then use the browser's back button.
+                The URL fragment below the panel is what would land in the
+                address bar.
+              </p>
+              <div data-component="routing-recipe" class="route-shell">
+                <div class="route-tabs" role="tablist">
+                  <button class="route-tab" role="tab" @click="navigate" data-bind="data-route:'home'"      data-class="active:route === 'home'">Home</button>
+                  <button class="route-tab" role="tab" @click="navigate" data-bind="data-route:'projects'"  data-class="active:route === 'projects'">Projects</button>
+                  <button class="route-tab" role="tab" @click="navigate" data-bind="data-route:'settings'"  data-class="active:route === 'settings'">Settings</button>
+                </div>
+
+                <div class="route-body">
+                  <div data-if="route === 'home'">
+                    <p>Welcome back. Recent activity, quick actions, the usual.</p>
+                  </div>
+
+                  <div data-if="route === 'projects'">
+                    <p>Filter projects by status:</p>
+                    <div class="filter-bar">
+                      <button @click="setFilter" data-bind="data-filter:'all'"     data-class="active:filter === 'all'">All</button>
+                      <button @click="setFilter" data-bind="data-filter:'active'"  data-class="active:filter === 'active'">Active</button>
+                      <button @click="setFilter" data-bind="data-filter:'archived'" data-class="active:filter === 'archived'">Archived</button>
+                    </div>
+                    <p data-text="'Showing: ' + filter"></p>
+                  </div>
+
+                  <div data-if="route === 'settings'">
+                    <p>Profile, billing, security — everything per-account.</p>
+                  </div>
+
+                  <code class="route-url" data-text="'URL fragment: ' + url"></code>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="recipe-section">
+            <h3>Full source</h3>
+            <pre><code>&lt;div data-component="router"&gt;
+  &lt;nav&gt;
+    &lt;button @click="navigate" data-bind="data-route:'home'"     data-class="active:route === 'home'"    &gt;Home&lt;/button&gt;
+    &lt;button @click="navigate" data-bind="data-route:'projects'" data-class="active:route === 'projects'"&gt;Projects&lt;/button&gt;
+    &lt;button @click="navigate" data-bind="data-route:'settings'" data-class="active:route === 'settings'"&gt;Settings&lt;/button&gt;
+  &lt;/nav&gt;
+
+  &lt;div data-if="route === 'home'"    &gt;…home…&lt;/div&gt;
+  &lt;div data-if="route === 'projects'"&gt;
+    &lt;button @click="setFilter" data-bind="data-filter:'active'"&gt;Active&lt;/button&gt;
+    &lt;!-- … --&gt;
+  &lt;/div&gt;
+  &lt;div data-if="route === 'settings'"&gt;…settings…&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+
+            <pre><code>Micra.define('router', {
+  state: { route: 'home', filter: 'all' },
+
+  onCreate() {
+    this._sync = () =&gt; this._readUrl()
+    window.addEventListener('hashchange', this._sync)
+    window.addEventListener('popstate',   this._sync)
+    this._readUrl()                              // initial pass
+  },
+
+  onDestroy() {
+    window.removeEventListener('hashchange', this._sync)
+    window.removeEventListener('popstate',   this._sync)
+  },
+
+  // URL → state
+  _readUrl() {
+    const hash = window.location.hash.slice(1) || '/home'    // '#/home?filter=active' → '/home?filter=active'
+    const [path, qs] = hash.split('?')
+    const route = (path.replace(/^\//, '') || 'home').split('/')[0]
+
+    const params = new URLSearchParams(qs || '')
+    const filter = params.get('filter') || 'all'
+
+    this.state.route  = route
+    this.state.filter = filter
+  },
+
+  // state → URL (single source of truth: the URL)
+  _writeUrl(route, filter) {
+    const qs = filter !== 'all' ? '?filter=' + encodeURIComponent(filter) : ''
+    const next = '#/' + route + qs
+    if (window.location.hash !== next) window.location.hash = next
+  },
+
+  navigate(e)  { this._writeUrl(e.currentTarget.dataset.route, this.state.filter) },
+  setFilter(e) { this._writeUrl(this.state.route, e.currentTarget.dataset.filter) },
+})
+
+Micra.start()</code></pre>
+          </section>
+
+          <section class="recipe-section">
+            <h3>Why URL → state, not state → URL?</h3>
+            <p>
+              The natural instinct is to make state primary and push it to
+              the URL when it changes. That breaks browser back / forward:
+              the URL updates, the user clicks Back, the hash changes — but
+              your state object hasn't moved, and now you have to detect
+              "external" URL changes anyway.
+            </p>
+            <p>
+              Making the URL the source of truth flips that:
+              <span class="inline-code">navigate()</span> writes the URL,
+              the browser fires
+              <span class="inline-code">hashchange</span>, your
+              <span class="inline-code">_readUrl</span> reads the new URL
+              into state, Micra re-renders. Back / forward, copy-paste,
+              programmatic <span class="inline-code">location.hash = …</span>
+              — all go through the same one-way pipe.
+            </p>
+          </section>
+
+          <section class="recipe-section">
+            <h3>Hash vs History API</h3>
+            <p>
+              Hash routing works without server cooperation — every refresh
+              hits the same HTML file. The History API
+              (<span class="inline-code">pushState</span> /
+              <span class="inline-code">popstate</span>) gives clean URLs
+              but requires the server to serve the same HTML for every
+              route. For an SPA island inside a server-rendered page, hash
+              is the simpler choice; for a standalone SPA on a custom
+              domain, History API is worth the server config.
+            </p>
+            <p>
+              To switch: replace
+              <span class="inline-code">window.location.hash</span> with
+              <span class="inline-code">history.pushState(null, '', '/projects?filter=active')</span>,
+              listen only to <span class="inline-code">popstate</span>, and
+              call <span class="inline-code">_readUrl</span> from
+              <span class="inline-code">navigate</span> manually since
+              pushState doesn't fire a popstate.
+            </p>
+          </section>
+
+          <section class="recipe-section">
+            <h3>Pitfalls</h3>
+            <ul>
+              <li>
+                <strong>Don't update state directly in
+                <span class="inline-code">navigate()</span>.</strong> Write
+                the URL and let
+                <span class="inline-code">hashchange</span> drive state.
+                One pipe = no drift between displayed URL and rendered view.
+              </li>
+              <li>
+                <strong>Don't forget the
+                <span class="inline-code">popstate</span> listener.</strong>
+                <span class="inline-code">hashchange</span> covers most
+                cases, but
+                <span class="inline-code">history.back()</span> on a
+                pushState-driven app fires only popstate.
+              </li>
+              <li>
+                <strong>Don't leave default filters in the URL.</strong>
+                <span class="inline-code">?filter=all</span> bloats every
+                link. The
+                <span class="inline-code">filter !== 'all'</span> guard in
+                <span class="inline-code">_writeUrl</span> keeps URLs short
+                when the user hasn't actually narrowed anything.
+              </li>
+              <li>
+                <strong>Don't skip the no-op guard.</strong>
+                <span class="inline-code">if (window.location.hash !== next)</span>
+                prevents an infinite loop when
+                <span class="inline-code">_writeUrl</span> is called from
+                a code path that didn't actually change anything.
+              </li>
+              <li>
+                <strong>Don't put unsafe characters into the hash
+                directly.</strong> Always
+                <span class="inline-code">encodeURIComponent</span> any
+                value that could contain
+                <span class="inline-code">&amp;</span>,
+                <span class="inline-code">?</span>, or
+                <span class="inline-code">#</span>. Use
+                <span class="inline-code">URLSearchParams</span> for
+                building too — it handles encoding automatically.
+              </li>
+            </ul>
+          </section>
+        </main>
+
+        <footer class="doc-footer">
+          <div class="footer-left">
+            <a href="./" class="btn">
+              <svg class="icon" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+              <span>All recipes</span>
+            </a>
+          </div>
+        </footer>
+      </div>
+    </div>
+
+    <script src="../dist/micra.js"></script>
+    <script>
+      Micra.define("sidebar-menu", {
+        state: { open: false },
+        toggle() { this.state.open = !this.state.open },
+        close()  { this.state.open = false },
+      });
+
+      Micra.define("routing-recipe", {
+        state: { route: "home", filter: "all", url: "#/home" },
+
+        onCreate() {
+          this._sync = () => this._readUrl();
+          window.addEventListener("hashchange", this._sync);
+          window.addEventListener("popstate",   this._sync);
+          this._readUrl();
+        },
+
+        onDestroy() {
+          window.removeEventListener("hashchange", this._sync);
+          window.removeEventListener("popstate",   this._sync);
+        },
+
+        _readUrl() {
+          const hash = window.location.hash.slice(1) || "/home";
+          const [path, qs] = hash.split("?");
+          const route = (path.replace(/^\//, "") || "home").split("/")[0];
+          const params = new URLSearchParams(qs || "");
+          const filter = params.get("filter") || "all";
+          // Only adopt routes we know about (don't render undefined views).
+          this.state.route  = ["home", "projects", "settings"].includes(route) ? route : "home";
+          this.state.filter = ["all", "active", "archived"].includes(filter) ? filter : "all";
+          this.state.url    = "#" + (window.location.hash.slice(1) || "/home");
+        },
+
+        _writeUrl(route, filter) {
+          const qs = filter !== "all" ? "?filter=" + encodeURIComponent(filter) : "";
+          const next = "#/" + route + qs;
+          if (window.location.hash !== next) window.location.hash = next;
+        },
+
+        navigate(e)  { this._writeUrl(e.currentTarget.dataset.route, this.state.filter) },
+        setFilter(e) { this._writeUrl(this.state.route, e.currentTarget.dataset.filter) },
+      });
+
+      Micra.start();
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll("pre code").forEach((el) => hljs.highlightElement(el));
+      });
+    </script>
+  </body>
+</html>

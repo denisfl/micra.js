@@ -1,6 +1,6 @@
 # Micra.js
 
-Micra.js is a lightweight reactive TypeScript framework for small sites and SaaS apps. It gives you reactive state, DOM directives, keyed list rendering, an event bus, SSR-friendly props, and auto-mounting in about 3.7 KB gzip.
+Micra.js is a lightweight reactive TypeScript framework for small sites and SaaS apps. It gives you reactive state, DOM directives, keyed list rendering, an event bus, SSR-friendly props, and auto-mounting in about 5 KB gzip.
 
 ## What is Micra.js?
 
@@ -29,13 +29,17 @@ Use it when you want:
 
 <script src="https://cdn.jsdelivr.net/npm/micra.js/dist/micra.min.js"></script>
 <script>
-  Micra.define('counter', {
+  Micra.define("counter", {
     state: { count: 0 },
-    increment() { this.state.count++ },
-    decrement() { this.state.count-- },
-  })
+    increment() {
+      this.state.count++;
+    },
+    decrement() {
+      this.state.count--;
+    },
+  });
 
-  Micra.start()
+  Micra.start();
 </script>
 ```
 
@@ -54,7 +58,7 @@ npm install micra.js
 ```
 
 ```ts
-import * as Micra from 'micra.js'
+import * as Micra from "micra.js";
 ```
 
 ## Basic usage
@@ -71,42 +75,42 @@ A counter mounted automatically from `data-component`:
 ```
 
 ```ts
-import * as Micra from 'micra.js'
+import * as Micra from "micra.js";
 
-Micra.define('counter', {
+Micra.define("counter", {
   state: { count: 0 },
 
   increment() {
-    this.state.count++
+    this.state.count++;
   },
 
   decrement() {
-    this.state.count--
+    this.state.count--;
   },
 
   reset() {
-    this.state.count = 0
+    this.state.count = 0;
   },
-})
+});
 
-Micra.start()
+Micra.start();
 ```
 
 ## Directives
 
-| Directive | Example | Description |
-|---|---|---|
-| `data-text` | `data-text="name"` | Set `textContent` |
-| `data-html` | `data-html="content"` | Set `innerHTML` |
-| `data-if` | `data-if="count > 0"` | Toggle display |
-| `data-show` | `data-show="loaded"` | Alias of `data-if` |
-| `data-bind` | `data-bind="href:url, disabled:loading"` | Bind attributes |
-| `data-model` | `data-model="search"` | Two-way input binding |
-| `data-each` | `data-each="items" data-key="id"` | List rendering |
-| `data-ref` | `data-ref="chart"` | DOM ref in `this.refs` |
-| `data-class` | `data-class="active:isActive"` | Toggle classes additively |
-| `data-on` | `data-on="click:save"` | Bind DOM events |
-| `@event` | `@click="increment"` | Shorthand event binding |
+| Directive    | Example                                  | Description               |
+| ------------ | ---------------------------------------- | ------------------------- |
+| `data-text`  | `data-text="name"`                       | Set `textContent`         |
+| `data-html`  | `data-html="content"`                    | Set `innerHTML`           |
+| `data-if`    | `data-if="count > 0"`                    | Toggle display            |
+| `data-show`  | `data-show="loaded"`                     | Alias of `data-if`        |
+| `data-bind`  | `data-bind="href:url, disabled:loading"` | Bind attributes           |
+| `data-model` | `data-model="search"`                    | Two-way input binding     |
+| `data-each`  | `data-each="items" data-key="id"`        | List rendering            |
+| `data-ref`   | `data-ref="chart"`                       | DOM ref in `this.refs`    |
+| `data-class` | `data-class="active:isActive"`           | Toggle classes additively |
+| `data-on`    | `data-on="click:save"`                   | Bind DOM events           |
+| `@event`     | `@click="increment"`                     | Shorthand event binding   |
 
 ## API reference summary
 

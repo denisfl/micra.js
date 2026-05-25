@@ -77,7 +77,8 @@ export async function micraFetch(url: string, options: FetchOptions = {}): Promi
   if (method === 'GET' || method === 'HEAD') {
     const params: Record<string, string> = {}
     for (const [k, v] of Object.entries(options)) {
-      if (k !== 'method' && k !== 'headers' && v != null) params[k] = String(v)
+      if (k !== 'method' && k !== 'headers' && k !== 'signal' && v != null)
+        params[k] = String(v)
     }
     if (Object.keys(params).length)
       finalUrl += (url.includes('?') ? '&' : '?') + new URLSearchParams(params)
@@ -89,6 +90,7 @@ export async function micraFetch(url: string, options: FetchOptions = {}): Promi
   const res = await fetch(finalUrl, {
     method,
     headers,
+    ...(options.signal !== undefined ? { signal: options.signal as AbortSignal } : {}),
     ...(body !== undefined ? { body } : {}),
   })
 

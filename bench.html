@@ -69,11 +69,21 @@
 </head>
 <body>
 
+<!-- Heroicons sprite (inlined so it works under file:// too — canonical source: assets/icons.svg) -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="icon-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 0 1 0 1.971l-11.54 6.347a1.125 1.125 0 0 1-1.667-.985V5.653Z" /></symbol>
+</svg>
+
 <h1>Micra.js — Benchmarks</h1>
 <p class="subtitle">Measures raw JS + DOM patching time (no paint). Lower is better.</p>
 
 <div class="controls">
-  <button class="btn btn-primary" id="runBtn" onclick="runAll()">▶ Run all</button>
+  <button class="btn btn-primary" id="runBtn" onclick="runAll()">
+    <svg width="14" height="14" aria-hidden="true" style="vertical-align:middle">
+      <use href="#icon-play"></use>
+    </svg>
+    <span>Run all</span>
+  </button>
   <label style="font-size:13px;color:var(--muted)">
     Iterations:
     <select id="iterSel">

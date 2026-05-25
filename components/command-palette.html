@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../assets/styles.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css" />
+    <title>Command palette — Micra.js Components</title>
+  </head>
+  <body>
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+      <symbol id="icon-bars-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" /></symbol>
+      <symbol id="icon-x-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18 18 6M6 6l12 12" /></symbol>
+      <symbol id="icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></symbol>
+      <symbol id="icon-magnifying-glass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></symbol>
+      <symbol id="icon-bolt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" /></symbol>
+      <symbol id="icon-document-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m3.75 7.5h3M9 12.75h6m-6 3h6M5.25 5.625v12.75c0 .621.504 1.125 1.125 1.125h11.25c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9H6.375a1.125 1.125 0 0 0-1.125 1.125Z" /></symbol>
+      <symbol id="icon-command-line" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0 0 21 18V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v12a2.25 2.25 0 0 0 2.25 2.25Z" /></symbol>
+    </svg>
+
+    <div class="app">
+      <aside class="sidebar" data-component="sidebar-menu">
+        <div class="sidebar-logo" data-class="open:open">
+          <strong>Micra<span>.js</span></strong>
+          <button class="menu-toggle" aria-label="Toggle menu" @click="toggle">
+            <svg class="icon" aria-hidden="true" data-if="!open"><use href="#icon-bars-3"></use></svg>
+            <svg class="icon" aria-hidden="true" data-if="open"><use href="#icon-x-mark"></use></svg>
+          </button>
+        </div>
+        <nav class="sidebar-nav" data-class="open:open">
+          <a href="../docs.html" class="sidebar-section-link">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+            Back to docs
+          </a>
+          <span class="sidebar-group">Overlays</span>
+          <a href="./modal.html"><span class="dot"></span>Modal</a>
+          <a href="./dropdown.html"><span class="dot"></span>Dropdown</a>
+          <a href="./tooltip.html"><span class="dot"></span>Tooltip</a>
+          <a href="./toast.html"><span class="dot"></span>Toast</a>
+          <a href="./command-palette.html" class="active"><span class="dot"></span>Command palette</a>
+          <span class="sidebar-group">Navigation</span>
+          <a href="./tabs.html"><span class="dot"></span>Tabs</a>
+          <a href="./accordion.html"><span class="dot"></span>Accordion</a>
+          <a href="./breadcrumb.html"><span class="dot"></span>Breadcrumb</a>
+          <span class="sidebar-group">Forms</span>
+          <a href="./combobox.html"><span class="dot"></span>Combobox</a>
+          <a href="./toggle.html"><span class="dot"></span>Toggle</a>
+          <a href="./tag-input.html"><span class="dot"></span>Tag input</a>
+          <a href="./date-picker.html"><span class="dot"></span>Date picker</a>
+          <a href="./slider.html"><span class="dot"></span>Slider</a>
+          <span class="sidebar-group">Data</span>
+          <a href="./table.html"><span class="dot"></span>Table</a>
+        </nav>
+      </aside>
+
+      <div class="main">
+        <main class="content">
+          <section class="hero">
+            <h2>Command palette</h2>
+            <p>
+              ⌘K-style launcher. Document-level shortcut opens the overlay,
+              typed text filters the registered commands, arrow keys move
+              the highlight, Enter runs the command. The visible list is a
+              <span class="inline-code">filtered()</span> method — registered
+              commands stay in <span class="inline-code">state.commands</span>.
+            </p>
+          </section>
+
+          <section class="component-section">
+            <h3>Live preview</h3>
+            <div class="component-preview preview-left" style="flex-direction: column; gap: var(--sp-3); align-items: flex-start">
+              <p class="hint">
+                Press <kbd class="cmdk-kbd">⌘K</kbd> or
+                <kbd class="cmdk-kbd">Ctrl K</kbd> — or use the button below.
+              </p>
+              <div data-component="cmdk-demo">
+                <button class="btn btn-primary" @click="open">Open palette</button>
+
+                <div class="cmdk-backdrop" data-if="visible" @click.self="close">
+                  <div class="cmdk-panel" role="dialog" aria-modal="true" aria-label="Command palette">
+                    <div class="cmdk-search">
+                      <svg class="icon" aria-hidden="true"><use href="#icon-magnifying-glass"></use></svg>
+                      <input
+                        data-ref="input"
+                        data-model="query"
+                        @keydown="onKey"
+                        placeholder="Type a command…"
+                        aria-autocomplete="list"
+                      />
+                      <kbd class="cmdk-kbd">esc</kbd>
+                    </div>
+
+                    <div class="cmdk-list">
+                      <template data-each="filtered()" data-key="id">
+                        <button
+                          class="cmdk-row"
+                          @mouseenter="setHighlight"
+                          @click="run"
+                          data-bind="data-id:item.id, data-i:$index"
+                          data-class="highlight:$index === highlight"
+                        >
+                          <svg class="icon" aria-hidden="true"><use data-bind="href:'#' + item.icon"></use></svg>
+                          <span class="cmdk-row-label" data-text="item.label"></span>
+                          <span class="cmdk-row-group" data-text="item.group"></span>
+                        </button>
+                      </template>
+                      <p class="cmdk-empty" data-if="filtered().length === 0">No commands match "<span data-text="query"></span>"</p>
+                    </div>
+                  </div>
+                </div>
+
+                <p class="hint" style="margin-top: var(--sp-3)" data-if="lastRan">
+                  Last command: <strong data-text="lastRan"></strong>
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section class="component-section">
+            <h3>Markup</h3>
+            <pre><code>&lt;div data-component="cmdk-demo"&gt;
+  &lt;div class="cmdk-backdrop" data-if="visible" @click.self="close"&gt;
+    &lt;div class="cmdk-panel" role="dialog" aria-modal="true"&gt;
+      &lt;div class="cmdk-search"&gt;
+        &lt;input data-ref="input"
+               data-model="query"
+               @keydown="onKey"
+               placeholder="Type a command…" /&gt;
+      &lt;/div&gt;
+      &lt;div class="cmdk-list"&gt;
+        &lt;template data-each="filtered()" data-key="id"&gt;
+          &lt;button class="cmdk-row"
+                  @mouseenter="setHighlight"
+                  @click="run"
+                  data-bind="data-id:item.id, data-i:$index"
+                  data-class="highlight:$index === highlight"&gt;
+            &lt;span data-text="item.label"&gt;&lt;/span&gt;
+            &lt;span data-text="item.group"&gt;&lt;/span&gt;
+          &lt;/button&gt;
+        &lt;/template&gt;
+        &lt;p data-if="filtered().length === 0"&gt;No matches&lt;/p&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+          </section>
+
+          <section class="component-section">
+            <h3>Definition</h3>
+            <pre><code>Micra.define('cmdk-demo', {
+  state: {
+    visible: false,
+    query: '',
+    highlight: 0,
+    lastRan: '',
+    commands: [
+      { id: 'new-doc',  label: 'New document',  group: 'Files',    icon: 'icon-document-text' },
+      { id: 'search',   label: 'Search files',  group: 'Files',    icon: 'icon-magnifying-glass' },
+      { id: 'invite',   label: 'Invite teammate', group: 'Team',  icon: 'icon-bolt' },
+      { id: 'theme',    label: 'Toggle theme',  group: 'Appearance', icon: 'icon-bolt' },
+      { id: 'shortcuts',label: 'Show keyboard shortcuts', group: 'Help', icon: 'icon-command-line' },
+      { id: 'logout',   label: 'Sign out',      group: 'Account',  icon: 'icon-bolt' },
+    ],
+  },
+
+  filtered() {
+    const q = this.state.query.trim().toLowerCase()
+    if (!q) return this.state.commands
+    return this.state.commands.filter(c =&gt;
+      c.label.toLowerCase().includes(q) || c.group.toLowerCase().includes(q),
+    )
+  },
+
+  onCreate() {
+    this._shortcut = (e) =&gt; {
+      const isCmdK = (e.metaKey || e.ctrlKey) &amp;&amp; e.key === 'k'
+      if (isCmdK) {
+        e.preventDefault()
+        this.open()
+      }
+    }
+    document.addEventListener('keydown', this._shortcut)
+  },
+  onDestroy() {
+    document.removeEventListener('keydown', this._shortcut)
+  },
+
+  open() {
+    this.state.visible = true
+    this.state.query = ''
+    this.state.highlight = 0
+    queueMicrotask(() =&gt; this.refs.input?.focus())
+  },
+  close() { this.state.visible = false },
+
+  setHighlight(e) {
+    const i = parseInt(e.currentTarget.dataset.i, 10)
+    if (!Number.isNaN(i)) this.state.highlight = i
+  },
+
+  onKey(e) {
+    const list = this.filtered()
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      this.state.highlight = (this.state.highlight + 1) % list.length
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      this.state.highlight = (this.state.highlight - 1 + list.length) % list.length
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      const cmd = list[this.state.highlight]
+      if (cmd) this._run(cmd)
+    } else if (e.key === 'Escape') {
+      this.close()
+    }
+  },
+
+  run(e) {
+    const id = e.currentTarget.dataset.id
+    const cmd = this.state.commands.find(c =&gt; c.id === id)
+    if (cmd) this._run(cmd)
+  },
+
+  _run(cmd) {
+    this.state.lastRan = cmd.label
+    this.close()
+    Micra.emit('command:run', cmd)
+  },
+})</code></pre>
+          </section>
+
+          <section class="component-section">
+            <h3>Integration</h3>
+            <ul>
+              <li>
+                <strong>Global shortcut.</strong> A single document
+                <span class="inline-code">keydown</span> listener in
+                <span class="inline-code">onCreate</span> matches
+                <span class="inline-code">⌘K</span> /
+                <span class="inline-code">Ctrl+K</span>. Removed in
+                <span class="inline-code">onDestroy</span> so detached
+                instances stop responding.
+              </li>
+              <li>
+                <strong>Focus on open.</strong>
+                <span class="inline-code">queueMicrotask(() =&gt; this.refs.input.focus())</span>
+                waits for the
+                <span class="inline-code">data-if="visible"</span> render to
+                attach the input to the DOM, then focuses it.
+              </li>
+              <li>
+                <strong>Commands publish on the bus.</strong>
+                <span class="inline-code">Micra.emit('command:run', cmd)</span>
+                — wire any other component to
+                <span class="inline-code">this.on('command:run', …)</span> and
+                dispatch on <span class="inline-code">cmd.id</span>.
+              </li>
+              <li>
+                <strong>Filtering</strong> matches both label and group, so a
+                user can type "team" to find "Invite teammate".
+              </li>
+            </ul>
+          </section>
+
+          <section class="component-section">
+            <h3>Pitfalls</h3>
+            <ul>
+              <li>
+                Don't bind <span class="inline-code">@keydown.enter</span> on
+                the input — Enter must compete with arrow / Escape handling.
+                One <span class="inline-code">onKey</span> branching on
+                <span class="inline-code">e.key</span> beats four separate
+                modifier-suffixed handlers.
+              </li>
+              <li>
+                Don't mount more than one
+                <span class="inline-code">cmdk-demo</span> instance — both
+                will register the ⌘K listener and open simultaneously.
+              </li>
+              <li>
+                Don't store <span class="inline-code">filtered</span> in state.
+                Query updates already trigger a re-render; the method
+                recomputes on read.
+              </li>
+            </ul>
+          </section>
+        </main>
+
+        <footer class="doc-footer">
+          <div class="footer-left">
+            <a href="./" class="btn">
+              <svg class="icon" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+              <span>All components</span>
+            </a>
+          </div>
+        </footer>
+      </div>
+    </div>
+
+    <script src="../dist/micra.js"></script>
+    <script>
+      Micra.define("sidebar-menu", {
+        state: { open: false },
+        toggle() { this.state.open = !this.state.open },
+        close()  { this.state.open = false },
+      });
+
+      Micra.define("cmdk-demo", {
+        state: {
+          visible: false,
+          query: "",
+          highlight: 0,
+          lastRan: "",
+          commands: [
+            { id: "new-doc",   label: "New document",  group: "Files",       icon: "icon-document-text" },
+            { id: "search",    label: "Search files",  group: "Files",       icon: "icon-magnifying-glass" },
+            { id: "invite",    label: "Invite teammate", group: "Team",      icon: "icon-bolt" },
+            { id: "theme",     label: "Toggle theme",  group: "Appearance",  icon: "icon-bolt" },
+            { id: "shortcuts", label: "Show keyboard shortcuts", group: "Help", icon: "icon-command-line" },
+            { id: "logout",    label: "Sign out",      group: "Account",     icon: "icon-bolt" },
+          ],
+        },
+
+        filtered() {
+          const q = this.state.query.trim().toLowerCase();
+          if (!q) return this.state.commands;
+          return this.state.commands.filter(c =>
+            c.label.toLowerCase().includes(q) || c.group.toLowerCase().includes(q),
+          );
+        },
+
+        onCreate() {
+          this._shortcut = (e) => {
+            const isCmdK = (e.metaKey || e.ctrlKey) && e.key === "k";
+            if (isCmdK) {
+              e.preventDefault();
+              this.open();
+            }
+          };
+          document.addEventListener("keydown", this._shortcut);
+        },
+        onDestroy() {
+          document.removeEventListener("keydown", this._shortcut);
+        },
+
+        open() {
+          this.state.visible = true;
+          this.state.query = "";
+          this.state.highlight = 0;
+          queueMicrotask(() => this.refs.input?.focus());
+        },
+        close() { this.state.visible = false },
+
+        setHighlight(e) {
+          const i = parseInt(e.currentTarget.dataset.i, 10);
+          if (!Number.isNaN(i)) this.state.highlight = i;
+        },
+
+        onKey(e) {
+          const list = this.filtered();
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            this.state.highlight = (this.state.highlight + 1) % list.length;
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            this.state.highlight = (this.state.highlight - 1 + list.length) % list.length;
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            const cmd = list[this.state.highlight];
+            if (cmd) this._run(cmd);
+          } else if (e.key === "Escape") {
+            this.close();
+          }
+        },
+
+        run(e) {
+          const id = e.currentTarget.dataset.id;
+          const cmd = this.state.commands.find(c => c.id === id);
+          if (cmd) this._run(cmd);
+        },
+
+        _run(cmd) {
+          this.state.lastRan = cmd.label;
+          this.close();
+          Micra.emit("command:run", cmd);
+        },
+      });
+
+      Micra.start();
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll("pre code").forEach((el) => hljs.highlightElement(el));
+      });
+    </script>
+  </body>
+</html>

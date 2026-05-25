@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../assets/styles.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css" />
+    <title>Date picker — Micra.js Components</title>
+  </head>
+  <body>
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+      <symbol id="icon-bars-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" /></symbol>
+      <symbol id="icon-x-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18 18 6M6 6l12 12" /></symbol>
+      <symbol id="icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></symbol>
+      <symbol id="icon-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m19.5 8.25-7.5 7.5-7.5-7.5" /></symbol>
+      <symbol id="icon-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m8.25 4.5 7.5 7.5-7.5 7.5" /></symbol>
+    </svg>
+
+    <div class="app">
+      <aside class="sidebar" data-component="sidebar-menu">
+        <div class="sidebar-logo" data-class="open:open">
+          <strong>Micra<span>.js</span></strong>
+          <button class="menu-toggle" aria-label="Toggle menu" @click="toggle">
+            <svg class="icon" aria-hidden="true" data-if="!open"><use href="#icon-bars-3"></use></svg>
+            <svg class="icon" aria-hidden="true" data-if="open"><use href="#icon-x-mark"></use></svg>
+          </button>
+        </div>
+        <nav class="sidebar-nav" data-class="open:open">
+          <a href="../docs.html" class="sidebar-section-link">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+            Back to docs
+          </a>
+          <span class="sidebar-group">Overlays</span>
+          <a href="./modal.html"><span class="dot"></span>Modal</a>
+          <a href="./dropdown.html"><span class="dot"></span>Dropdown</a>
+          <a href="./tooltip.html"><span class="dot"></span>Tooltip</a>
+          <a href="./toast.html"><span class="dot"></span>Toast</a>
+          <a href="./command-palette.html"><span class="dot"></span>Command palette</a>
+          <span class="sidebar-group">Navigation</span>
+          <a href="./tabs.html"><span class="dot"></span>Tabs</a>
+          <a href="./accordion.html"><span class="dot"></span>Accordion</a>
+          <a href="./breadcrumb.html"><span class="dot"></span>Breadcrumb</a>
+          <span class="sidebar-group">Forms</span>
+          <a href="./combobox.html"><span class="dot"></span>Combobox</a>
+          <a href="./toggle.html"><span class="dot"></span>Toggle</a>
+          <a href="./tag-input.html"><span class="dot"></span>Tag input</a>
+          <a href="./date-picker.html" class="active"><span class="dot"></span>Date picker</a>
+          <a href="./slider.html"><span class="dot"></span>Slider</a>
+          <span class="sidebar-group">Data</span>
+          <a href="./table.html"><span class="dot"></span>Table</a>
+        </nav>
+      </aside>
+
+      <div class="main">
+        <main class="content">
+          <section class="hero">
+            <h2>Date picker</h2>
+            <p>
+              Month calendar with prev/next navigation and click-to-pick day.
+              The grid is rendered from
+              <span class="inline-code">days()</span> — a derived array of
+              <span class="inline-code">{ day, iso, empty }</span> objects.
+              Selected and "today" states are decided per cell via methods,
+              not stored as flags.
+            </p>
+          </section>
+
+          <section class="component-section">
+            <h3>Live preview</h3>
+            <div class="component-preview preview-left">
+              <div class="datepicker" data-component="datepicker-demo">
+                <div class="datepicker-header">
+                  <button class="icon-btn" aria-label="Previous month" @click="prevMonth">
+                    <svg class="icon" aria-hidden="true" style="transform: rotate(180deg)"><use href="#icon-chevron-right"></use></svg>
+                  </button>
+                  <span class="datepicker-title" data-text="title()"></span>
+                  <button class="icon-btn" aria-label="Next month" @click="nextMonth">
+                    <svg class="icon" aria-hidden="true"><use href="#icon-chevron-right"></use></svg>
+                  </button>
+                </div>
+                <div class="datepicker-weekdays">
+                  <span class="datepicker-weekday">Mo</span>
+                  <span class="datepicker-weekday">Tu</span>
+                  <span class="datepicker-weekday">We</span>
+                  <span class="datepicker-weekday">Th</span>
+                  <span class="datepicker-weekday">Fr</span>
+                  <span class="datepicker-weekday">Sa</span>
+                  <span class="datepicker-weekday">Su</span>
+                </div>
+                <div class="datepicker-grid">
+                  <template data-each="days()" data-key="iso">
+                    <button
+                      class="datepicker-day"
+                      data-class="empty:item.empty, selected:item.iso === selected, today:item.iso === today"
+                      data-bind="data-iso:item.iso, disabled:item.empty"
+                      @click="pick"
+                      data-text="item.day"
+                    ></button>
+                  </template>
+                </div>
+              </div>
+              <p class="hint" style="margin-top: var(--sp-4)" data-component="datepicker-display">
+                Picked: <strong data-text="value || '(none)'"></strong>
+              </p>
+            </div>
+          </section>
+
+          <section class="component-section">
+            <h3>Markup</h3>
+            <pre><code>&lt;div class="datepicker" data-component="datepicker-demo"&gt;
+  &lt;div class="datepicker-header"&gt;
+    &lt;button @click="prevMonth"&gt;‹&lt;/button&gt;
+    &lt;span data-text="title()"&gt;&lt;/span&gt;
+    &lt;button @click="nextMonth"&gt;›&lt;/button&gt;
+  &lt;/div&gt;
+
+  &lt;div class="datepicker-weekdays"&gt;
+    &lt;span&gt;Mo&lt;/span&gt;&lt;span&gt;Tu&lt;/span&gt;&lt;span&gt;We&lt;/span&gt;
+    &lt;span&gt;Th&lt;/span&gt;&lt;span&gt;Fr&lt;/span&gt;&lt;span&gt;Sa&lt;/span&gt;&lt;span&gt;Su&lt;/span&gt;
+  &lt;/div&gt;
+
+  &lt;div class="datepicker-grid"&gt;
+    &lt;template data-each="days()" data-key="iso"&gt;
+      &lt;button class="datepicker-day"
+        @click="pick"
+        data-bind="data-iso:item.iso, disabled:item.empty"
+        data-class="empty:item.empty, selected:item.iso === selected, today:item.iso === today"
+        data-text="item.day"&gt;&lt;/button&gt;
+    &lt;/template&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+          </section>
+
+          <section class="component-section">
+            <h3>Definition</h3>
+            <pre><code>Micra.define('datepicker-demo', {
+  state: {
+    today:    new Date().toISOString().slice(0, 10),
+    selected: '',
+    cursor:   '',   // 'YYYY-MM' — the visible month
+  },
+
+  onCreate() {
+    this.state.cursor = this.state.today.slice(0, 7)
+  },
+
+  // ── derived ──────────────────────────────────────────────
+  title() {
+    const [y, m] = this.state.cursor.split('-').map(Number)
+    return new Date(y, m - 1, 1).toLocaleString(undefined, {
+      month: 'long', year: 'numeric',
+    })
+  },
+
+  days() {
+    const [y, m] = this.state.cursor.split('-').map(Number)
+    const first  = new Date(y, m - 1, 1)
+    const last   = new Date(y, m, 0).getDate()
+    // Monday = 0, Sunday = 6
+    const lead   = (first.getDay() + 6) % 7
+    const cells  = []
+
+    for (let i = 0; i &lt; lead; i++) {
+      cells.push({ day: '', iso: `pad-${m}-${i}`, empty: true })
+    }
+    for (let d = 1; d &lt;= last; d++) {
+      const iso = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+      cells.push({ day: d, iso, empty: false })
+    }
+    return cells
+  },
+
+  // ── actions ──────────────────────────────────────────────
+  prevMonth() {
+    const [y, m] = this.state.cursor.split('-').map(Number)
+    const prev = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`
+    this.state.cursor = prev
+  },
+
+  nextMonth() {
+    const [y, m] = this.state.cursor.split('-').map(Number)
+    const next = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`
+    this.state.cursor = next
+  },
+
+  pick(e) {
+    const iso = e.currentTarget.dataset.iso
+    if (!iso || iso.startsWith('pad-')) return
+    this.state.selected = iso
+    Micra.emit('date:picked', iso)
+  },
+})</code></pre>
+          </section>
+
+          <section class="component-section">
+            <h3>Integration</h3>
+            <ul>
+              <li>
+                <strong>Cursor is a string</strong>
+                (<span class="inline-code">'YYYY-MM'</span>) — survives JSON
+                round-trips, easy to compare, and reading it never produces a
+                stale <span class="inline-code">Date</span> object.
+              </li>
+              <li>
+                <strong>Padding cells</strong> for the Monday-aligned grid
+                carry <span class="inline-code">empty: true</span> and a
+                synthetic <span class="inline-code">iso</span> like
+                <span class="inline-code">pad-3-0</span> so the keyed
+                <span class="inline-code">data-each</span> can diff them
+                without colliding with real dates.
+              </li>
+              <li>
+                <strong>Selected + today state</strong> are computed by
+                comparing each cell's <span class="inline-code">iso</span> to
+                <span class="inline-code">state.selected</span> /
+                <span class="inline-code">state.today</span> inside
+                <span class="inline-code">data-class</span> — never written
+                back to the day object.
+              </li>
+              <li>
+                <strong>Locale-aware title.</strong>
+                <span class="inline-code">toLocaleString({ month, year })</span>
+                respects the browser's locale. Set
+                <span class="inline-code">document.documentElement.lang</span>
+                to force a specific one.
+              </li>
+              <li>
+                <strong>Bus handoff.</strong>
+                <span class="inline-code">'date:picked'</span> publishes the
+                ISO string so a form, a chart, or a fetch can react.
+              </li>
+            </ul>
+          </section>
+
+          <section class="component-section">
+            <h3>Pitfalls</h3>
+            <ul>
+              <li>
+                Don't store the visible month as a
+                <span class="inline-code">Date</span> object — its identity
+                changes on every mutation and you risk timezone drift across
+                <span class="inline-code">toLocale*</span> calls. Strings are
+                stable.
+              </li>
+              <li>
+                Don't precompute <span class="inline-code">days</span> into
+                state. Cursor changes already trigger a re-render; the days
+                method runs on read.
+              </li>
+              <li>
+                Don't use <span class="inline-code">$index</span> as
+                <span class="inline-code">data-key</span> — month-to-month
+                transitions reorder cells and you'd lose keyed-diff benefits.
+              </li>
+            </ul>
+          </section>
+        </main>
+
+        <footer class="doc-footer">
+          <div class="footer-left">
+            <a href="./" class="btn">
+              <svg class="icon" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+              <span>All components</span>
+            </a>
+          </div>
+        </footer>
+      </div>
+    </div>
+
+    <script src="../dist/micra.js"></script>
+    <script>
+      Micra.define("sidebar-menu", {
+        state: { open: false },
+        toggle() { this.state.open = !this.state.open },
+        close()  { this.state.open = false },
+      });
+
+      Micra.define("datepicker-demo", {
+        state: {
+          today: new Date().toISOString().slice(0, 10),
+          selected: "",
+          cursor: "",
+        },
+        onCreate() {
+          this.state.cursor = this.state.today.slice(0, 7);
+        },
+        title() {
+          const [y, m] = this.state.cursor.split("-").map(Number);
+          return new Date(y, m - 1, 1).toLocaleString(undefined, {
+            month: "long", year: "numeric",
+          });
+        },
+        days() {
+          const [y, m] = this.state.cursor.split("-").map(Number);
+          const first = new Date(y, m - 1, 1);
+          const last  = new Date(y, m, 0).getDate();
+          const lead = (first.getDay() + 6) % 7;
+          const cells = [];
+          for (let i = 0; i < lead; i++) {
+            cells.push({ day: "", iso: `pad-${m}-${i}`, empty: true });
+          }
+          for (let d = 1; d <= last; d++) {
+            const iso = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+            cells.push({ day: d, iso, empty: false });
+          }
+          return cells;
+        },
+        prevMonth() {
+          const [y, m] = this.state.cursor.split("-").map(Number);
+          this.state.cursor = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`;
+        },
+        nextMonth() {
+          const [y, m] = this.state.cursor.split("-").map(Number);
+          this.state.cursor = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
+        },
+        pick(e) {
+          const iso = e.currentTarget.dataset.iso;
+          if (!iso || iso.startsWith("pad-")) return;
+          this.state.selected = iso;
+          Micra.emit("date:picked", iso);
+        },
+      });
+
+      Micra.define("datepicker-display", {
+        state: { value: "" },
+        onCreate() {
+          this.on("date:picked", (iso) => { this.state.value = iso });
+        },
+      });
+
+      Micra.start();
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll("pre code").forEach((el) => hljs.highlightElement(el));
+      });
+    </script>
+  </body>
+</html>

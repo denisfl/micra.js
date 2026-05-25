@@ -27,8 +27,11 @@ jobs:
         run: |
           mkdir _site
           cp docs.html _site/index.html
+          cp bench.html _site/bench.html
           cp -r assets _site/assets
           cp -r dist _site/dist
+          if [ -d components ]; then cp -r components _site/components; fi
+          if [ -d recipes ];    then cp -r recipes    _site/recipes;    fi
 
       - uses: actions/configure-pages@v5
 
