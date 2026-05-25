@@ -221,7 +221,7 @@
             c = t.height - d - 24;
           ((e.fillStyle = i[n]),
             e.fillRect(o, c, l, d),
-            (e.fillStyle = "#1a1a18"),
+            (e.fillStyle = "#333"),
             (e.font =
               '12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'),
             e.fillText(String(r), o + 8, c - 8),
