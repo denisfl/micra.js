@@ -85,7 +85,6 @@ body {
   width: var(--sidebar-w);
   flex-shrink: 0;
   background: var(--surface);
-  border-right: 1px solid var(--border);
   padding: var(--sp-6) 0;
   position: sticky;
   top: 0;
@@ -102,7 +101,6 @@ body {
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--text);
-  border-bottom: 1px solid var(--border);
   margin-bottom: var(--sp-2);
 }
 
@@ -928,6 +926,10 @@ canvas {
   border-top: 1px solid var(--border);
   font-size: var(--text-sm);
   color: var(--muted);
+  padding: var(--sp-7) var(--content-pad);
+  max-width: var(--content-max);
+  width: 100%;
+  margin: 0 auto;
 }
 
 .footer-left {
@@ -1104,7 +1106,6 @@ td {
     position: sticky;
     top: 0;
     border-right: none;
-    border-bottom: 1px solid var(--border);
     padding: var(--sp-3) 0;
     z-index: 100;
   }
@@ -2174,12 +2175,15 @@ td {
   margin-bottom: var(--sp-3);
 }
 
+.component-section ul,
+.component-section ol,
 .recipe-section ul,
 .recipe-section ol {
   margin-left: var(--sp-5);
 }
 
-.recipe-section li {
+.recipe-section li,
+.component-section li {
   margin-bottom: var(--sp-3);
 }
 
