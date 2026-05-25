@@ -115,11 +115,11 @@
   state: { checked: false, label: '', disabled: false },
 
   onCreate() {
+    // this.prop() auto-casts "true"/"false" to booleans, so a default of
+    // `false` covers both "attribute missing" and "data-checked='false'".
     this.state.label    = this.prop('label', '')
-    this.state.checked  = this.prop('checked', false) === true
-                       || this.prop('checked') === 'true'
-    this.state.disabled = this.prop('disabled', false) === true
-                       || this.prop('disabled') === 'true'
+    this.state.checked  = this.prop('checked', false)
+    this.state.disabled = this.prop('disabled', false)
   },
 
   flip() {
@@ -212,8 +212,8 @@
         state: { checked: false, label: "", disabled: false },
         onCreate() {
           this.state.label    = this.prop("label", "");
-          this.state.checked  = this.prop("checked") === "true" || this.prop("checked") === true;
-          this.state.disabled = this.prop("disabled") === "true" || this.prop("disabled") === true;
+          this.state.checked  = this.prop("checked", false);
+          this.state.disabled = this.prop("disabled", false);
         },
         flip() {
           if (this.state.disabled) return;

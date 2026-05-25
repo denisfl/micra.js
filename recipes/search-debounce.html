@@ -100,9 +100,11 @@
   &lt;p data-if="status === 'loading'"&gt;Searching…&lt;/p&gt;
   &lt;p data-if="status === 'empty'"  &gt;No matches.&lt;/p&gt;
 
-  &lt;template data-if="status === 'done'" data-each="results" data-key="code"&gt;
-    &lt;div data-text="item.name"&gt;&lt;/div&gt;
-  &lt;/template&gt;
+  &lt;div data-if="status === 'done'"&gt;
+    &lt;template data-each="results" data-key="code"&gt;
+      &lt;div data-text="item.name"&gt;&lt;/div&gt;
+    &lt;/template&gt;
+  &lt;/div&gt;
 &lt;/div&gt;</code></pre>
 
             <pre><code>Micra.define('country-search', {

@@ -135,12 +135,13 @@
   },
 
   onCreate() {
+    // this.prop() auto-casts numeric strings to Number — no manual cast needed.
     this.state.label  = this.prop('label', '')
     this.state.suffix = this.prop('suffix', '')
-    this.state.min    = Number(this.prop('min', 0))
-    this.state.max    = Number(this.prop('max', 100))
-    this.state.step   = Number(this.prop('step', 1))
-    this.state.value  = Number(this.prop('value', this.state.min))
+    this.state.min    = this.prop('min',  0)
+    this.state.max    = this.prop('max',  100)
+    this.state.step   = this.prop('step', 1)
+    this.state.value  = this.prop('value', this.state.min)
   },
 
   // derived percentage for the WebKit fill track
@@ -179,13 +180,16 @@
                 <span class="inline-code">emit() { Micra.emit('slider:change', this.state.value) }</span>.
               </li>
               <li>
-                <strong>Two-way binding gotcha.</strong>
-                <span class="inline-code">data-model</span> writes numbers as
-                strings — that's why every numeric prop is cast through
-                <span class="inline-code">Number()</span> on read. Comparisons
-                and arithmetic on the value field still need
-                <span class="inline-code">Number(...)</span> if you mix it
-                with min/max from props.
+                <strong>Numeric two-way binding.</strong>
+                <span class="inline-code">data-model</span> on
+                <span class="inline-code">type="range"</span> /
+                <span class="inline-code">type="number"</span> writes the
+                input's <span class="inline-code">valueAsNumber</span>, not a
+                string — so state.value stays numeric without manual casting.
+                <span class="inline-code">this.prop()</span> auto-casts
+                numeric strings too, so min/max/step from
+                <span class="inline-code">data-*</span> attributes arrive as
+                numbers as well.
               </li>
             </ul>
           </section>
@@ -204,10 +208,16 @@
               </li>
               <li>
                 Don't bind <span class="inline-code">style:</span> as a
-                concatenated string if you have multiple style segments —
-                pass an object:
-                <span class="inline-code">style:{ '--fill': percent() + '%' }</span>.
-                The string form here works because it's the only style we set.
+                concatenated string when the element has other inline styles.
+                <span class="inline-code">applyBind</span> calls
+                <span class="inline-code">setAttribute('style', …)</span>,
+                which replaces the <em>entire</em> attribute and wipes any
+                pre-existing inline rules. For mixing with other inline
+                styles, pass an object —
+                <span class="inline-code">style:{ '--fill': percent() + '%' }</span>
+                — which Micra applies via
+                <span class="inline-code">Object.assign(el.style, val)</span>
+                and merges instead of replacing.
               </li>
             </ul>
           </section>
@@ -237,14 +247,13 @@
         onCreate() {
           this.state.label  = this.prop("label", "");
           this.state.suffix = this.prop("suffix", "");
-          this.state.min    = Number(this.prop("min", 0));
-          this.state.max    = Number(this.prop("max", 100));
-          this.state.step   = Number(this.prop("step", 1));
-          this.state.value  = Number(this.prop("value", this.state.min));
+          this.state.min    = this.prop("min",  0);
+          this.state.max    = this.prop("max",  100);
+          this.state.step   = this.prop("step", 1);
+          this.state.value  = this.prop("value", this.state.min);
         },
         percent() {
-          const value = Number(this.state.value);
-          const { min, max } = this.state;
+          const { value, min, max } = this.state;
           if (max === min) return 0;
           return Math.round(((value - min) / (max - min)) * 100);
         },

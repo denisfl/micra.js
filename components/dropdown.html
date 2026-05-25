@@ -204,9 +204,13 @@ Micra.define('dropdown-display', {
                 sources of truth = drift.
               </li>
               <li>
-                Don't use <span class="inline-code">data-show</span> for the
-                menu unless you have a real reason — keyboard focus reaches
-                hidden buttons.
+                Prefer <span class="inline-code">data-if</span> over
+                <span class="inline-code">data-show</span> for the menu.
+                <span class="inline-code">display:none</span> keeps the
+                hidden items in the accessibility tree — some screen
+                readers still announce them — and grows the DOM for a
+                feature that's mostly closed. Mounting only when open is
+                cleaner.
               </li>
               <li>
                 The outside-click listener fires for clicks on the toggle
