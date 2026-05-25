@@ -1,4 +1,4 @@
-/* Micra.js v2.0.0 — https://github.com/micra-js/micra — MIT */
+/* Micra.js v2.1.0 — https://github.com/micra-js/micra — MIT */
 "use strict";
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;

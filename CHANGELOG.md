@@ -4,6 +4,29 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] — 2026-05-25
+
+### Added
+
+- **`this.fetch(url, { signal })` now forwards `AbortSignal` to the native
+  `fetch()`.** Previously the `signal` option was treated as any other
+  GET-option and serialized into the URL as `&signal=[object AbortSignal]`,
+  while never reaching the underlying request — so abort silently did
+  nothing. After this release:
+  - `signal` passes through verbatim to native `fetch()`.
+  - `signal` is excluded from the GET-querystring serialization loop.
+  - `AbortController#abort()` rejects the in-flight request with an
+    `AbortError`, matching native semantics.
+  - Enables the canonical search-debounce pattern (drop a stale request when
+    a fresher query arrives) without dropping to native `fetch` manually.
+  - Migration: none — purely additive, the previous URL-serialization
+    behaviour was a bug.
+
+### Tests
+
+- 76 new tests for the components and recipes shipped on the docs site
+  (14 components + 6 recipes). Total suite: 235 tests across 13 files.
+
 ## [2.0.0] — 2026-05-24
 
 ### Breaking
