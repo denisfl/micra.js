@@ -11,11 +11,57 @@
     <title>Modal — Micra.js Components</title>
   </head>
   <body>
-    <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
-      <symbol id="icon-bars-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" /></symbol>
-      <symbol id="icon-x-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18 18 6M6 6l12 12" /></symbol>
-      <symbol id="icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></symbol>
-      <symbol id="icon-rectangle-stack" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6.878V6a2.25 2.25 0 0 1 2.25-2.25h7.5A2.25 2.25 0 0 1 18 6v.878m-12 0c.235-.083.487-.128.75-.128h10.5c.263 0 .515.045.75.128m-12 0A2.25 2.25 0 0 0 4.5 9v.878m13.5-3A2.25 2.25 0 0 1 19.5 9v.878m0 0a2.246 2.246 0 0 0-.75-.128H5.25c-.263 0-.515.045-.75.128m15 0A2.25 2.25 0 0 1 21 12v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6c0-.98.626-1.813 1.5-2.122" /></symbol>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      style="display: none"
+      aria-hidden="true"
+    >
+      <symbol
+        id="icon-bars-3"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
+      </symbol>
+      <symbol
+        id="icon-x-mark"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M6 18 18 6M6 6l12 12" />
+      </symbol>
+      <symbol
+        id="icon-arrow-left"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      </symbol>
+      <symbol
+        id="icon-rectangle-stack"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path
+          d="M6 6.878V6a2.25 2.25 0 0 1 2.25-2.25h7.5A2.25 2.25 0 0 1 18 6v.878m-12 0c.235-.083.487-.128.75-.128h10.5c.263 0 .515.045.75.128m-12 0A2.25 2.25 0 0 0 4.5 9v.878m13.5-3A2.25 2.25 0 0 1 19.5 9v.878m0 0a2.246 2.246 0 0 0-.75-.128H5.25c-.263 0-.515.045-.75.128m15 0A2.25 2.25 0 0 1 21 12v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6c0-.98.626-1.813 1.5-2.122"
+        />
+      </symbol>
     </svg>
 
     <div class="app">
@@ -23,21 +69,31 @@
         <div class="sidebar-logo" data-class="open:open">
           <strong>Micra<span>.js</span></strong>
           <button class="menu-toggle" aria-label="Toggle menu" @click="toggle">
-            <svg class="icon" aria-hidden="true" data-if="!open"><use href="#icon-bars-3"></use></svg>
-            <svg class="icon" aria-hidden="true" data-if="open"><use href="#icon-x-mark"></use></svg>
+            <svg class="icon" aria-hidden="true" data-if="!open">
+              <use href="#icon-bars-3"></use>
+            </svg>
+            <svg class="icon" aria-hidden="true" data-if="open">
+              <use href="#icon-x-mark"></use>
+            </svg>
           </button>
         </div>
         <nav class="sidebar-nav" data-class="open:open">
-          <a href="../docs.html" class="sidebar-section-link">
-            <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+          <a href="/" class="sidebar-section-link">
+            <svg class="icon icon-sm" aria-hidden="true">
+              <use href="#icon-arrow-left"></use>
+            </svg>
             Back to docs
           </a>
           <span class="sidebar-group">Overlays</span>
-          <a href="./modal.html" class="active"><span class="dot"></span>Modal</a>
+          <a href="./modal.html" class="active"
+            ><span class="dot"></span>Modal</a
+          >
           <a href="./dropdown.html"><span class="dot"></span>Dropdown</a>
           <a href="./tooltip.html"><span class="dot"></span>Tooltip</a>
           <a href="./toast.html"><span class="dot"></span>Toast</a>
-          <a href="./command-palette.html"><span class="dot"></span>Command palette</a>
+          <a href="./command-palette.html"
+            ><span class="dot"></span>Command palette</a
+          >
           <span class="sidebar-group">Navigation</span>
           <a href="./tabs.html"><span class="dot"></span>Tabs</a>
           <a href="./accordion.html"><span class="dot"></span>Accordion</a>
@@ -60,7 +116,8 @@
             <p>
               Centered dialog with a dimmed backdrop. Closes on Escape and on
               backdrop click, locks body scroll while open, restores it on
-              close. Built entirely from <span class="inline-code">data-if</span>
+              close. Built entirely from
+              <span class="inline-code">data-if</span>
               and a single document-level listener — no portal, no library.
             </p>
           </section>
@@ -69,12 +126,23 @@
             <h3>Live preview</h3>
             <div class="component-preview" data-component="modal-demo">
               <button class="btn btn-primary" @click="open">Open dialog</button>
-              <div class="modal-backdrop" data-if="visible" @click.self="cancel">
-                <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="m-title">
+              <div
+                class="modal-backdrop"
+                data-if="visible"
+                @click.self="cancel"
+              >
+                <div
+                  class="modal-dialog"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="m-title"
+                >
                   <header class="modal-header">
                     <h3 id="m-title">Delete project?</h3>
                     <button class="icon-btn" aria-label="Close" @click="cancel">
-                      <svg class="icon" aria-hidden="true"><use href="#icon-x-mark"></use></svg>
+                      <svg class="icon" aria-hidden="true">
+                        <use href="#icon-x-mark"></use>
+                      </svg>
                     </button>
                   </header>
                   <div class="modal-body">
@@ -83,11 +151,18 @@
                   </div>
                   <footer class="modal-footer">
                     <button class="btn" @click="cancel">Cancel</button>
-                    <button class="btn btn-primary" @click="confirm">Delete</button>
+                    <button class="btn btn-primary" @click="confirm">
+                      Delete
+                    </button>
                   </footer>
                 </div>
               </div>
-              <p class="hint" data-if="lastAction" style="margin-left: var(--sp-4)" data-text="'Last action: ' + lastAction"></p>
+              <p
+                class="hint"
+                data-if="lastAction"
+                style="margin-left: var(--sp-4)"
+                data-text="'Last action: ' + lastAction"
+              ></p>
             </div>
           </section>
 
@@ -159,8 +234,8 @@
               <li>
                 <strong>Backdrop click closes.</strong>
                 <span class="inline-code">@click.self="close"</span> fires only
-                when the click target is the backdrop itself — clicks inside
-                the dialog don't bubble through.
+                when the click target is the backdrop itself — clicks inside the
+                dialog don't bubble through.
               </li>
               <li>
                 <strong>Escape closes.</strong> Single document-level listener
@@ -170,11 +245,13 @@
               </li>
               <li>
                 <strong>Body scroll lock.</strong>
-                <span class="inline-code">document.body.style.overflow = 'hidden'</span>
+                <span class="inline-code"
+                  >document.body.style.overflow = 'hidden'</span
+                >
                 while open. Always reset in
                 <span class="inline-code">close</span> AND
-                <span class="inline-code">onDestroy</span> so the page can't
-                end up frozen if the instance is torn down with the modal open.
+                <span class="inline-code">onDestroy</span> so the page can't end
+                up frozen if the instance is torn down with the modal open.
               </li>
               <li>
                 <strong>Slot content.</strong> Any markup inside the dialog
@@ -185,7 +262,9 @@
               </li>
               <li>
                 <strong>Bus events.</strong> Emit
-                <span class="inline-code">Micra.emit('modal:open', payload)</span>
+                <span class="inline-code"
+                  >Micra.emit('modal:open', payload)</span
+                >
                 from another component to drive the modal — combine with
                 <span class="inline-code">this.on()</span> in
                 <span class="inline-code">onCreate</span> for cross-component
@@ -224,7 +303,9 @@
         <footer class="doc-footer">
           <div class="footer-left">
             <a href="./" class="btn">
-              <svg class="icon" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+              <svg class="icon" aria-hidden="true">
+                <use href="#icon-arrow-left"></use>
+              </svg>
               <span>All components</span>
             </a>
           </div>
@@ -236,8 +317,12 @@
     <script>
       Micra.define("sidebar-menu", {
         state: { open: false },
-        toggle() { this.state.open = !this.state.open },
-        close()  { this.state.open = false },
+        toggle() {
+          this.state.open = !this.state.open;
+        },
+        close() {
+          this.state.open = false;
+        },
       });
 
       Micra.define("modal-demo", {
@@ -275,7 +360,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        document.querySelectorAll("pre code").forEach((el) => hljs.highlightElement(el));
+        document
+          .querySelectorAll("pre code")
+          .forEach((el) => hljs.highlightElement(el));
       });
     </script>
   </body>

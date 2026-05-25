@@ -4,14 +4,51 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="../assets/styles.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css"
+    />
     <title>Form validation recipe — Micra.js</title>
   </head>
   <body>
-    <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
-      <symbol id="icon-bars-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" /></symbol>
-      <symbol id="icon-x-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18 18 6M6 6l12 12" /></symbol>
-      <symbol id="icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></symbol>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      style="display: none"
+      aria-hidden="true"
+    >
+      <symbol
+        id="icon-bars-3"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
+      </symbol>
+      <symbol
+        id="icon-x-mark"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M6 18 18 6M6 6l12 12" />
+      </symbol>
+      <symbol
+        id="icon-arrow-left"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      </symbol>
     </svg>
 
     <div class="app">
@@ -19,22 +56,36 @@
         <div class="sidebar-logo" data-class="open:open">
           <strong>Micra<span>.js</span></strong>
           <button class="menu-toggle" aria-label="Toggle menu" @click="toggle">
-            <svg class="icon" aria-hidden="true" data-if="!open"><use href="#icon-bars-3"></use></svg>
-            <svg class="icon" aria-hidden="true" data-if="open"><use href="#icon-x-mark"></use></svg>
+            <svg class="icon" aria-hidden="true" data-if="!open">
+              <use href="#icon-bars-3"></use>
+            </svg>
+            <svg class="icon" aria-hidden="true" data-if="open">
+              <use href="#icon-x-mark"></use>
+            </svg>
           </button>
         </div>
         <nav class="sidebar-nav" data-class="open:open">
-          <a href="../docs.html" class="sidebar-section-link">
-            <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+          <a href="/" class="sidebar-section-link">
+            <svg class="icon icon-sm" aria-hidden="true">
+              <use href="#icon-arrow-left"></use>
+            </svg>
             Back to docs
           </a>
           <span class="sidebar-group">Recipes</span>
           <a href="./todo-app.html"><span class="dot"></span>Todo app</a>
           <a href="./sse.html"><span class="dot"></span>Server-Sent Events</a>
-          <a href="./form-validation.html" class="active"><span class="dot"></span>Form validation</a>
-          <a href="./search-debounce.html"><span class="dot"></span>Search + debounce</a>
-          <a href="./optimistic-updates.html"><span class="dot"></span>Optimistic updates</a>
-          <a href="./routing.html"><span class="dot"></span>Routing + URL sync</a>
+          <a href="./form-validation.html" class="active"
+            ><span class="dot"></span>Form validation</a
+          >
+          <a href="./search-debounce.html"
+            ><span class="dot"></span>Search + debounce</a
+          >
+          <a href="./optimistic-updates.html"
+            ><span class="dot"></span>Optimistic updates</a
+          >
+          <a href="./routing.html"
+            ><span class="dot"></span>Routing + URL sync</a
+          >
         </nav>
       </aside>
 
@@ -44,12 +95,14 @@
             <h2>Recipe: Form with server validation</h2>
             <p>
               Sign-up form with three fields, per-field error messages from a
-              server 422 response, and a four-state submit button
-              (<span class="inline-code">idle</span> →
-              <span class="inline-code">submitting</span> →
+              server 422 response, and a four-state submit button (<span
+                class="inline-code"
+                >idle</span
+              >
+              → <span class="inline-code">submitting</span> →
               <span class="inline-code">success</span> /
-              <span class="inline-code">error</span>). No validation library
-              — server is the source of truth, client just renders what comes
+              <span class="inline-code">error</span>). No validation library —
+              server is the source of truth, client just renders what comes
               back.
             </p>
             <div class="recipe-meta">
@@ -62,7 +115,11 @@
           <section class="recipe-section">
             <h3>Live preview</h3>
             <div class="component-preview preview-left">
-              <form class="signup-form" data-component="signup-recipe" @submit.prevent="submit">
+              <form
+                class="signup-form"
+                data-component="signup-recipe"
+                @submit.prevent="submit"
+              >
                 <div class="field-group">
                   <label class="field-label" for="sr-name">Full name</label>
                   <input
@@ -73,7 +130,11 @@
                     placeholder="Ada Lovelace"
                     autocomplete="name"
                   />
-                  <span class="field-error" data-if="errorFor('name')" data-text="errorFor('name')"></span>
+                  <span
+                    class="field-error"
+                    data-if="errorFor('name')"
+                    data-text="errorFor('name')"
+                  ></span>
                 </div>
 
                 <div class="field-group">
@@ -87,8 +148,15 @@
                     placeholder="ada@example.com"
                     autocomplete="email"
                   />
-                  <span class="field-error" data-if="errorFor('email')" data-text="errorFor('email')"></span>
-                  <span class="field-hint" data-if="!errorFor('email')">Try "taken@example.com" to see a server-side conflict.</span>
+                  <span
+                    class="field-error"
+                    data-if="errorFor('email')"
+                    data-text="errorFor('email')"
+                  ></span>
+                  <span class="field-hint" data-if="!errorFor('email')"
+                    >Try "taken@example.com" to see a server-side
+                    conflict.</span
+                  >
                 </div>
 
                 <div class="field-group">
@@ -102,11 +170,19 @@
                     placeholder="At least 8 characters"
                     autocomplete="new-password"
                   />
-                  <span class="field-error" data-if="errorFor('password')" data-text="errorFor('password')"></span>
+                  <span
+                    class="field-error"
+                    data-if="errorFor('password')"
+                    data-text="errorFor('password')"
+                  ></span>
                 </div>
 
-                <div data-if="status === 'success'" class="form-status success">Account created — check your inbox.</div>
-                <div data-if="status === 'error'"   class="form-status error"  >Network error. Try again.</div>
+                <div data-if="status === 'success'" class="form-status success">
+                  Account created — check your inbox.
+                </div>
+                <div data-if="status === 'error'" class="form-status error">
+                  Network error. Try again.
+                </div>
 
                 <button
                   class="btn btn-primary"
@@ -198,9 +274,7 @@
 
           <section class="recipe-section">
             <h3>Server contract</h3>
-            <p>
-              The recipe assumes a JSON 422 with this shape:
-            </p>
+            <p>The recipe assumes a JSON 422 with this shape:</p>
             <pre><code>HTTP/1.1 422 Unprocessable Entity
 Content-Type: application/json
 
@@ -216,11 +290,11 @@ Content-Type: application/json
               response, carrying <span class="inline-code">e.status</span>
               (the HTTP status code) and
               <span class="inline-code">e.response</span> (the raw
-              <span class="inline-code">Response</span>). Parse the JSON
-              body yourself with
-              <span class="inline-code">await e.response.json()</span> —
-              that keeps Micra's error type small and lets you control
-              how strict the parsing is.
+              <span class="inline-code">Response</span>). Parse the JSON body
+              yourself with
+              <span class="inline-code">await e.response.json()</span> — that
+              keeps Micra's error type small and lets you control how strict the
+              parsing is.
             </p>
           </section>
 
@@ -237,28 +311,58 @@ Content-Type: application/json
               <tbody>
                 <tr>
                   <td>Per-field error display</td>
-                  <td>boolean flags <span class="inline-code">emailInvalid</span> + <span class="inline-code">emailError</span> kept in sync</td>
-                  <td>single <span class="inline-code">errors</span> object, <span class="inline-code">errorFor(field)</span> method</td>
+                  <td>
+                    boolean flags
+                    <span class="inline-code">emailInvalid</span> +
+                    <span class="inline-code">emailError</span> kept in sync
+                  </td>
+                  <td>
+                    single <span class="inline-code">errors</span> object,
+                    <span class="inline-code">errorFor(field)</span> method
+                  </td>
                 </tr>
                 <tr>
                   <td>Submit button label</td>
-                  <td><span class="inline-code">btnLabel</span> state field updated in submit/finally</td>
-                  <td><span class="inline-code">data-text="status === 'submitting' ? … : …"</span></td>
+                  <td>
+                    <span class="inline-code">btnLabel</span> state field
+                    updated in submit/finally
+                  </td>
+                  <td>
+                    <span class="inline-code"
+                      >data-text="status === 'submitting' ? … : …"</span
+                    >
+                  </td>
                 </tr>
                 <tr>
                   <td>Disable while submitting</td>
-                  <td><span class="inline-code">btnDisabled</span> state field</td>
-                  <td><span class="inline-code">data-bind="disabled:status === 'submitting'"</span></td>
+                  <td>
+                    <span class="inline-code">btnDisabled</span> state field
+                  </td>
+                  <td>
+                    <span class="inline-code"
+                      >data-bind="disabled:status === 'submitting'"</span
+                    >
+                  </td>
                 </tr>
                 <tr>
                   <td>Client validation library</td>
                   <td>zod / yup / joi + sync rules</td>
-                  <td>server validates, client renders — one source of truth</td>
+                  <td>
+                    server validates, client renders — one source of truth
+                  </td>
                 </tr>
                 <tr>
                   <td>Reset errors on each submit</td>
-                  <td><span class="inline-code">this.state.errors.email = null</span> (invisible to proxy)</td>
-                  <td><span class="inline-code">this.state.errors = {}</span> — replace top-level</td>
+                  <td>
+                    <span class="inline-code"
+                      >this.state.errors.email = null</span
+                    >
+                    (invisible to proxy)
+                  </td>
+                  <td>
+                    <span class="inline-code">this.state.errors = {}</span> —
+                    replace top-level
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -268,35 +372,49 @@ Content-Type: application/json
             <h3>Pitfalls</h3>
             <ul>
               <li>
-                <strong>Never mutate <span class="inline-code">errors</span> in place.</strong>
+                <strong
+                  >Never mutate <span class="inline-code">errors</span> in
+                  place.</strong
+                >
                 <span class="inline-code">this.state.errors.email = 'msg'</span>
                 is a nested write — the proxy doesn't see it. Always
                 <em>replace</em>:
-                <span class="inline-code">this.state.errors = { ...this.state.errors, email: 'msg' }</span>
+                <span class="inline-code"
+                  >this.state.errors = { ...this.state.errors, email: 'msg'
+                  }</span
+                >
                 or full replace as in <span class="inline-code">submit</span>.
               </li>
               <li>
-                <strong>Don't add client validation that duplicates the server</strong> —
-                the moment server rules drift (new password policy, blocked
-                email domains), client and server disagree. If you want
-                instant feedback, debounce a
-                <span class="inline-code">/api/check-email</span> probe on
-                blur, but the source of truth is still the server.
+                <strong
+                  >Don't add client validation that duplicates the
+                  server</strong
+                >
+                — the moment server rules drift (new password policy, blocked
+                email domains), client and server disagree. If you want instant
+                feedback, debounce a
+                <span class="inline-code">/api/check-email</span> probe on blur,
+                but the source of truth is still the server.
               </li>
               <li>
-                <strong>Don't reset
-                <span class="inline-code">status</span> in
-                <span class="inline-code">finally</span></strong> — a 422
-                response is an "OK, here are the errors" state, not an error
-                state. Leaving <span class="inline-code">status === 'idle'</span>
+                <strong
+                  >Don't reset <span class="inline-code">status</span> in
+                  <span class="inline-code">finally</span></strong
+                >
+                — a 422 response is an "OK, here are the errors" state, not an
+                error state. Leaving
+                <span class="inline-code">status === 'idle'</span>
                 after 422 lets the user retry naturally.
               </li>
               <li>
-                <strong>Don't bind <span class="inline-code">@keydown.enter</span></strong>
+                <strong
+                  >Don't bind
+                  <span class="inline-code">@keydown.enter</span></strong
+                >
                 — let the form submit normally and use
-                <span class="inline-code">@submit.prevent</span>. Enter inside
-                a single-field input also submits, and the browser handles
-                that for free.
+                <span class="inline-code">@submit.prevent</span>. Enter inside a
+                single-field input also submits, and the browser handles that
+                for free.
               </li>
             </ul>
           </section>
@@ -305,7 +423,9 @@ Content-Type: application/json
         <footer class="doc-footer">
           <div class="footer-left">
             <a href="./" class="btn">
-              <svg class="icon" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+              <svg class="icon" aria-hidden="true">
+                <use href="#icon-arrow-left"></use>
+              </svg>
               <span>All recipes</span>
             </a>
           </div>
@@ -325,20 +445,27 @@ Content-Type: application/json
             setTimeout(() => {
               const body = JSON.parse(opts.body);
               const errors = {};
-              if (!body.name?.trim())       errors.name     = "is required";
-              if (!body.email?.includes("@")) errors.email    = "must be a valid email";
-              if (body.email === "taken@example.com") errors.email = "is already taken";
-              if ((body.password || "").length < 8) errors.password = "must be at least 8 characters";
+              if (!body.name?.trim()) errors.name = "is required";
+              if (!body.email?.includes("@"))
+                errors.email = "must be a valid email";
+              if (body.email === "taken@example.com")
+                errors.email = "is already taken";
+              if ((body.password || "").length < 8)
+                errors.password = "must be at least 8 characters";
               if (Object.keys(errors).length) {
-                resolve(new Response(JSON.stringify({ errors }), {
-                  status: 422,
-                  headers: { "content-type": "application/json" },
-                }));
+                resolve(
+                  new Response(JSON.stringify({ errors }), {
+                    status: 422,
+                    headers: { "content-type": "application/json" },
+                  }),
+                );
               } else {
-                resolve(new Response(JSON.stringify({ ok: true }), {
-                  status: 200,
-                  headers: { "content-type": "application/json" },
-                }));
+                resolve(
+                  new Response(JSON.stringify({ ok: true }), {
+                    status: 200,
+                    headers: { "content-type": "application/json" },
+                  }),
+                );
               }
             }, 450);
           });
@@ -348,8 +475,12 @@ Content-Type: application/json
 
       Micra.define("sidebar-menu", {
         state: { open: false },
-        toggle() { this.state.open = !this.state.open },
-        close()  { this.state.open = false },
+        toggle() {
+          this.state.open = !this.state.open;
+        },
+        close() {
+          this.state.open = false;
+        },
       });
 
       Micra.define("signup-recipe", {
@@ -370,8 +501,8 @@ Content-Type: application/json
             await this.fetch("/api/signup", {
               method: "POST",
               body: {
-                name:     this.state.name,
-                email:    this.state.email,
+                name: this.state.name,
+                email: this.state.email,
                 password: this.state.password,
               },
             });
@@ -393,7 +524,9 @@ Content-Type: application/json
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        document.querySelectorAll("pre code").forEach((el) => hljs.highlightElement(el));
+        document
+          .querySelectorAll("pre code")
+          .forEach((el) => hljs.highlightElement(el));
       });
     </script>
   </body>

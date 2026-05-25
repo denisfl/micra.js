@@ -4,15 +4,64 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="../assets/styles.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css"
+    />
     <title>Search + debounce recipe — Micra.js</title>
   </head>
   <body>
-    <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
-      <symbol id="icon-bars-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" /></symbol>
-      <symbol id="icon-x-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18 18 6M6 6l12 12" /></symbol>
-      <symbol id="icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></symbol>
-      <symbol id="icon-magnifying-glass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></symbol>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      style="display: none"
+      aria-hidden="true"
+    >
+      <symbol
+        id="icon-bars-3"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
+      </symbol>
+      <symbol
+        id="icon-x-mark"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M6 18 18 6M6 6l12 12" />
+      </symbol>
+      <symbol
+        id="icon-arrow-left"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      </symbol>
+      <symbol
+        id="icon-magnifying-glass"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path
+          d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+        />
+      </symbol>
     </svg>
 
     <div class="app">
@@ -20,22 +69,36 @@
         <div class="sidebar-logo" data-class="open:open">
           <strong>Micra<span>.js</span></strong>
           <button class="menu-toggle" aria-label="Toggle menu" @click="toggle">
-            <svg class="icon" aria-hidden="true" data-if="!open"><use href="#icon-bars-3"></use></svg>
-            <svg class="icon" aria-hidden="true" data-if="open"><use href="#icon-x-mark"></use></svg>
+            <svg class="icon" aria-hidden="true" data-if="!open">
+              <use href="#icon-bars-3"></use>
+            </svg>
+            <svg class="icon" aria-hidden="true" data-if="open">
+              <use href="#icon-x-mark"></use>
+            </svg>
           </button>
         </div>
         <nav class="sidebar-nav" data-class="open:open">
-          <a href="../docs.html" class="sidebar-section-link">
-            <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+          <a href="/" class="sidebar-section-link">
+            <svg class="icon icon-sm" aria-hidden="true">
+              <use href="#icon-arrow-left"></use>
+            </svg>
             Back to docs
           </a>
           <span class="sidebar-group">Recipes</span>
           <a href="./todo-app.html"><span class="dot"></span>Todo app</a>
           <a href="./sse.html"><span class="dot"></span>Server-Sent Events</a>
-          <a href="./form-validation.html"><span class="dot"></span>Form validation</a>
-          <a href="./search-debounce.html" class="active"><span class="dot"></span>Search + debounce</a>
-          <a href="./optimistic-updates.html"><span class="dot"></span>Optimistic updates</a>
-          <a href="./routing.html"><span class="dot"></span>Routing + URL sync</a>
+          <a href="./form-validation.html"
+            ><span class="dot"></span>Form validation</a
+          >
+          <a href="./search-debounce.html" class="active"
+            ><span class="dot"></span>Search + debounce</a
+          >
+          <a href="./optimistic-updates.html"
+            ><span class="dot"></span>Optimistic updates</a
+          >
+          <a href="./routing.html"
+            ><span class="dot"></span>Routing + URL sync</a
+          >
         </nav>
       </aside>
 
@@ -72,18 +135,30 @@
                     placeholder="Search countries…"
                     aria-label="Search countries"
                   />
-                  <svg class="icon combobox-chev" aria-hidden="true"><use href="#icon-magnifying-glass"></use></svg>
+                  <svg class="icon combobox-chev" aria-hidden="true">
+                    <use href="#icon-magnifying-glass"></use>
+                  </svg>
                 </div>
 
-                <p class="search-status" data-if="status === 'idle'">Start typing to search.</p>
-                <p class="search-status" data-if="status === 'loading'">Searching…</p>
-                <p class="search-status" data-if="status === 'empty'">No countries match "<span data-text="query"></span>"</p>
+                <p class="search-status" data-if="status === 'idle'">
+                  Start typing to search.
+                </p>
+                <p class="search-status" data-if="status === 'loading'">
+                  Searching…
+                </p>
+                <p class="search-status" data-if="status === 'empty'">
+                  No countries match "<span data-text="query"></span>"
+                </p>
 
                 <div class="search-results" data-if="status === 'done'">
                   <template data-each="results" data-key="code">
                     <div class="search-result">
                       <strong data-text="item.name"></strong>
-                      <span class="field-hint" style="margin-left: 0.5rem" data-text="item.region"></span>
+                      <span
+                        class="field-hint"
+                        style="margin-left: 0.5rem"
+                        data-text="item.region"
+                      ></span>
                     </div>
                   </template>
                 </div>
@@ -156,17 +231,17 @@
           </section>
 
           <section class="recipe-section">
-            <h3>Why
-              <span class="inline-code">@input</span> instead of
-              <span class="inline-code">data-model</span>?</h3>
+            <h3>
+              Why <span class="inline-code">@input</span> instead of
+              <span class="inline-code">data-model</span>?
+            </h3>
             <p>
-              <span class="inline-code">data-model</span> would two-way bind
-              the input, but you'd have no place to start the debounce timer
-              on each keystroke. Using
-              <span class="inline-code">@input</span> + manual
+              <span class="inline-code">data-model</span> would two-way bind the
+              input, but you'd have no place to start the debounce timer on each
+              keystroke. Using <span class="inline-code">@input</span> + manual
               <span class="inline-code">value:query</span> binding gives you
-              both the timer hook AND keeps the input value driven by state
-              — so programmatic
+              both the timer hook AND keeps the input value driven by state — so
+              programmatic
               <span class="inline-code">this.state.query = 'x'</span> still
               updates the input.
             </p>
@@ -176,42 +251,47 @@
             <h3>Pitfalls</h3>
             <ul>
               <li>
-                <strong>Don't skip the AbortController.</strong> Without it,
-                a slow first request can land
-                <em>after</em> a fast second one and clobber the visible
-                list with stale matches. The "1 in 50" bug.
+                <strong>Don't skip the AbortController.</strong> Without it, a
+                slow first request can land <em>after</em> a fast second one and
+                clobber the visible list with stale matches. The "1 in 50" bug.
               </li>
               <li>
-                <strong>Don't debounce inside
-                <span class="inline-code">data-model</span>'s
-                input event.</strong> Micra runs the
+                <strong
+                  >Don't debounce inside
+                  <span class="inline-code">data-model</span>'s input
+                  event.</strong
+                >
+                Micra runs the
                 <span class="inline-code">data-model</span> handler
                 synchronously to keep state in sync. Add your own
-                <span class="inline-code">@input</span> alongside if you
-                really need both — but the bind-only pattern above is
-                cleaner.
+                <span class="inline-code">@input</span> alongside if you really
+                need both — but the bind-only pattern above is cleaner.
               </li>
               <li>
                 <strong>Don't forget to clear the empty case.</strong>
-                Clearing the input must abort the in-flight request AND
-                clear <span class="inline-code">results</span> — otherwise
-                old matches linger when the user wipes their query.
+                Clearing the input must abort the in-flight request AND clear
+                <span class="inline-code">results</span> — otherwise old matches
+                linger when the user wipes their query.
               </li>
               <li>
-                <strong>Don't render
-                <span class="inline-code">results</span> alongside the
-                "empty" message.</strong> Each state branch is mutually
-                exclusive — gate on
+                <strong
+                  >Don't render
+                  <span class="inline-code">results</span> alongside the "empty"
+                  message.</strong
+                >
+                Each state branch is mutually exclusive — gate on
                 <span class="inline-code">status</span>, not on
                 <span class="inline-code">results.length</span> alone.
               </li>
               <li>
-                <strong>Always clean up in
-                <span class="inline-code">onDestroy</span>.</strong>
+                <strong
+                  >Always clean up in
+                  <span class="inline-code">onDestroy</span>.</strong
+                >
                 <span class="inline-code">clearTimeout</span> +
-                <span class="inline-code">abort()</span>. Otherwise a
-                pending request fires after teardown and writes to a state
-                that no longer drives any DOM.
+                <span class="inline-code">abort()</span>. Otherwise a pending
+                request fires after teardown and writes to a state that no
+                longer drives any DOM.
               </li>
             </ul>
           </section>
@@ -220,7 +300,9 @@
         <footer class="doc-footer">
           <div class="footer-left">
             <a href="./" class="btn">
-              <svg class="icon" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+              <svg class="icon" aria-hidden="true">
+                <use href="#icon-arrow-left"></use>
+              </svg>
               <span>All recipes</span>
             </a>
           </div>
@@ -232,44 +314,46 @@
     <script>
       // ── Mock backend for the live demo ───────────────────────────
       const COUNTRIES = [
-        { code: "AR", name: "Argentina",   region: "South America" },
-        { code: "AU", name: "Australia",   region: "Oceania" },
-        { code: "BR", name: "Brazil",      region: "South America" },
-        { code: "CA", name: "Canada",      region: "North America" },
-        { code: "CN", name: "China",       region: "Asia" },
-        { code: "DE", name: "Germany",     region: "Europe" },
-        { code: "ES", name: "Spain",       region: "Europe" },
-        { code: "FR", name: "France",      region: "Europe" },
+        { code: "AR", name: "Argentina", region: "South America" },
+        { code: "AU", name: "Australia", region: "Oceania" },
+        { code: "BR", name: "Brazil", region: "South America" },
+        { code: "CA", name: "Canada", region: "North America" },
+        { code: "CN", name: "China", region: "Asia" },
+        { code: "DE", name: "Germany", region: "Europe" },
+        { code: "ES", name: "Spain", region: "Europe" },
+        { code: "FR", name: "France", region: "Europe" },
         { code: "GB", name: "United Kingdom", region: "Europe" },
-        { code: "IN", name: "India",       region: "Asia" },
-        { code: "IT", name: "Italy",       region: "Europe" },
-        { code: "JP", name: "Japan",       region: "Asia" },
+        { code: "IN", name: "India", region: "Asia" },
+        { code: "IT", name: "Italy", region: "Europe" },
+        { code: "JP", name: "Japan", region: "Asia" },
         { code: "KR", name: "South Korea", region: "Asia" },
-        { code: "MX", name: "Mexico",      region: "North America" },
+        { code: "MX", name: "Mexico", region: "North America" },
         { code: "NL", name: "Netherlands", region: "Europe" },
-        { code: "NO", name: "Norway",      region: "Europe" },
-        { code: "PL", name: "Poland",      region: "Europe" },
-        { code: "PT", name: "Portugal",    region: "Europe" },
-        { code: "SE", name: "Sweden",      region: "Europe" },
-        { code: "TR", name: "Turkey",      region: "Asia" },
-        { code: "UA", name: "Ukraine",     region: "Europe" },
+        { code: "NO", name: "Norway", region: "Europe" },
+        { code: "PL", name: "Poland", region: "Europe" },
+        { code: "PT", name: "Portugal", region: "Europe" },
+        { code: "SE", name: "Sweden", region: "Europe" },
+        { code: "TR", name: "Turkey", region: "Asia" },
+        { code: "UA", name: "Ukraine", region: "Europe" },
         { code: "US", name: "United States", region: "North America" },
-        { code: "VN", name: "Vietnam",     region: "Asia" },
+        { code: "VN", name: "Vietnam", region: "Asia" },
       ];
 
       const _origFetch = window.fetch;
       window.fetch = (url, opts) => {
         if (typeof url === "string" && url.startsWith("/api/countries")) {
           const q = new URL("http://x" + url).searchParams.get("q") || "";
-          const matches = COUNTRIES.filter(c =>
-            c.name.toLowerCase().includes(q.toLowerCase())
+          const matches = COUNTRIES.filter((c) =>
+            c.name.toLowerCase().includes(q.toLowerCase()),
           );
           return new Promise((resolve, reject) => {
             const t = setTimeout(() => {
-              resolve(new Response(JSON.stringify(matches), {
-                status: 200,
-                headers: { "content-type": "application/json" },
-              }));
+              resolve(
+                new Response(JSON.stringify(matches), {
+                  status: 200,
+                  headers: { "content-type": "application/json" },
+                }),
+              );
             }, 350);
             if (opts?.signal) {
               opts.signal.addEventListener("abort", () => {
@@ -286,8 +370,12 @@
 
       Micra.define("sidebar-menu", {
         state: { open: false },
-        toggle() { this.state.open = !this.state.open },
-        close()  { this.state.open = false },
+        toggle() {
+          this.state.open = !this.state.open;
+        },
+        close() {
+          this.state.open = false;
+        },
       });
 
       Micra.define("search-recipe", {
@@ -333,7 +421,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        document.querySelectorAll("pre code").forEach((el) => hljs.highlightElement(el));
+        document
+          .querySelectorAll("pre code")
+          .forEach((el) => hljs.highlightElement(el));
       });
     </script>
   </body>

@@ -4,16 +4,73 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="../assets/styles.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css"
+    />
     <title>Date picker — Micra.js Components</title>
   </head>
   <body>
-    <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
-      <symbol id="icon-bars-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" /></symbol>
-      <symbol id="icon-x-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18 18 6M6 6l12 12" /></symbol>
-      <symbol id="icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></symbol>
-      <symbol id="icon-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m19.5 8.25-7.5 7.5-7.5-7.5" /></symbol>
-      <symbol id="icon-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m8.25 4.5 7.5 7.5-7.5 7.5" /></symbol>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      style="display: none"
+      aria-hidden="true"
+    >
+      <symbol
+        id="icon-bars-3"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
+      </symbol>
+      <symbol
+        id="icon-x-mark"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M6 18 18 6M6 6l12 12" />
+      </symbol>
+      <symbol
+        id="icon-arrow-left"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      </symbol>
+      <symbol
+        id="icon-chevron-down"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+      </symbol>
+      <symbol
+        id="icon-chevron-right"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+      </symbol>
     </svg>
 
     <div class="app">
@@ -21,13 +78,19 @@
         <div class="sidebar-logo" data-class="open:open">
           <strong>Micra<span>.js</span></strong>
           <button class="menu-toggle" aria-label="Toggle menu" @click="toggle">
-            <svg class="icon" aria-hidden="true" data-if="!open"><use href="#icon-bars-3"></use></svg>
-            <svg class="icon" aria-hidden="true" data-if="open"><use href="#icon-x-mark"></use></svg>
+            <svg class="icon" aria-hidden="true" data-if="!open">
+              <use href="#icon-bars-3"></use>
+            </svg>
+            <svg class="icon" aria-hidden="true" data-if="open">
+              <use href="#icon-x-mark"></use>
+            </svg>
           </button>
         </div>
         <nav class="sidebar-nav" data-class="open:open">
-          <a href="../docs.html" class="sidebar-section-link">
-            <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+          <a href="/" class="sidebar-section-link">
+            <svg class="icon icon-sm" aria-hidden="true">
+              <use href="#icon-arrow-left"></use>
+            </svg>
             Back to docs
           </a>
           <span class="sidebar-group">Overlays</span>
@@ -35,7 +98,9 @@
           <a href="./dropdown.html"><span class="dot"></span>Dropdown</a>
           <a href="./tooltip.html"><span class="dot"></span>Tooltip</a>
           <a href="./toast.html"><span class="dot"></span>Toast</a>
-          <a href="./command-palette.html"><span class="dot"></span>Command palette</a>
+          <a href="./command-palette.html"
+            ><span class="dot"></span>Command palette</a
+          >
           <span class="sidebar-group">Navigation</span>
           <a href="./tabs.html"><span class="dot"></span>Tabs</a>
           <a href="./accordion.html"><span class="dot"></span>Accordion</a>
@@ -44,7 +109,9 @@
           <a href="./combobox.html"><span class="dot"></span>Combobox</a>
           <a href="./toggle.html"><span class="dot"></span>Toggle</a>
           <a href="./tag-input.html"><span class="dot"></span>Tag input</a>
-          <a href="./date-picker.html" class="active"><span class="dot"></span>Date picker</a>
+          <a href="./date-picker.html" class="active"
+            ><span class="dot"></span>Date picker</a
+          >
           <a href="./slider.html"><span class="dot"></span>Slider</a>
           <span class="sidebar-group">Data</span>
           <a href="./table.html"><span class="dot"></span>Table</a>
@@ -60,8 +127,8 @@
               The grid is rendered from
               <span class="inline-code">days()</span> — a derived array of
               <span class="inline-code">{ day, iso, empty }</span> objects.
-              Selected and "today" states are decided per cell via methods,
-              not stored as flags.
+              Selected and "today" states are decided per cell via methods, not
+              stored as flags.
             </p>
           </section>
 
@@ -70,12 +137,28 @@
             <div class="component-preview preview-left">
               <div class="datepicker" data-component="datepicker-demo">
                 <div class="datepicker-header">
-                  <button class="icon-btn" aria-label="Previous month" @click="prevMonth">
-                    <svg class="icon" aria-hidden="true" style="transform: rotate(180deg)"><use href="#icon-chevron-right"></use></svg>
+                  <button
+                    class="icon-btn"
+                    aria-label="Previous month"
+                    @click="prevMonth"
+                  >
+                    <svg
+                      class="icon"
+                      aria-hidden="true"
+                      style="transform: rotate(180deg)"
+                    >
+                      <use href="#icon-chevron-right"></use>
+                    </svg>
                   </button>
                   <span class="datepicker-title" data-text="title()"></span>
-                  <button class="icon-btn" aria-label="Next month" @click="nextMonth">
-                    <svg class="icon" aria-hidden="true"><use href="#icon-chevron-right"></use></svg>
+                  <button
+                    class="icon-btn"
+                    aria-label="Next month"
+                    @click="nextMonth"
+                  >
+                    <svg class="icon" aria-hidden="true">
+                      <use href="#icon-chevron-right"></use>
+                    </svg>
                   </button>
                 </div>
                 <div class="datepicker-weekdays">
@@ -99,7 +182,11 @@
                   </template>
                 </div>
               </div>
-              <p class="hint" style="margin-top: var(--sp-4)" data-component="datepicker-display">
+              <p
+                class="hint"
+                style="margin-top: var(--sp-4)"
+                data-component="datepicker-display"
+              >
                 Picked: <strong data-text="value || '(none)'"></strong>
               </p>
             </div>
@@ -202,20 +289,20 @@
                 stale <span class="inline-code">Date</span> object.
               </li>
               <li>
-                <strong>Padding cells</strong> for the Monday-aligned grid
-                carry <span class="inline-code">empty: true</span> and a
-                synthetic <span class="inline-code">iso</span> like
+                <strong>Padding cells</strong> for the Monday-aligned grid carry
+                <span class="inline-code">empty: true</span> and a synthetic
+                <span class="inline-code">iso</span> like
                 <span class="inline-code">pad-3-0</span> so the keyed
-                <span class="inline-code">data-each</span> can diff them
-                without colliding with real dates.
+                <span class="inline-code">data-each</span> can diff them without
+                colliding with real dates.
               </li>
               <li>
                 <strong>Selected + today state</strong> are computed by
                 comparing each cell's <span class="inline-code">iso</span> to
                 <span class="inline-code">state.selected</span> /
                 <span class="inline-code">state.today</span> inside
-                <span class="inline-code">data-class</span> — never written
-                back to the day object.
+                <span class="inline-code">data-class</span> — never written back
+                to the day object.
               </li>
               <li>
                 <strong>Locale-aware title.</strong>
@@ -226,8 +313,8 @@
               </li>
               <li>
                 <strong>Bus handoff.</strong>
-                <span class="inline-code">'date:picked'</span> publishes the
-                ISO string so a form, a chart, or a fetch can react.
+                <span class="inline-code">'date:picked'</span> publishes the ISO
+                string so a form, a chart, or a fetch can react.
               </li>
             </ul>
           </section>
@@ -259,7 +346,9 @@
         <footer class="doc-footer">
           <div class="footer-left">
             <a href="./" class="btn">
-              <svg class="icon" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+              <svg class="icon" aria-hidden="true">
+                <use href="#icon-arrow-left"></use>
+              </svg>
               <span>All components</span>
             </a>
           </div>
@@ -271,8 +360,12 @@
     <script>
       Micra.define("sidebar-menu", {
         state: { open: false },
-        toggle() { this.state.open = !this.state.open },
-        close()  { this.state.open = false },
+        toggle() {
+          this.state.open = !this.state.open;
+        },
+        close() {
+          this.state.open = false;
+        },
       });
 
       Micra.define("datepicker-demo", {
@@ -287,13 +380,14 @@
         title() {
           const [y, m] = this.state.cursor.split("-").map(Number);
           return new Date(y, m - 1, 1).toLocaleString(undefined, {
-            month: "long", year: "numeric",
+            month: "long",
+            year: "numeric",
           });
         },
         days() {
           const [y, m] = this.state.cursor.split("-").map(Number);
           const first = new Date(y, m - 1, 1);
-          const last  = new Date(y, m, 0).getDate();
+          const last = new Date(y, m, 0).getDate();
           const lead = (first.getDay() + 6) % 7;
           const cells = [];
           for (let i = 0; i < lead; i++) {
@@ -307,11 +401,13 @@
         },
         prevMonth() {
           const [y, m] = this.state.cursor.split("-").map(Number);
-          this.state.cursor = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`;
+          this.state.cursor =
+            m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`;
         },
         nextMonth() {
           const [y, m] = this.state.cursor.split("-").map(Number);
-          this.state.cursor = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
+          this.state.cursor =
+            m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
         },
         pick(e) {
           const iso = e.currentTarget.dataset.iso;
@@ -324,7 +420,9 @@
       Micra.define("datepicker-display", {
         state: { value: "" },
         onCreate() {
-          this.on("date:picked", (iso) => { this.state.value = iso });
+          this.on("date:picked", (iso) => {
+            this.state.value = iso;
+          });
         },
       });
 
@@ -333,7 +431,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        document.querySelectorAll("pre code").forEach((el) => hljs.highlightElement(el));
+        document
+          .querySelectorAll("pre code")
+          .forEach((el) => hljs.highlightElement(el));
       });
     </script>
   </body>

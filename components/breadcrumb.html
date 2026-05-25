@@ -4,15 +4,62 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="../assets/styles.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css"
+    />
     <title>Breadcrumb — Micra.js Components</title>
   </head>
   <body>
-    <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
-      <symbol id="icon-bars-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" /></symbol>
-      <symbol id="icon-x-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18 18 6M6 6l12 12" /></symbol>
-      <symbol id="icon-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" /></symbol>
-      <symbol id="icon-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m8.25 4.5 7.5 7.5-7.5 7.5" /></symbol>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      style="display: none"
+      aria-hidden="true"
+    >
+      <symbol
+        id="icon-bars-3"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
+      </symbol>
+      <symbol
+        id="icon-x-mark"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M6 18 18 6M6 6l12 12" />
+      </symbol>
+      <symbol
+        id="icon-arrow-left"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      </symbol>
+      <symbol
+        id="icon-chevron-right"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+      </symbol>
     </svg>
 
     <div class="app">
@@ -20,13 +67,19 @@
         <div class="sidebar-logo" data-class="open:open">
           <strong>Micra<span>.js</span></strong>
           <button class="menu-toggle" aria-label="Toggle menu" @click="toggle">
-            <svg class="icon" aria-hidden="true" data-if="!open"><use href="#icon-bars-3"></use></svg>
-            <svg class="icon" aria-hidden="true" data-if="open"><use href="#icon-x-mark"></use></svg>
+            <svg class="icon" aria-hidden="true" data-if="!open">
+              <use href="#icon-bars-3"></use>
+            </svg>
+            <svg class="icon" aria-hidden="true" data-if="open">
+              <use href="#icon-x-mark"></use>
+            </svg>
           </button>
         </div>
         <nav class="sidebar-nav" data-class="open:open">
-          <a href="../docs.html" class="sidebar-section-link">
-            <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+          <a href="/" class="sidebar-section-link">
+            <svg class="icon icon-sm" aria-hidden="true">
+              <use href="#icon-arrow-left"></use>
+            </svg>
             Back to docs
           </a>
           <span class="sidebar-group">Overlays</span>
@@ -34,11 +87,15 @@
           <a href="./dropdown.html"><span class="dot"></span>Dropdown</a>
           <a href="./tooltip.html"><span class="dot"></span>Tooltip</a>
           <a href="./toast.html"><span class="dot"></span>Toast</a>
-          <a href="./command-palette.html"><span class="dot"></span>Command palette</a>
+          <a href="./command-palette.html"
+            ><span class="dot"></span>Command palette</a
+          >
           <span class="sidebar-group">Navigation</span>
           <a href="./tabs.html"><span class="dot"></span>Tabs</a>
           <a href="./accordion.html"><span class="dot"></span>Accordion</a>
-          <a href="./breadcrumb.html" class="active"><span class="dot"></span>Breadcrumb</a>
+          <a href="./breadcrumb.html" class="active"
+            ><span class="dot"></span>Breadcrumb</a
+          >
           <span class="sidebar-group">Forms</span>
           <a href="./combobox.html"><span class="dot"></span>Combobox</a>
           <a href="./toggle.html"><span class="dot"></span>Toggle</a>
@@ -65,26 +122,55 @@
 
           <section class="component-section">
             <h3>Live preview</h3>
-            <div class="component-preview preview-left" style="flex-direction: column; align-items: stretch; gap: var(--sp-5)">
+            <div
+              class="component-preview preview-left"
+              style="
+                flex-direction: column;
+                align-items: stretch;
+                gap: var(--sp-5);
+              "
+            >
               <div data-component="breadcrumb-demo">
                 <nav class="breadcrumb" aria-label="Breadcrumb">
                   <template data-each="visible()" data-key="key">
                     <span data-if="item.ellipsis">
-                      <button class="crumb-ellipsis" @click="expand" aria-label="Show hidden segments">…</button>
+                      <button
+                        class="crumb-ellipsis"
+                        @click="expand"
+                        aria-label="Show hidden segments"
+                      >
+                        …
+                      </button>
                       <span class="crumb-sep" aria-hidden="true">
-                        <svg class="icon" aria-hidden="true"><use href="#icon-chevron-right"></use></svg>
+                        <svg class="icon" aria-hidden="true">
+                          <use href="#icon-chevron-right"></use>
+                        </svg>
                       </span>
                     </span>
                     <span data-if="!item.ellipsis &amp;&amp; !item.current">
                       <a data-bind="href:item.href" data-text="item.label"></a>
                       <span class="crumb-sep" aria-hidden="true">
-                        <svg class="icon" aria-hidden="true"><use href="#icon-chevron-right"></use></svg>
+                        <svg class="icon" aria-hidden="true">
+                          <use href="#icon-chevron-right"></use>
+                        </svg>
                       </span>
                     </span>
-                    <span class="crumb-current" data-if="item.current" aria-current="page" data-text="item.label"></span>
+                    <span
+                      class="crumb-current"
+                      data-if="item.current"
+                      aria-current="page"
+                      data-text="item.label"
+                    ></span>
                   </template>
                 </nav>
-                <div class="demo-row" style="margin-top: var(--sp-4); gap: var(--sp-2); flex-wrap: wrap">
+                <div
+                  class="demo-row"
+                  style="
+                    margin-top: var(--sp-4);
+                    gap: var(--sp-2);
+                    flex-wrap: wrap;
+                  "
+                >
                   <button class="btn" @click="setShort">Short path</button>
                   <button class="btn" @click="setLong">Long path</button>
                 </div>
@@ -174,24 +260,23 @@
               <li>
                 <strong>Trail is just data.</strong> Render server-side, load
                 from the router, or hydrate from a fetch — replace
-                <span class="inline-code">state.trail</span> and the
-                breadcrumb updates.
+                <span class="inline-code">state.trail</span> and the breadcrumb
+                updates.
               </li>
               <li>
                 <strong>Collapse threshold</strong>
-                (<span class="inline-code">maxSegments</span>) is state, so
-                you can change it per viewport — pair with a
+                (<span class="inline-code">maxSegments</span>) is state, so you
+                can change it per viewport — pair with a
                 <span class="inline-code">window.matchMedia</span> listener in
                 <span class="inline-code">onCreate</span> for responsive
                 collapse.
               </li>
               <li>
                 <strong>ARIA.</strong>
-                <span class="inline-code">aria-label="Breadcrumb"</span> on
-                the <span class="inline-code">&lt;nav&gt;</span> and
-                <span class="inline-code">aria-current="page"</span> on the
-                last segment are the two attributes assistive tech actually
-                consumes.
+                <span class="inline-code">aria-label="Breadcrumb"</span> on the
+                <span class="inline-code">&lt;nav&gt;</span> and
+                <span class="inline-code">aria-current="page"</span> on the last
+                segment are the two attributes assistive tech actually consumes.
               </li>
               <li>
                 <strong>Keys.</strong> Each segment carries a
@@ -231,7 +316,9 @@
         <footer class="doc-footer">
           <div class="footer-left">
             <a href="./" class="btn">
-              <svg class="icon" aria-hidden="true"><use href="#icon-arrow-left"></use></svg>
+              <svg class="icon" aria-hidden="true">
+                <use href="#icon-arrow-left"></use>
+              </svg>
               <span>All components</span>
             </a>
           </div>
@@ -243,18 +330,22 @@
     <script>
       Micra.define("sidebar-menu", {
         state: { open: false },
-        toggle() { this.state.open = !this.state.open },
-        close()  { this.state.open = false },
+        toggle() {
+          this.state.open = !this.state.open;
+        },
+        close() {
+          this.state.open = false;
+        },
       });
 
       Micra.define("breadcrumb-demo", {
         state: {
           trail: [
             { label: "Workspace", href: "/ws" },
-            { label: "Projects",  href: "/ws/projects" },
-            { label: "Atlas",     href: "/ws/projects/atlas" },
-            { label: "Settings",  href: "/ws/projects/atlas/settings" },
-            { label: "Billing",   href: "/ws/projects/atlas/settings/billing" },
+            { label: "Projects", href: "/ws/projects" },
+            { label: "Atlas", href: "/ws/projects/atlas" },
+            { label: "Settings", href: "/ws/projects/atlas/settings" },
+            { label: "Billing", href: "/ws/projects/atlas/settings/billing" },
           ],
           showAll: false,
           maxSegments: 4,
@@ -263,7 +354,11 @@
         visible() {
           const { trail, showAll, maxSegments } = this.state;
           const len = trail.length;
-          const tail = (item, i) => ({ ...item, current: i === len - 1, key: "c-" + i });
+          const tail = (item, i) => ({
+            ...item,
+            current: i === len - 1,
+            key: "c-" + i,
+          });
 
           if (showAll || len <= maxSegments) {
             return trail.map(tail);
@@ -276,14 +371,16 @@
           ];
         },
 
-        expand() { this.state.showAll = true },
+        expand() {
+          this.state.showAll = true;
+        },
 
         setShort() {
           this.state.showAll = false;
           this.state.trail = [
             { label: "Workspace", href: "/ws" },
-            { label: "Projects",  href: "/ws/projects" },
-            { label: "Atlas",     href: "/ws/projects/atlas" },
+            { label: "Projects", href: "/ws/projects" },
+            { label: "Atlas", href: "/ws/projects/atlas" },
           ];
         },
 
@@ -291,10 +388,10 @@
           this.state.showAll = false;
           this.state.trail = [
             { label: "Workspace", href: "/ws" },
-            { label: "Projects",  href: "/ws/projects" },
-            { label: "Atlas",     href: "/ws/projects/atlas" },
-            { label: "Settings",  href: "/ws/projects/atlas/settings" },
-            { label: "Billing",   href: "/ws/projects/atlas/settings/billing" },
+            { label: "Projects", href: "/ws/projects" },
+            { label: "Atlas", href: "/ws/projects/atlas" },
+            { label: "Settings", href: "/ws/projects/atlas/settings" },
+            { label: "Billing", href: "/ws/projects/atlas/settings/billing" },
           ];
         },
       });
@@ -304,7 +401,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        document.querySelectorAll("pre code").forEach((el) => hljs.highlightElement(el));
+        document
+          .querySelectorAll("pre code")
+          .forEach((el) => hljs.highlightElement(el));
       });
     </script>
   </body>
