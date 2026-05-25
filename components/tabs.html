@@ -141,25 +141,30 @@
             <h3>Definition</h3>
             <pre><code>Micra.define('tabs-demo', {
   state: { active: 'overview' },
-  ids: ['overview', 'billing', 'security'],  // static config — not reactive
+
+  // Static config exposed as a method — Micra only copies functions from
+  // the definition onto the instance, not plain fields. Bonus: methods can
+  // pull from state if the tab set ever becomes dynamic.
+  ids() { return ['overview', 'billing', 'security'] },
 
   select(e) {
     this.state.active = e.currentTarget.dataset.id
   },
 
   onKey(e) {
-    const i = this.ids.indexOf(this.state.active)
+    const ids = this.ids()
+    const i = ids.indexOf(this.state.active)
     if (e.key === 'ArrowRight') {
-      this.state.active = this.ids[(i + 1) % this.ids.length]
+      this.state.active = ids[(i + 1) % ids.length]
       this._focusActive()
     } else if (e.key === 'ArrowLeft') {
-      this.state.active = this.ids[(i - 1 + this.ids.length) % this.ids.length]
+      this.state.active = ids[(i - 1 + ids.length) % ids.length]
       this._focusActive()
     } else if (e.key === 'Home') {
-      this.state.active = this.ids[0]
+      this.state.active = ids[0]
       this._focusActive()
     } else if (e.key === 'End') {
-      this.state.active = this.ids[this.ids.length - 1]
+      this.state.active = ids[ids.length - 1]
       this._focusActive()
     }
   },
@@ -197,10 +202,12 @@
                 them.
               </li>
               <li>
-                <strong>Static config.</strong> The
-                <span class="inline-code">ids</span> array is set on the
-                definition object, not in <span class="inline-code">state</span>
-                — it never changes, so it stays out of the reactive proxy.
+                <strong>Static config as a method.</strong>
+                <span class="inline-code">ids()</span> returns a literal
+                array — it stays out of the reactive proxy (not in state)
+                <em>and</em> survives the trip from definition to instance
+                (Micra only copies functions from the definition onto the
+                instance, not plain data fields).
               </li>
             </ul>
           </section>
@@ -251,25 +258,26 @@
 
       Micra.define("tabs-demo", {
         state: { active: "overview" },
-        ids: ["overview", "billing", "security"],
+        ids() { return ["overview", "billing", "security"] },
 
         select(e) {
           this.state.active = e.currentTarget.dataset.id;
         },
 
         onKey(e) {
-          const i = this.ids.indexOf(this.state.active);
+          const ids = this.ids();
+          const i = ids.indexOf(this.state.active);
           if (e.key === "ArrowRight") {
-            this.state.active = this.ids[(i + 1) % this.ids.length];
+            this.state.active = ids[(i + 1) % ids.length];
             this._focusActive();
           } else if (e.key === "ArrowLeft") {
-            this.state.active = this.ids[(i - 1 + this.ids.length) % this.ids.length];
+            this.state.active = ids[(i - 1 + ids.length) % ids.length];
             this._focusActive();
           } else if (e.key === "Home") {
-            this.state.active = this.ids[0];
+            this.state.active = ids[0];
             this._focusActive();
           } else if (e.key === "End") {
-            this.state.active = this.ids[this.ids.length - 1];
+            this.state.active = ids[ids.length - 1];
             this._focusActive();
           }
         },
