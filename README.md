@@ -2,21 +2,31 @@
 
 Micra.js is a lightweight reactive TypeScript framework for small sites and SaaS apps. It gives you reactive state, DOM directives, keyed list rendering, an event bus, SSR-friendly props, and auto-mounting in about 5 KB gzip.
 
-## What is Micra.js?
+## When to use Micra.js
 
-Micra.js is designed for server-rendered apps and small frontends that need a little reactivity without a large framework.
+Built for **server-rendered apps** (Rails, Laravel, Django, Phoenix, ASP.NET) and small SaaS frontends that need a sprinkle of reactivity without a build step.
 
-Use it when you want:
+Reach for Micra.js instead of React/Vue when:
 
-- JS expressions in directives like `data-if="count > 0"`
-- keyed list diffing with `data-each` + `data-key`
-- auto-mounting with `data-component`, `Micra.define()`, and `Micra.start()`
+- ~5 KB gzip matters (full bundle, not "core")
+- you want to drop a `<script>` tag on an existing page and go — no toolchain
+- you have HTML rendered by your server template engine that needs reactive directives
+- you don't need client-side routing or a full SPA
+- you want **htmx + reactive client state** in the same page
+
+Compared to Alpine.js: smaller surface, no `x-*` shorthand soup, AST-validated expressions (no global `window` / `fetch` access from markup), cleaner LLM ergonomics — fewer anti-patterns to fall into.
+
+What you get:
+
+- reactive `state` via a shallow `Proxy` (top-level writes only)
+- JS expressions in directives: `data-if="count > 0"`
+- keyed list diffing: `data-each` + `data-key`
+- auto-mounting via `data-component` + `Micra.start()`
 - SSR props from `data-*` attributes via `this.prop()`
-- a built-in `this.fetch()` helper
-- a small global event bus with `Micra.on()` and `Micra.emit()`
-- DOM refs via `data-ref`
-- additive class toggling with `data-class`
-- simple lifecycle hooks: `onCreate`, `onDestroy`
+- built-in `this.fetch()` helper with `AbortSignal` support
+- global event bus: `Micra.on()` / `Micra.emit()`
+- DOM refs via `data-ref`, additive class toggling via `data-class`
+- lifecycle hooks: `onCreate`, `onDestroy`
 
 ## Quick Start
 
@@ -102,8 +112,8 @@ Micra.start();
 | ------------ | ---------------------------------------- | ------------------------- |
 | `data-text`  | `data-text="name"`                       | Set `textContent`         |
 | `data-html`  | `data-html="content"`                    | Set `innerHTML`           |
-| `data-if`    | `data-if="count > 0"`                    | Toggle display            |
-| `data-show`  | `data-show="loaded"`                     | Alias of `data-if`        |
+| `data-if`    | `data-if="count > 0"`                    | Mount / unmount from DOM  |
+| `data-show`  | `data-show="loaded"`                     | Toggle `style.display`    |
 | `data-bind`  | `data-bind="href:url, disabled:loading"` | Bind attributes           |
 | `data-model` | `data-model="search"`                    | Two-way input binding     |
 | `data-each`  | `data-each="items" data-key="id"`        | List rendering            |
@@ -153,13 +163,14 @@ this.refs
 this.render()
 this.destroy()
 this.prop(name, default?)
-this.fetch(url, options?)
+this.fetch(url, options?)   // supports AbortSignal in options.signal
 this.emit(event, payload?)
 this.on(event, handler)
 ```
 
 ## Documentation
 
+- **AI / LLM code generation:** [`llms.txt`](./llms.txt) (overview) · [`llms-full.txt`](./llms-full.txt) (10 inline recipes + anti-pattern reference) · [`docs/llm-guide.md`](./docs/llm-guide.md) (full guide)
 - [Getting started](./docs/getting-started.md)
 - [Core concepts](./docs/concepts.md)
 - [Directives](./docs/directives.md)
@@ -171,3 +182,17 @@ this.on(event, handler)
 - Recipes:
   - [Todo app](./docs/recipes/todo-app.md)
   - [Server-sent events (SSE)](./docs/recipes/sse.md)
+
+## Code generation with LLMs
+
+Micra has a small surface area, but LLMs default to jQuery / vanilla-JS or React patterns that defeat the framework. When generating Micra code (in Claude artifacts, ChatGPT canvas, Cursor, Copilot, etc.), follow these rules:
+
+1. **Lists** go through `<template data-each="items" data-key="id">`. Never `getElementById` / `innerHTML` for component output.
+2. **Derived values** (counts, totals, filtered subsets) are **methods**, not state fields. State holds raw data only.
+3. **Event handlers** use `@event` / `data-on`. Never `addEventListener` inside methods — it leaks past `destroy()`. Document-level listeners go in `onCreate` and are removed in `onDestroy`.
+4. **No manual re-render.** Micra batches a microtask render on every state write — no `this.refresh()` / `this.update()` / `this.renderList()`.
+5. **State proxy is shallow.** Replace top-level: `state.user = { ...state.user, name: x }`, not `state.user.name = x`.
+6. **No modifier syntax** like `@keydown.enter` — branch on `e.key === 'Enter'` inside the handler.
+7. **Use jsDelivr, not unpkg** — `cdn.jsdelivr.net` is in the CSP allowlist of Claude artifacts / ChatGPT canvas; `unpkg.com` is blocked there.
+
+Full anti-pattern reference with side-by-side examples: [`docs/llm-guide.md`](./docs/llm-guide.md) and [`llms-full.txt`](./llms-full.txt).
