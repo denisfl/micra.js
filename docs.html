@@ -108,28 +108,33 @@
               DOM bindings, and a cross-component event bus — no build step, no
               compiler, no virtual DOM.
             </p>
-            <div class="hero-grid">
-              <div class="hero-card">
-                <strong>Reactive state</strong>
-                <span
-                  >Assign to <span class="inline-code">this.state</span> and
-                  Micra re-renders the DOM.</span
+            <div class="hero-demo">
+              <div class="hero-demo-pane hero-demo-live">
+                <span class="hero-demo-caption">Live</span>
+                <div data-component="counter-demo" class="hero-demo-counter">
+                  <button class="btn" @click="dec">−</button>
+                  <strong data-text="count"></strong>
+                  <button class="btn btn-primary" @click="inc">+</button>
+                </div>
+                <span class="hero-demo-foot"
+                  >~5 kB gzip · 0 deps · no build step</span
                 >
               </div>
-              <div class="hero-card">
-                <strong>HTML-first directives</strong>
-                <span
-                  ><span class="inline-code">data-text</span>,
-                  <span class="inline-code">data-if</span>,
-                  <span class="inline-code">data-each</span>, and more.</span
-                >
-              </div>
-              <div class="hero-card">
-                <strong>Tiny runtime</strong>
-                <span
-                  >Use refs, the event bus, fetch helpers, and multiple
-                  component instances on one page.</span
-                >
+              <div class="hero-demo-pane hero-demo-code">
+                <span class="hero-demo-caption">Source</span>
+                <pre><code>&lt;div data-component="counter"&gt;
+  &lt;button @click="dec"&gt;−&lt;/button&gt;
+  &lt;strong data-text="count"&gt;&lt;/strong&gt;
+  &lt;button @click="inc"&gt;+&lt;/button&gt;
+&lt;/div&gt;
+
+Micra.define('counter', {
+  state: { count: 0 },
+  inc() { this.state.count++ },
+  dec() { this.state.count-- },
+})
+
+Micra.start()</code></pre>
               </div>
             </div>
           </section>
@@ -196,32 +201,71 @@
                 </ul>
               </div>
             </div>
-            <div class="vs-strip">
-              <div class="vs-badge">
-                <strong>vs Alpine.js</strong>
-                <span
-                  >~5 KB vs ~14 KB gzip — ~3× smaller. Standard
-                  <span class="inline-code">data-*</span> attributes instead of
-                  custom <span class="inline-code">x-*</span>. Built-in
-                  cross-component event bus — no stores needed.</span
-                >
-              </div>
-              <div class="vs-badge">
-                <strong>vs petite-vue</strong>
-                <span
-                  >No Vue template syntax or
-                  <span class="inline-code">v-scope</span>. Plain JS objects —
-                  no Vue background required.</span
-                >
-              </div>
-              <div class="vs-badge">
-                <strong>vs vanilla JS</strong>
-                <span
-                  >Declarative state → DOM bindings, batched re-renders, keyed
-                  list diffing, and automatic cleanup on destroy — without
-                  manual bookkeeping.</span
-                >
-              </div>
+            <div class="vs-table-wrap">
+              <table class="vs-table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th class="vs-col-mine">Micra.js</th>
+                    <th>Alpine.js</th>
+                    <th>petite-vue</th>
+                    <th>vanilla JS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Bundle (gzip)</th>
+                    <td class="vs-col-mine"><strong>~5 kB</strong></td>
+                    <td>~14 kB</td>
+                    <td>~6 kB</td>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Build step</th>
+                    <td class="vs-col-mine vs-no">no</td>
+                    <td class="vs-no">no</td>
+                    <td class="vs-no">no</td>
+                    <td class="vs-no">no</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Reactive state</th>
+                    <td class="vs-col-mine vs-yes">yes</td>
+                    <td class="vs-yes">yes</td>
+                    <td class="vs-yes">yes</td>
+                    <td class="vs-no">no</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Attribute syntax</th>
+                    <td class="vs-col-mine">
+                      <span class="inline-code">data-*</span>
+                    </td>
+                    <td><span class="inline-code">x-*</span></td>
+                    <td><span class="inline-code">v-*</span></td>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Cross-component bus</th>
+                    <td class="vs-col-mine vs-yes">built-in</td>
+                    <td class="vs-no">stores</td>
+                    <td class="vs-no">no</td>
+                    <td class="vs-no">no</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Keyed list diffing</th>
+                    <td class="vs-col-mine vs-yes">yes</td>
+                    <td class="vs-yes">yes</td>
+                    <td class="vs-yes">yes</td>
+                    <td class="vs-no">manual</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Auto cleanup on destroy</th>
+                    <td class="vs-col-mine vs-yes">yes</td>
+                    <td class="vs-yes">yes</td>
+                    <td class="vs-yes">yes</td>
+                    <td class="vs-no">manual</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
             <div class="example">
               <div class="example-preview">

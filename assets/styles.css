@@ -8,11 +8,17 @@
 
 :root {
   /* Colors */
-  --bg: #fff;
+  --bg: #ffffff;
   --surface: #ffffff;
-  --surface-alt: #fcfcfa;
-  --surface-sub: #fafaf7;
-  --border: #e2e1dc;
+  --surface-alt: #f7f7f5;
+  --surface-sub: #f3f3f0;
+  --border: #e5e4df;
+  --border-strong: #cfcec7;
+  --letterpress: 0 1px 0 rgba(255, 255, 255, 0.9);
+  --tile-edge: 0 1px 1px rgba(20, 20, 18, 0.04), 0 1px 0 rgba(20, 20, 18, 0.03);
+  --tile-edge-strong: 0 1px 2px rgba(20, 20, 18, 0.06), 0 1px 0 rgba(20, 20, 18, 0.04);
+  --button-inset: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  --button-edge: 0 1px 0 rgba(20, 20, 18, 0.06), 0 1px 2px rgba(20, 20, 18, 0.04);
   --text: #1a1a18;
   --muted: #2b2b29; /* darker than typical "muted" — readable as body text */
   --on-accent: #fff; /* text/icon on accent backgrounds */
@@ -128,6 +134,7 @@ h5,
 h6 {
   line-height: var(--leading-tight);
   letter-spacing: -0.01em;
+  text-shadow: var(--letterpress);
 }
 
 /* ── Code blocks (unified) ──────────────────────────────────────── */
@@ -184,6 +191,7 @@ pre code {
   height: 100vh;
   overflow-y: auto;
   line-height: var(--leading-ui);
+  border-right: 1px solid var(--border);
 }
 
 .sidebar-logo {
@@ -309,12 +317,14 @@ pre code {
   display: inline-flex;
   align-items: center;
   gap: var(--sp-2);
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-pill);
-  padding: var(--sp-2) var(--sp-3);
+  padding: var(--sp-2) var(--sp-4);
   color: var(--text);
-  font-size: var(--text-ui);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  box-shadow: var(--tile-edge);
 }
 
 .size-badge {
@@ -330,29 +340,77 @@ pre code {
   white-space: nowrap;
 }
 
-.hero-grid {
+/* Hero CTA row — primary action, GitHub link, size badge */
+/* Hero demo — live counter side-by-side with its source */
+.hero-demo {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
   gap: var(--sp-4);
+  margin-top: var(--sp-6);
+  align-items: stretch;
 }
 
-.hero-card {
+.hero-demo-pane {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.hero-demo-caption {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: var(--sp-2);
+}
+
+.hero-demo-live {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  padding: var(--sp-4);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-5);
+  box-shadow: var(--tile-edge);
 }
 
-.hero-card strong {
-  display: block;
-  font-size: var(--text-ui);
-  margin-bottom: var(--sp-1);
+.hero-demo-counter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-4);
+  padding: var(--sp-6) 0;
+  flex: 1;
 }
 
-.hero-card span {
-  color: var(--muted);
+.hero-demo-counter strong {
+  font-size: 2.5rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  min-width: 2.5rem;
+  text-align: center;
+  text-shadow: var(--letterpress);
+}
+
+.hero-demo-counter .btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.hero-demo-foot {
   font-size: var(--text-sm);
-  line-height: 1.6;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  text-align: center;
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border);
+}
+
+.hero-demo-code pre {
+  margin: 0;
+  height: 100%;
 }
 
 /* ── Performance bench grid ──────────────────────────────────────── */
@@ -367,10 +425,11 @@ pre code {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
-  padding: var(--sp-4);
+  padding: var(--sp-5);
   display: flex;
   flex-direction: column;
   gap: var(--sp-1);
+  box-shadow: var(--tile-edge);
 }
 
 .bench-label {
@@ -381,10 +440,11 @@ pre code {
 }
 
 .bench-value {
-  font-size: var(--text-h2);
-  font-weight: 600;
+  font-size: calc(var(--text-h2) + 0.25rem);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   margin-top: 2px;
+  text-shadow: var(--letterpress);
 }
 
 .bench-unit {
@@ -440,7 +500,12 @@ pre code {
 .use-card {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: var(--sp-4);
+  padding: var(--sp-5);
+  box-shadow: var(--tile-edge);
+}
+
+.use-card strong {
+  text-shadow: var(--letterpress);
 }
 
 .use-card strong {
@@ -496,27 +561,77 @@ pre code {
   color: var(--muted);
 }
 
-.vs-strip {
-  display: flex;
-  gap: var(--sp-2);
-  flex-wrap: wrap;
-  margin-top: var(--sp-3);
-  margin-bottom: var(--sp-3);
-}
-
-.vs-badge {
+/* ── Comparison table (Micra.js vs others) ──────────────────────── */
+.vs-table-wrap {
+  margin: var(--sp-5) 0 var(--sp-6);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: var(--sp-2) var(--sp-3);
-  font-size: var(--text-sm);
-  background: var(--surface);
-  line-height: 1.5;
+  overflow: hidden;
+  box-shadow: var(--tile-edge);
 }
 
-.vs-badge strong {
+.vs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-ui);
+  background: var(--surface);
+}
+
+.vs-table thead th {
+  background: var(--surface-alt);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 600;
+  padding: var(--sp-3) var(--sp-4);
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.vs-table tbody th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--muted);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.vs-table td {
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
   color: var(--text);
 }
-.vs-badge span {
+
+.vs-table tbody tr:last-child th,
+.vs-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.vs-table .vs-col-mine {
+  background: var(--accent-light);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.vs-table thead .vs-col-mine {
+  color: var(--accent);
+  text-shadow: var(--letterpress);
+}
+
+.vs-table .vs-yes::before {
+  content: "✓ ";
+  font-weight: 700;
+  color: var(--success);
+}
+
+.vs-table .vs-col-mine.vs-yes::before {
+  color: var(--accent);
+}
+
+.vs-table .vs-no {
   color: var(--muted);
 }
 
@@ -531,30 +646,50 @@ pre code {
   font-size: var(--text-sm);
   font-weight: 500;
   cursor: pointer;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   background: var(--surface);
   color: var(--text);
+  box-shadow:
+    var(--button-inset),
+    var(--button-edge);
   transition:
     background 0.12s,
     border-color 0.12s,
-    color 0.12s;
+    color 0.12s,
+    transform 0.05s;
   font-family: inherit;
   text-decoration: none;
 }
 
 .btn:hover {
-  background: var(--bg);
+  background: var(--surface-alt);
+  border-color: #b9b6a8;
+}
+
+.btn:active {
+  transform: translateY(1px);
+  box-shadow: var(--button-inset);
 }
 
 .btn-primary {
   background: var(--accent);
   color: var(--on-accent);
   border-color: var(--accent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 1px 0 rgba(0, 0, 0, 0.18);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
 }
 
 .btn-primary:hover {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
+}
+
+.btn-lg {
+  padding: 0.625rem 1.125rem;
+  font-size: var(--text-ui);
+  border-radius: var(--radius-lg);
 }
 
 /* ── Doc sections ────────────────────────────────────────────────── */
@@ -604,6 +739,7 @@ pre code {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: var(--sp-6);
+  box-shadow: var(--tile-edge);
 }
 
 .example-code {
@@ -1155,7 +1291,7 @@ td {
   .example,
   .bus-grid,
   .triple-grid,
-  .hero-grid,
+  .hero-demo,
   .use-when,
   .install-tabs {
     grid-template-columns: minmax(0, 1fr);
@@ -1270,6 +1406,7 @@ td {
   border-radius: var(--radius-xl);
   text-decoration: none;
   color: var(--text);
+  box-shadow: var(--tile-edge);
   transition:
     border-color 0.15s,
     box-shadow 0.15s,
@@ -1278,8 +1415,12 @@ td {
 
 .component-card:hover {
   border-color: var(--accent-ring);
-  box-shadow: var(--shadow);
+  box-shadow: 0 0.5rem 1rem rgba(20, 20, 18, 0.06);
   transform: translateY(-1px);
+}
+
+.component-card strong {
+  text-shadow: var(--letterpress);
 }
 
 .component-card .icon-lg {
@@ -1319,6 +1460,7 @@ td {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: var(--tile-edge);
 }
 
 .component-preview.preview-left {
