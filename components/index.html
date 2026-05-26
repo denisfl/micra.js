@@ -4,10 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="../assets/styles.css" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css"
-    />
     <title>Micra.js — Components</title>
   </head>
   <body>
@@ -448,14 +444,19 @@
       <div class="main">
         <main class="content">
           <section class="hero">
-            <h2>Components</h2>
-            <p>
-              Production-ready UI primitives built on Micra.js. Each component
-              is a single
+            <h2>15 production-ready components.</h2>
+            <p class="hero-subtitle">
+              Copy-paste, no install. Each component is a single
               <span class="inline-code">Micra.define()</span> blueprint with
-              live preview, copy-pasteable HTML &amp; JS, and integration notes.
-              No external dependencies, no build step — drop into any page.
+              live preview, full HTML+JS source, and integration notes — no
+              external dependencies, no build step.
             </p>
+            <ul class="hero-trust" aria-label="Components metadata">
+              <li><strong>15</strong> components</li>
+              <li><strong>0</strong> external deps</li>
+              <li><strong>~5&nbsp;kB</strong> runtime</li>
+              <li>Copy-paste ready</li>
+            </ul>
           </section>
 
           <section class="doc-section">
@@ -671,5 +672,6 @@
       });
       Micra.start();
     </script>
+      <script src="../assets/highlight.js"></script>
   </body>
 </html>
