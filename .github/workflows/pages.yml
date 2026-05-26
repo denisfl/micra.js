@@ -1,9 +1,9 @@
-name: Deploy docs to GitHub Pages
+name: Deploy site to GitHub Pages
 
 on:
   push:
-    branches:
-      - master
+    branches: [master]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -15,30 +15,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
-      - name: Prepare site
-        run: |
-          mkdir _site
-          cp docs.html _site/index.html
-          cp bench.html _site/bench.html
-          cp -r assets _site/assets
-          cp -r dist _site/dist
-          if [ -d components ]; then cp -r components _site/components; fi
-          if [ -d recipes ];    then cp -r recipes    _site/recipes;    fi
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
 
-      - uses: actions/configure-pages@v5
+      - run: npm ci
+
+      # Build the library (produces dist/) and copy into site/dist/
+      # so the site is fully self-contained when deployed.
+      - run: npm run docs:build
+
+      - uses: actions/configure-pages@v6
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: ./site
 
-      - name: Deploy
-        id: deploy
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
         uses: actions/deploy-pages@v4
