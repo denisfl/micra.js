@@ -6,12 +6,16 @@
 
 import { SCENARIOS } from './scenarios.js'
 
+// Each frame lives at `frames/<lib>/index.html`. Using the directory URL
+// (with trailing slash) means relative paths inside the frame work
+// consistently across local `npx serve` (which rewrites .html→/) and
+// GitHub Pages (which serves directories with auto-find of index.html).
 const FRAMES = [
-  { name: 'Micra', url: 'frames/micra.html' },
-  { name: 'Alpine.js', url: 'frames/alpine.html' },
-  { name: 'petite-vue', url: 'frames/petite-vue.html' },
-  { name: 'Stimulus', url: 'frames/stimulus.html' },
-  { name: 'vanilla', url: 'frames/vanilla.html' },
+  { name: 'Micra', url: 'frames/micra/' },
+  { name: 'Alpine.js', url: 'frames/alpine/' },
+  { name: 'petite-vue', url: 'frames/petite-vue/' },
+  { name: 'Stimulus', url: 'frames/stimulus/' },
+  { name: 'vanilla', url: 'frames/vanilla/' },
 ]
 
 let _reqId = 0

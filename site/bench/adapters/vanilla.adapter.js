@@ -187,7 +187,7 @@ export const adapter = {
         const sandbox = fresh()
         for (let i = 0; i < 1000; i++) {
           const el = document.createElement('div')
-          el.innerHTML = `<span data-a></span>`
+          el.innerHTML = `<span data-a></span><span data-b></span><span data-c></span>`
           sandbox.appendChild(el)
           this._instances.push(makeCounter(el, { a: 1, b: 1, c: 1 }))
         }
