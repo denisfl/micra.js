@@ -28,6 +28,8 @@ export type {
   UnsubFn,
   EventHandler,
   FetchOptions,
+  ComponentMethods,
+  ComponentBuiltins,
   ComponentInstance,
   ComponentDefinition,
 } from './types'

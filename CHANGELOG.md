@@ -4,6 +4,63 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] — 2026-05-27
+
+### Performance — single-pass DOM scan
+
+- **Mount cost cut roughly in half.** Internal `applyDirectives`,
+  `bindDataOn`, `bindAtEvents`, `bindModels`, `collectRefs`, and
+  `renderList` used to walk the DOM 10+ times per render via separate
+  `querySelectorAll` calls. They now consume a single pre-computed
+  `ScanIndex` built by one `TreeWalker` traversal. The walker
+  `FILTER_REJECT`s subtrees rooted at nested `[data-component]` — those
+  subtrees aren't even visited.
+- Cross-library benchmark numbers on Firefox 150 / Mac (median of 7 runs):
+
+  | Scenario                  | Before  | After     | Vs Alpine.js  | Vs petite-vue |
+  | ------------------------- | ------: | --------: | ------------: | ------------: |
+  | Mount 100 components      | 10.8 ms | **5.6 ms**| × 4.9 faster  | × 3.6 faster  |
+  | Mount 1000 components     |128.3 ms |**65.4 ms**| × 7.0 faster  | × 2.4 faster  |
+  | Update 5 of 1000 rows     |    —    | **1 ms**  | × 886 faster  | × 1002 faster |
+  | 10,000 state writes       |    —    | **1 ms**  | × 980 faster  | × 983 faster  |
+  | First render 1000 keyed   |    —    | **12 ms** | × 79 faster   | × 82 faster   |
+  | Swap first ↔ last of 1000 |    —    | **7 ms**  | × 131 faster  | × 143 faster  |
+
+  Bundle stays at **5.0 KB gzip** — the rewrite removed code, not added it.
+
+### TypeScript — full inference from your component literal
+
+- **Method-level type inference.** Both `S` (state shape) and `M`
+  (method set) are now inferred from the object literal passed to
+  `Micra.define` / `Micra.mount`. Inside method bodies and lifecycle
+  hooks **both** `this.state.X` and `this.someMethod()` are fully typed:
+
+  ```ts
+  Micra.define('counter', {
+    state: { count: 0 },
+    inc() {
+      this.state.count++   // ✓ number
+      this.dec()           // ✓ inferred sibling method
+      // this.foo()        // ❌ Property 'foo' does not exist
+    },
+    dec() { this.state.count-- },
+  })
+  ```
+
+- Public `ComponentInstance<S, M>` and `ComponentDefinition<S, M>` now
+  take a second generic parameter for methods. `mount()` returns a fully
+  typed instance — `inst.inc()` and `inst.state.count` are both checked
+  at the call site.
+- New `ComponentMethods` and `ComponentBuiltins` types exported for
+  advanced typing.
+
+### Breaking — internal only
+
+- The internal directive scan format changed (`DirectiveCache` →
+  `ScanIndex`). Internal-only — no public-API change. If you reached
+  into internals via deep imports, switch to consuming
+  `el.__micraScan` instead of `el.__micraCache`.
+
 ## [2.1.0] — 2026-05-25
 
 ### Added

@@ -9,13 +9,21 @@ import { Runner, browserInfo } from './runner.js'
 
 // Display metadata — populated as frames report ready.
 const LIB_META = {
-  Micra:        { version: '2.1.0' },
+  Micra:        { version: '2.2.0' },
   'Alpine.js':  { version: '3.14.1' },
   'petite-vue': { version: '0.4.1' },
   Stimulus:     { version: '3.2.2', notes: 'Not reactive — list/state scenarios N/A.' },
   vanilla:      { version: 'baseline' },
 }
 const LIB_ORDER = ['Micra', 'Alpine.js', 'petite-vue', 'Stimulus', 'vanilla']
+
+// "Reactive" libraries are the apples-to-apples set for Micra. Coloring (best/
+// good/mid/slow) is applied here. "Reference" libraries (vanilla = perf floor,
+// Stimulus = controller pattern, not reactive) are shown for context only and
+// rendered with a neutral background — they shouldn't appear to "lose" or
+// "win" against a reactive runtime.
+const REACTIVE_LIBS = new Set(['Micra', 'Alpine.js', 'petite-vue'])
+const REFERENCE_LIBS = new Set(['Stimulus', 'vanilla'])
 
 // ── Render environment info ───────────────────────────────────────────
 const env = browserInfo()
@@ -35,9 +43,13 @@ function renderGrid(results = {}) {
       <thead>
         <tr>
           <th>Scenario</th>
-          ${LIB_ORDER.map(name => `<th class="lib-col" data-lib="${name}">
-            ${name}<br><small>${LIB_META[name]?.version || ''}</small>
-          </th>`).join('')}
+          ${LIB_ORDER.map(name => {
+            const tag = REFERENCE_LIBS.has(name) ? 'reference' : 'reactive'
+            return `<th class="lib-col lib-${tag}" data-lib="${name}">
+              ${name}<br><small>${LIB_META[name]?.version || ''}</small>
+              <span class="lib-tag">${tag}</span>
+            </th>`
+          }).join('')}
         </tr>
       </thead>
       <tbody>
@@ -72,22 +84,36 @@ function formatCell(r) {
   return `<span class="cell-pending">running…</span>`
 }
 
-function paintRelative() {
-  document.querySelectorAll('.bench-table tbody tr').forEach(tr => {
-    const cells = [...tr.querySelectorAll('.cell')]
-    const numeric = cells
-      .map(c => ({ c, val: parseFloat(c.querySelector('.cell-value strong')?.textContent || 'NaN') }))
-      .filter(x => !isNaN(x.val))
-    if (numeric.length === 0) return
-    const min = Math.min(...numeric.map(x => x.val))
-    numeric.forEach(({ c, val }) => {
-      c.classList.remove('cell-best', 'cell-good', 'cell-mid', 'cell-slow')
-      const ratio = val / min
-      if (ratio < 1.15) c.classList.add('cell-best')
-      else if (ratio < 1.6) c.classList.add('cell-good')
-      else if (ratio < 3) c.classList.add('cell-mid')
-      else c.classList.add('cell-slow')
-    })
+// Absolute UX-driven thresholds. Communicates "how fast does this feel" — NOT
+// "who's the relative winner". A 1-ms vs 2-ms gap is meaningless to users, so
+// both render green. A 1-ms vs 900-ms gap is a real difference, so red.
+//
+// Reference libraries (vanilla, Stimulus) get neutral coloring — they're not
+// reactive frameworks and shouldn't compete on the same axis.
+function paintCells() {
+  document.querySelectorAll('.bench-table .cell').forEach(c => {
+    c.classList.remove('cell-best', 'cell-good', 'cell-mid', 'cell-slow', 'cell-reference')
+
+    const lib = c.dataset.lib
+    if (REFERENCE_LIBS.has(lib)) {
+      c.classList.add('cell-reference')
+      return
+    }
+
+    const v = c.querySelector('.cell-value strong')
+    if (!v) return
+    const val = parseFloat(v.textContent)
+    if (isNaN(val)) return
+
+    // UX-tier thresholds (ms):
+    //   < 5    instant    — user perceives as "immediate"
+    //   < 50   fast       — well within "no perceived delay" budget
+    //   < 500  noticeable — feels slow but not broken
+    //   ≥ 500  slow       — clear UI hang
+    if (val < 5) c.classList.add('cell-best')
+    else if (val < 50) c.classList.add('cell-good')
+    else if (val < 500) c.classList.add('cell-mid')
+    else c.classList.add('cell-slow')
   })
 }
 
@@ -107,7 +133,7 @@ const runner = new Runner({
   onResult: (libName, scenarioId, result) => {
     const cell = document.querySelector(`.cell[data-lib="${libName}"][data-scenario="${scenarioId}"]`)
     if (cell) cell.innerHTML = formatCell(result)
-    paintRelative()
+    paintCells()
   },
   onReady: ({ name, version }) => {
     // Update header version if frame reports different one

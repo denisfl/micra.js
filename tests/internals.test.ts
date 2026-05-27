@@ -3,9 +3,28 @@
  * Tests for __micraEvents, __micraModel, __micraNodes deduplication.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { bindDataOn, bindModels } from '../src/dom/events'
-import { renderList } from '../src/dom/each'
+import { bindDataOn as _bindDataOn, bindModels as _bindModels, bindAtEvents as _bindAtEventsRaw } from '../src/dom/events'
+import { renderList as _renderList } from '../src/dom/each'
+import { scanComponent } from '../src/dom/scan'
 import type { InternalInstance, MicraElement, StateRecord } from '../src/types'
+
+// ── Test shims ────────────────────────────────────────────────────────────────
+// In src/, these now accept pre-scanned arrays from scan.ts. These tests
+// were written against the older (root, instance) signature — the shims
+// scan-on-call so existing tests keep their old shape.
+
+function bindDataOn(root: Element, inst: InternalInstance): void {
+  _bindDataOn(scanComponent(root).on, inst)
+}
+function bindModels(root: Element, inst: InternalInstance): void {
+  _bindModels(scanComponent(root).model, inst)
+}
+function bindAtEvents(root: Element, inst: InternalInstance): void {
+  _bindAtEventsRaw(scanComponent(root).atEvents, inst)
+}
+function renderList(root: Element, state: StateRecord, rawState: StateRecord, inst: InternalInstance): void {
+  _renderList(scanComponent(root).each, state, rawState, inst)
+}
 
 function makeInstance(extra: Record<string, unknown> = {}): InternalInstance {
   return {
@@ -147,7 +166,6 @@ describe('10.2 __micraModel — no duplicate listeners', () => {
 
 describe('10.1.ter @event — per-element rebind on new DOM', () => {
   it('binds @click on root element itself', async () => {
-    const { bindAtEvents } = await import('../src/dom/events')
     const handler = vi.fn()
     const inst = makeInstance({ handle: handler })
     const root = document.createElement('button')
@@ -159,7 +177,6 @@ describe('10.1.ter @event — per-element rebind on new DOM', () => {
   })
 
   it('second bindAtEvents on same root does not duplicate bindings', async () => {
-    const { bindAtEvents } = await import('../src/dom/events')
     const handler = vi.fn()
     const inst = makeInstance({ handle: handler })
     const root = document.createElement('div')
@@ -174,7 +191,6 @@ describe('10.1.ter @event — per-element rebind on new DOM', () => {
   })
 
   it('new element added after first bind gets bound on next call', async () => {
-    const { bindAtEvents } = await import('../src/dom/events')
     const handler = vi.fn()
     const inst = makeInstance({ handle: handler })
     const root = document.createElement('div')
@@ -191,7 +207,6 @@ describe('10.1.ter @event — per-element rebind on new DOM', () => {
   })
 
   it('does NOT bind @event inside nested data-component subtree', async () => {
-    const { bindAtEvents } = await import('../src/dom/events')
     const parentHandler = vi.fn()
     const parentInst = makeInstance({ handle: parentHandler })
 

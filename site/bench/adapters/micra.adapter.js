@@ -34,7 +34,7 @@ function uniqId() { return 'micra-bench-' + (_id++) }
 
 export const adapter = {
   name: 'Micra',
-  version: '2.1.0',
+  version: '2.2.0',
   scenarios: {
 
     'mount-100': {

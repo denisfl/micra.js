@@ -1,4 +1,4 @@
-/* Micra.js v2.1.0 — https://github.com/micra-js/micra — MIT */
+/* Micra.js v2.2.0 — https://github.com/micra-js/micra — MIT */
 
 // src/utils/fetch.ts
 function getCSRF() {
@@ -221,27 +221,6 @@ function createScheduler(render) {
   };
 }
 
-// src/dom/query.ts
-function queryAll(root, sel) {
-  return Array.from(root.querySelectorAll(sel));
-}
-function queryOwn(root, attr) {
-  return filterOwn(root, queryAll(root, `[${attr}]`));
-}
-function queryOwnAll(root, sel) {
-  return filterOwn(root, queryAll(root, sel));
-}
-function filterOwn(root, els) {
-  return els.filter((el) => {
-    let node = el.parentElement;
-    while (node && node !== root) {
-      if (node.hasAttribute("data-component")) return false;
-      node = node.parentElement;
-    }
-    return true;
-  });
-}
-
 // src/dom/directives.ts
 function applyText(el, expr, state) {
   var _a;
@@ -295,92 +274,37 @@ function applyClass(el, pairs, state) {
     el.classList.toggle(cls, Boolean(evalExpr(valExpr, state)));
   }
 }
-function parsePairs(expr) {
-  const out = [];
-  for (const part of expr.split(",")) {
-    const colonIdx = part.indexOf(":");
-    if (colonIdx === -1) continue;
-    const left = part.slice(0, colonIdx).trim();
-    const right = part.slice(colonIdx + 1).trim();
-    if (!left) continue;
-    out.push([left, right]);
-  }
-  return out;
-}
 function applyModel(el, key, rawState) {
   const html = el;
   const stateVal = rawState[key];
   const desired = stateVal == null ? "" : String(stateVal);
   if (html.value !== desired) html.value = desired;
 }
-function buildCache(root) {
-  const pick = (attr) => {
-    var _a;
-    const els = queryOwn(root, attr);
-    if ((_a = root.hasAttribute) == null ? void 0 : _a.call(root, attr)) els.unshift(root);
-    return els.filter((el) => !el.closest("template")).map((el) => ({ el, expr: el.getAttribute(attr) }));
-  };
-  const pickPairs = (attr) => pick(attr).map((b) => ({ ...b, pairs: parsePairs(b.expr) }));
-  return {
-    text: pick("data-text"),
-    html: pick("data-html"),
-    if: pick("data-if"),
-    show: pick("data-show"),
-    bind: pickPairs("data-bind"),
-    model: pick("data-model"),
-    class: pickPairs("data-class")
-  };
+function applyDirectives(scan, state, rawState, _instance) {
+  for (const b of scan.if) applyIf(b, state);
+  for (const b of scan.text) applyText(b.el, b.expr, state);
+  for (const b of scan.html) applyHtml(b.el, b.expr, state);
+  for (const b of scan.show) applyShow(b.el, b.expr, state);
+  for (const b of scan.bind) applyBind(b.el, b.pairs, state);
+  for (const b of scan.model) applyModel(b.el, b.expr.trim(), rawState);
+  for (const b of scan.class) applyClass(b.el, b.pairs, state);
 }
-function applyDirectives(root, state, rawState, _instance) {
-  if (root.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
-    applyFromList(buildFragmentList(root), state, rawState);
-    return;
-  }
-  const el = root;
-  if (!el.__micraCache) el.__micraCache = buildCache(el);
-  applyFromList(el.__micraCache, state, rawState);
-}
-function applyFromList(cache, state, rawState) {
-  cache.if.forEach((b) => applyIf(b, state));
-  cache.text.forEach((b) => applyText(b.el, b.expr, state));
-  cache.html.forEach((b) => applyHtml(b.el, b.expr, state));
-  cache.show.forEach((b) => applyShow(b.el, b.expr, state));
-  cache.bind.forEach((b) => applyBind(b.el, b.pairs, state));
-  cache.model.forEach((b) => applyModel(b.el, b.expr.trim(), rawState));
-  cache.class.forEach((b) => applyClass(b.el, b.pairs, state));
-}
-function buildFragmentList(frag) {
-  const pick = (attr) => queryAll(frag, `[${attr}]`).filter((el) => !el.closest("template")).map((el) => ({ el, expr: el.getAttribute(attr) }));
-  const pickPairs = (attr) => pick(attr).map((b) => ({ ...b, pairs: parsePairs(b.expr) }));
-  return {
-    text: pick("data-text"),
-    html: pick("data-html"),
-    if: pick("data-if"),
-    show: pick("data-show"),
-    bind: pickPairs("data-bind"),
-    model: pick("data-model"),
-    class: pickPairs("data-class")
-  };
-}
-function validateDirectives(root) {
-  var _a, _b;
-  queryOwn(root, "data-each").forEach((el) => {
+function validateDirectives(scan) {
+  for (const el of scan.each) {
     const tmpl = el;
     if (!el.hasAttribute("data-key") && !tmpl.__micraNoKeyWarned) {
       tmpl.__micraNoKeyWarned = true;
-      warn(`data-each="${el.getAttribute("data-each")}" has no data-key \u2014 keyed diff disabled. Add data-key="id" for better performance.`);
+      warn(
+        `data-each="${el.getAttribute("data-each")}" has no data-key \u2014 keyed diff disabled. Add data-key="id" for better performance.`
+      );
     }
-  });
-  const bindEls = queryOwn(root, "data-bind");
-  if (((_a = root.hasAttribute) == null ? void 0 : _a.call(root, "data-bind")) && !bindEls.includes(root)) bindEls.unshift(root);
-  for (const el of bindEls) {
-    const spec = (_b = el.getAttribute("data-bind")) != null ? _b : "";
-    const hasClassBind = spec.split(",").some((p) => {
-      var _a2;
-      return ((_a2 = p.trim().split(":")[0]) == null ? void 0 : _a2.trim()) === "class";
-    });
-    if (hasClassBind && el.hasAttribute("data-class")) {
-      warn(`element has both data-bind="class:..." and data-class \u2014 they fight on every render. Use one.`);
+  }
+  for (const b of scan.bind) {
+    const hasClassBind = b.pairs.some((p) => p[0] === "class");
+    if (hasClassBind && b.el.hasAttribute("data-class")) {
+      warn(
+        `element has both data-bind="class:..." and data-class \u2014 they fight on every render. Use one.`
+      );
     }
   }
 }
@@ -391,17 +315,13 @@ function track(instance, el, type, fn) {
   el.addEventListener(type, fn);
   ((_a = instance.__micraListeners) != null ? _a : instance.__micraListeners = []).push({ el, type, fn });
 }
-function bindDataOn(root, instance) {
-  var _a, _b;
-  const isFragment = root.nodeType === 11;
-  const els = isFragment ? queryAll(root, "[data-on]") : queryOwn(root, "data-on");
-  if (!isFragment && ((_a = root.hasAttribute) == null ? void 0 : _a.call(root, "data-on")) && !els.includes(root))
-    els.unshift(root);
+function bindDataOn(els, instance) {
+  var _a;
   for (const el of els) {
     const mEl = el;
     if (mEl.__micraEvents) continue;
     mEl.__micraEvents = true;
-    const spec = (_b = mEl.dataset["on"]) != null ? _b : "";
+    const spec = (_a = mEl.dataset["on"]) != null ? _a : "";
     for (const part of spec.split(",")) {
       const [evSpec, method] = part.trim().split(":");
       if (!evSpec || !method) continue;
@@ -417,11 +337,8 @@ function bindDataOn(root, instance) {
     }
   }
 }
-function bindAtEvents(root, instance) {
-  const isFragment = root.nodeType === 11;
-  const all = isFragment ? queryAll(root, "*") : queryOwnAll(root, "*");
-  if (!isFragment && !all.includes(root)) all.unshift(root);
-  for (const el of all) {
+function bindAtEvents(els, instance) {
+  for (const el of els) {
     const mEl = el;
     if (mEl.__micraAtBound) continue;
     let bound = false;
@@ -442,15 +359,12 @@ function bindAtEvents(root, instance) {
     if (bound) mEl.__micraAtBound = true;
   }
 }
-function bindModels(root, instance) {
-  var _a;
-  const isFragment = root.nodeType === 11;
-  const els = isFragment ? queryAll(root, "[data-model]") : queryOwn(root, "data-model");
-  for (const el of els) {
+function bindModels(bindings, instance) {
+  for (const { el, expr } of bindings) {
     const mEl = el;
     if (mEl.__micraModel) continue;
     mEl.__micraModel = true;
-    const key = (_a = el.dataset["model"]) != null ? _a : "";
+    const key = expr.trim();
     const tag = el.tagName;
     const inputEl = el;
     const inputType = inputEl.type;
@@ -471,11 +385,132 @@ function bindModels(root, instance) {
   }
 }
 
+// src/dom/scan.ts
+function emptyScan() {
+  return {
+    text: [],
+    html: [],
+    if: [],
+    show: [],
+    bind: [],
+    model: [],
+    class: [],
+    each: [],
+    on: [],
+    atEvents: [],
+    refs: []
+  };
+}
+function parsePairs(expr) {
+  const out = [];
+  for (const part of expr.split(",")) {
+    const colon = part.indexOf(":");
+    if (colon === -1) continue;
+    const left = part.slice(0, colon).trim();
+    const right = part.slice(colon + 1).trim();
+    if (!left) continue;
+    out.push([left, right]);
+  }
+  return out;
+}
+function classify(el, scan) {
+  if (el.tagName === "TEMPLATE") {
+    if (el.hasAttribute("data-each")) scan.each.push(el);
+    return;
+  }
+  const attrs = el.attributes;
+  let atEventSeen = false;
+  for (let i = 0; i < attrs.length; i++) {
+    const a = attrs[i];
+    const name = a.name;
+    const first = name.charCodeAt(0);
+    if (first === 64) {
+      if (!atEventSeen) {
+        scan.atEvents.push(el);
+        atEventSeen = true;
+      }
+      continue;
+    }
+    if (first === 100 && name.length >= 6 && name.charCodeAt(4) === 45) {
+      const rest = name.slice(5);
+      switch (rest) {
+        case "text":
+          scan.text.push({ el, expr: a.value });
+          break;
+        case "html":
+          scan.html.push({ el, expr: a.value });
+          break;
+        case "if":
+          scan.if.push({ el, expr: a.value });
+          break;
+        case "show":
+          scan.show.push({ el, expr: a.value });
+          break;
+        case "bind": {
+          const pairs = parsePairs(a.value);
+          scan.bind.push({ el, expr: a.value, pairs });
+          break;
+        }
+        case "model":
+          scan.model.push({ el, expr: a.value });
+          break;
+        case "class": {
+          const pairs = parsePairs(a.value);
+          scan.class.push({ el, expr: a.value, pairs });
+          break;
+        }
+        case "on":
+          scan.on.push(el);
+          break;
+        case "ref":
+          scan.refs.push(el);
+          break;
+      }
+    }
+  }
+}
+var NESTED_COMPONENT_FILTER = {
+  acceptNode(node) {
+    if (node.hasAttribute("data-component"))
+      return NodeFilter.FILTER_REJECT;
+    return NodeFilter.FILTER_ACCEPT;
+  }
+};
+function scanComponent(root) {
+  const scan = emptyScan();
+  classify(root, scan);
+  const walker = document.createTreeWalker(
+    root,
+    NodeFilter.SHOW_ELEMENT,
+    NESTED_COMPONENT_FILTER
+  );
+  let node = walker.nextNode();
+  while (node) {
+    classify(node, scan);
+    node = walker.nextNode();
+  }
+  return scan;
+}
+function scanFragment(frag) {
+  const scan = emptyScan();
+  const walker = document.createTreeWalker(
+    frag,
+    NodeFilter.SHOW_ELEMENT,
+    NESTED_COMPONENT_FILTER
+  );
+  let node = walker.nextNode();
+  while (node) {
+    classify(node, scan);
+    node = walker.nextNode();
+  }
+  return scan;
+}
+
 // src/dom/each.ts
-function renderList(root, state, rawState, instance) {
-  queryOwn(root, "data-each").forEach((tmplEl) => {
-    var _a;
-    if (tmplEl.tagName !== "TEMPLATE") return;
+function renderList(templates, state, rawState, instance) {
+  var _a;
+  for (const tmplEl of templates) {
+    if (tmplEl.tagName !== "TEMPLATE") continue;
     const tmpl = tmplEl;
     const itemsExpr = tmpl.getAttribute("data-each");
     const keyAttr = (_a = tmpl.getAttribute("data-key")) != null ? _a : null;
@@ -490,21 +525,22 @@ function renderList(root, state, rawState, instance) {
     const marker = tmpl.__micraMarker;
     const keyMap = tmpl.__micraNodes;
     const parent = marker.parentNode;
-    if (!parent) return;
+    if (!parent) continue;
     if (!Array.isArray(items)) {
       tmpl.__micraList.forEach((n) => n.remove());
       tmpl.__micraList = [];
       keyMap.clear();
-      return;
+      continue;
     }
     if (keyAttr) {
       renderKeyed(tmpl, items, keyAttr, marker, keyMap, parent, state, rawState, instance);
     } else {
       renderNoKey(tmpl, items, marker, parent, state, rawState, instance);
     }
-  });
+  }
 }
 function renderKeyed(tmpl, items, keyAttr, marker, keyMap, parent, state, rawState, instance) {
+  var _a;
   const nextKeys = /* @__PURE__ */ new Set();
   const nextNodes = [];
   let warnedNullKey = false;
@@ -532,14 +568,18 @@ function renderKeyed(tmpl, items, keyAttr, marker, keyMap, parent, state, rawSta
       }
       node.__micraKey = key;
       keyMap.set(key, node);
-      bindDataOn(node, instance);
-      bindAtEvents(node, instance);
+      const rowScan2 = scanComponent(node);
+      node.__micraScan = rowScan2;
+      bindDataOn(rowScan2.on, instance);
+      bindAtEvents(rowScan2.atEvents, instance);
+      bindModels(rowScan2.model, instance);
     }
     const itemState = Object.assign(
       Object.create(state),
       { item, index, $index: index }
     );
-    applyDirectives(node, itemState, rawState, instance);
+    const rowScan = (_a = node.__micraScan) != null ? _a : node.__micraScan = scanComponent(node);
+    applyDirectives(rowScan, itemState, rawState, instance);
     nextNodes.push(node);
   }
   for (const [key, node] of keyMap) {
@@ -565,9 +605,11 @@ function renderNoKey(tmpl, items, marker, parent, state, rawState, instance) {
       Object.create(state),
       { item, index, $index: index }
     );
-    applyDirectives(clone, itemState, rawState, instance);
-    bindDataOn(clone, instance);
-    bindAtEvents(clone, instance);
+    const fragScan = scanFragment(clone);
+    applyDirectives(fragScan, itemState, rawState, instance);
+    bindDataOn(fragScan.on, instance);
+    bindAtEvents(fragScan.atEvents, instance);
+    bindModels(fragScan.model, instance);
     const nodes = Array.from(clone.childNodes);
     nodes.forEach((n) => {
       n.__micraEach = true;
@@ -579,9 +621,9 @@ function renderNoKey(tmpl, items, marker, parent, state, rawState, instance) {
 }
 
 // src/dom/refs.ts
-function collectRefs(root, instance) {
+function collectRefs(els, instance) {
   instance.refs = {};
-  for (const el of queryOwn(root, "data-ref")) {
+  for (const el of els) {
     const name = el.dataset["ref"];
     if (name) instance.refs[name] = el;
   }
@@ -595,10 +637,13 @@ function mount(selector, definition) {
     warn(`"${selector}" not found`);
     return null;
   }
-  if (_instances.has(root)) return _instances.get(root);
+  if (_instances.has(root))
+    return _instances.get(root);
   const rawState = { ...(_a = definition.state) != null ? _a : {} };
   const instance = { $el: root, refs: {} };
-  for (const [key, val] of Object.entries(definition)) {
+  for (const [key, val] of Object.entries(
+    definition
+  )) {
     if (key === "state" || key === "onCreate" || key === "onDestroy") continue;
     if (typeof val === "function") instance[key] = val;
   }
@@ -642,22 +687,27 @@ function mount(selector, definition) {
   });
   let warnedReentry = false;
   instance.render = function() {
+    var _a2;
     if (instance.__micraDestroyed) return;
     if (isRendering) {
       if (!warnedReentry) {
-        warn("render() re-entry detected \u2014 mutation inside a directive expression is ignored. Move state writes to a method.");
+        warn(
+          "render() re-entry detected \u2014 mutation inside a directive expression is ignored. Move state writes to a method."
+        );
         warnedReentry = true;
       }
       return;
     }
     isRendering = true;
     try {
-      applyDirectives(root, exprState, rawState, instance);
-      renderList(root, exprState, rawState, instance);
-      bindDataOn(root, instance);
-      bindAtEvents(root, instance);
-      bindModels(root, instance);
-      collectRefs(root, instance);
+      const mRoot2 = root;
+      const scan = (_a2 = mRoot2.__micraScan) != null ? _a2 : mRoot2.__micraScan = scanComponent(root);
+      applyDirectives(scan, exprState, rawState, instance);
+      renderList(scan.each, exprState, rawState, instance);
+      bindDataOn(scan.on, instance);
+      bindAtEvents(scan.atEvents, instance);
+      bindModels(scan.model, instance);
+      collectRefs(scan.refs, instance);
     } finally {
       isRendering = false;
     }
@@ -666,14 +716,16 @@ function mount(selector, definition) {
     var _a2, _b;
     if (instance.__micraDestroyed) return;
     instance.__micraDestroyed = true;
-    (_a2 = instance.__micraListeners) == null ? void 0 : _a2.forEach(({ el, type, fn }) => el.removeEventListener(type, fn));
+    (_a2 = instance.__micraListeners) == null ? void 0 : _a2.forEach(
+      ({ el, type, fn }) => el.removeEventListener(type, fn)
+    );
     instance.__micraListeners = [];
     const clearFlags = (el) => {
       const m = el;
       delete m.__micraEvents;
       delete m.__micraAtBound;
       delete m.__micraModel;
-      delete m.__micraCache;
+      delete m.__micraScan;
     };
     clearFlags(root);
     root.querySelectorAll("*").forEach(clearFlags);
@@ -685,7 +737,8 @@ function mount(selector, definition) {
   };
   _instances.set(root, instance);
   instance.render();
-  validateDirectives(root);
+  const mRoot = root;
+  if (mRoot.__micraScan) validateDirectives(mRoot.__micraScan);
   if (typeof definition.onCreate === "function")
     Promise.resolve().then(
       () => definition.onCreate.call(instance)

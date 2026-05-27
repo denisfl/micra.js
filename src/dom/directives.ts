@@ -4,27 +4,21 @@
  * Responsibilities:
  *   - data-text, data-html, data-if, data-show, data-bind, data-model
  *   - data-class (additive class toggling)
- *   - Directive result cache (built once per element, reused on re-renders)
  *
- * LLM NOTE: applyDirectives() is called on every render. The directive cache
- * (DirectiveCache on el.__micraCache) avoids repeated querySelectorAll on
- * re-renders — cache is built lazily on the first call for each root element.
+ * LLM NOTE: applyDirectives() is called on every render. It consumes a
+ * pre-computed ScanIndex (built once by scan.ts and cached on the element).
+ * The scan replaced 10+ querySelectorAll calls with a single TreeWalker pass.
  *
  * Important: this module does NOT handle data-each — see dom/each.ts.
  */
 
 import type {
-  CachedBinding,
   CachedIfBinding,
-  CachedPairBinding,
-  DirectiveCache,
   InternalInstance,
-  MicraElement,
-  MicraTemplate,
+  ScanIndex,
   StateRecord,
 } from '../types'
 import { evalExpr, warn } from '../utils/expr'
-import { queryOwn, queryAll } from './query'
 
 // ── Directive appliers ────────────────────────────────────────────────────────
 // Each function is PURE relative to state — reads state, writes DOM.
@@ -110,13 +104,8 @@ function applyBind(
 
 /**
  * data-class="active:isActive, disabled:count === 0"
- * Parses comma-separated `className:expression` pairs and toggles classes additively.
- * Unlike data-bind="class:expr" this does NOT replace the full className.
- *
- * Syntax mirrors data-bind — split by comma, then by first colon.
- *
- * @example
- * <div data-class="active:tab === 'home', hidden:!loaded">
+ * Toggles classes additively (does NOT replace full className like data-bind:class).
+ * Pairs are pre-parsed at scan time.
  */
 function applyClass(
   el: Element,
@@ -126,20 +115,6 @@ function applyClass(
   for (const [cls, valExpr] of pairs) {
     el.classList.toggle(cls, Boolean(evalExpr(valExpr, state)))
   }
-}
-
-/** @internal Parse a comma+colon spec like `href:url, disabled:loading` once. */
-function parsePairs(expr: string): Array<readonly [string, string]> {
-  const out: Array<readonly [string, string]> = []
-  for (const part of expr.split(',')) {
-    const colonIdx = part.indexOf(':')
-    if (colonIdx === -1) continue
-    const left  = part.slice(0, colonIdx).trim()
-    const right = part.slice(colonIdx + 1).trim()
-    if (!left) continue
-    out.push([left, right])
-  }
-  return out
 }
 
 function applyModel(
@@ -157,126 +132,65 @@ function applyModel(
   // listener is attached separately in events.ts — this only syncs the value
 }
 
-// ── Directive cache ───────────────────────────────────────────────────────────
-
-/** @internal Collect all directive bindings for a root element. Built once. */
-function buildCache(root: Element): DirectiveCache {
-  const pick = (attr: string): CachedBinding[] => {
-    const els = queryOwn(root, attr)
-    // Include root itself
-    if ((root as HTMLElement).hasAttribute?.(attr)) els.unshift(root)
-    return els
-      .filter(el => !el.closest('template'))
-      .map(el => ({ el, expr: el.getAttribute(attr)! }))
-  }
-  const pickPairs = (attr: string): CachedPairBinding[] =>
-    pick(attr).map(b => ({ ...b, pairs: parsePairs(b.expr) }))
-  return {
-    text:  pick('data-text'),
-    html:  pick('data-html'),
-    if:    pick('data-if') as CachedIfBinding[],
-    show:  pick('data-show'),
-    bind:  pickPairs('data-bind'),
-    model: pick('data-model'),
-    class: pickPairs('data-class'),
-  }
-}
-
 // ── Main entry point ──────────────────────────────────────────────────────────
 
 /**
  * Apply all non-each directives to a component subtree.
  *
- * For regular Elements: directive bindings are cached in `el.__micraCache`
- * after the first call — subsequent re-renders skip querySelectorAll entirely.
+ * Consumes a pre-computed ScanIndex. data-if runs first so subsequent
+ * directives don't write into a tree that's about to be detached this tick.
  *
- * For DocumentFragments (no-key each clones): always re-scan because these
- * fragments are new clones on every render.
- *
- * @param root     - Component root Element or DocumentFragment (no-key each clone)
+ * @param scan     - Pre-computed scan from scan.ts (cached per element)
  * @param state    - Expression state (may include item/index for each rows)
  * @param rawState - Raw (non-proxy) state for model sync
- * @param instance - Component instance (unused here, kept for future hooks)
  */
 export function applyDirectives<S extends StateRecord>(
-  root: Element | DocumentFragment,
+  scan: ScanIndex,
   state: StateRecord,
   rawState: StateRecord,
   _instance: InternalInstance<S>,
 ): void {
-  // DocumentFragments are temporary clones — always scan, never cache
-  if (root.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
-    applyFromList(buildFragmentList(root as DocumentFragment), state, rawState)
-    return
-  }
-
-  const el = root as MicraElement
-  if (!el.__micraCache) el.__micraCache = buildCache(el)
-  applyFromList(el.__micraCache, state, rawState)
-}
-
-/** @internal Apply a pre-built cache / binding list to current state. */
-function applyFromList(
-  cache: DirectiveCache,
-  state: StateRecord,
-  rawState: StateRecord,
-): void {
   // data-if runs first so subsequent directives don't write into a tree that's
   // about to be detached this tick.
-  cache.if.forEach(b => applyIf(b, state))
-  cache.text.forEach(b => applyText(b.el, b.expr, state))
-  cache.html.forEach(b => applyHtml(b.el, b.expr, state))
-  cache.show.forEach(b => applyShow(b.el, b.expr, state))
-  cache.bind.forEach(b => applyBind(b.el, b.pairs, state))
-  cache.model.forEach(b => applyModel(b.el, b.expr.trim(), rawState))
-  cache.class.forEach(b => applyClass(b.el, b.pairs, state))
-}
-
-/** @internal Scan a DocumentFragment (no-key each clone) — returns a DirectiveCache. */
-function buildFragmentList(frag: DocumentFragment): DirectiveCache {
-  const pick = (attr: string): CachedBinding[] =>
-    queryAll(frag, `[${attr}]`)
-      .filter(el => !el.closest('template'))
-      .map(el => ({ el, expr: el.getAttribute(attr)! }))
-  const pickPairs = (attr: string): CachedPairBinding[] =>
-    pick(attr).map(b => ({ ...b, pairs: parsePairs(b.expr) }))
-  return {
-    text:  pick('data-text'),
-    html:  pick('data-html'),
-    if:    pick('data-if') as CachedIfBinding[],
-    show:  pick('data-show'),
-    bind:  pickPairs('data-bind'),
-    model: pick('data-model'),
-    class: pickPairs('data-class'),
-  }
+  for (const b of scan.if) applyIf(b, state)
+  for (const b of scan.text) applyText(b.el, b.expr, state)
+  for (const b of scan.html) applyHtml(b.el, b.expr, state)
+  for (const b of scan.show) applyShow(b.el, b.expr, state)
+  for (const b of scan.bind) applyBind(b.el, b.pairs, state)
+  for (const b of scan.model) applyModel(b.el, b.expr.trim(), rawState)
+  for (const b of scan.class) applyClass(b.el, b.pairs, state)
 }
 
 // ── Dev warning helper ────────────────────────────────────────────────────────
 
 /**
  * Validate directive usage and emit dev warnings.
- * Called once after the initial render of a component.
+ * Called once after the initial render of a component, with the already-built
+ * scan so we don't walk the DOM again.
  *
  * @internal
  */
-export function validateDirectives(root: Element): void {
-  queryOwn(root, 'data-each').forEach(el => {
-    const tmpl = el as MicraTemplate
+export function validateDirectives(scan: ScanIndex): void {
+  for (const el of scan.each) {
+    const tmpl = el as HTMLTemplateElement & { __micraNoKeyWarned?: true }
     if (!el.hasAttribute('data-key') && !tmpl.__micraNoKeyWarned) {
       tmpl.__micraNoKeyWarned = true
-      warn(`data-each="${el.getAttribute('data-each')}" has no data-key — keyed diff disabled. Add data-key="id" for better performance.`)
+      warn(
+        `data-each="${el.getAttribute('data-each')}" has no data-key — ` +
+        `keyed diff disabled. Add data-key="id" for better performance.`,
+      )
     }
-  })
+  }
 
   // data-bind="class:..." replaces className wholesale, which fights with
   // data-class on the same element. Warn so the developer picks one.
-  const bindEls = queryOwn(root, 'data-bind')
-  if ((root as HTMLElement).hasAttribute?.('data-bind') && !bindEls.includes(root)) bindEls.unshift(root)
-  for (const el of bindEls) {
-    const spec = el.getAttribute('data-bind') ?? ''
-    const hasClassBind = spec.split(',').some(p => p.trim().split(':')[0]?.trim() === 'class')
-    if (hasClassBind && el.hasAttribute('data-class')) {
-      warn(`element has both data-bind="class:..." and data-class — they fight on every render. Use one.`)
+  for (const b of scan.bind) {
+    const hasClassBind = b.pairs.some(p => p[0] === 'class')
+    if (hasClassBind && b.el.hasAttribute('data-class')) {
+      warn(
+        `element has both data-bind="class:..." and data-class — they fight ` +
+        `on every render. Use one.`,
+      )
     }
   }
 }

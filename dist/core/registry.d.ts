@@ -14,13 +14,22 @@ export declare const _instances: Map<HTMLElement, InternalInstance<StateRecord>>
 /**
  * Register a component definition under `name`.
  *
+ * Both state shape (`S`) and method set (`M`) are inferred from the literal,
+ * so `this.state.X` and `this.someMethod()` are fully typed inside the
+ * method bodies and lifecycle hooks.
+ *
  * @example
- * define('counter', { state: { count: 0 }, inc() { this.state.count++ } })
+ * define('counter', {
+ *   state: { count: 0 },
+ *   inc() { this.state.count++ },        // this.state.count: number ✓
+ *   reset() { this.state.count = 0 },    // this.reset() is also typed ✓
+ *   onCreate() { this.inc() },           // ✓
+ * })
  */
-export declare function define<S extends StateRecord>(name: string, definition: ComponentDefinition<S>): void;
+export declare function define<S extends StateRecord, M>(name: string, definition: ComponentDefinition<S, M>): void;
 /**
  * Type-helper — returns `definition` unchanged but lets TypeScript infer `S`
- * from the `state` literal so all methods are typed with the correct `this`.
+ * and `M` from the literal so all methods are typed with the correct `this`.
  *
  * Use this when defining a component outside a `define()` call.
  *
@@ -31,7 +40,7 @@ export declare function define<S extends StateRecord>(name: string, definition: 
  * })
  * Micra.define('counter', counter)
  */
-export declare function defineComponent<S extends StateRecord>(definition: ComponentDefinition<S>): ComponentDefinition<S>;
+export declare function defineComponent<S extends StateRecord, M>(definition: ComponentDefinition<S, M>): ComponentDefinition<S, M>;
 /**
  * Returns a read-only view of all live instances (keyed by root element).
  * Useful for DevTools / debugging.

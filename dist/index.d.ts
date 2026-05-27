@@ -21,7 +21,7 @@
  *
  * @module Micra
  */
-export type { StateRecord, UnsubFn, EventHandler, FetchOptions, ComponentInstance, ComponentDefinition, } from './types';
+export type { StateRecord, UnsubFn, EventHandler, FetchOptions, ComponentMethods, ComponentBuiltins, ComponentInstance, ComponentDefinition, } from './types';
 export { FetchError } from './utils/fetch';
 export { define, defineComponent, instances, registry, debug } from './core/registry';
 export { mount } from './core/mount';

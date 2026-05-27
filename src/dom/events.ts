@@ -9,11 +9,18 @@
  * LLM NOTE: Every listener attached here is also recorded in
  * instance.__micraListeners so destroy() can remove it cleanly.
  * Re-render skips already-bound elements via per-element __micra* flags.
+ *
+ * All three binders accept pre-computed element lists from scan.ts —
+ * no DOM queries here.
  */
 
-import type { InternalInstance, MicraElement, StateRecord } from '../types'
+import type {
+  CachedBinding,
+  InternalInstance,
+  MicraElement,
+  StateRecord,
+} from '../types'
 import { warn } from '../utils/expr'
-import { queryOwn, queryOwnAll, queryAll } from './query'
 
 /** @internal Attach a DOM listener and track it on the instance for destroy(). */
 function track<S extends StateRecord>(
@@ -34,23 +41,16 @@ function track<S extends StateRecord>(
  *
  * Supports modifiers: `click.prevent`, `click.stop`, `click.self`.
  *
+ * @param els - Pre-computed list of [data-on] elements from scan.ts
+ *
  * @example
  * <button data-on="click:save">Save</button>
  * <form  data-on="submit.prevent:handleSubmit">
  */
 export function bindDataOn<S extends StateRecord>(
-  root: Element,
+  els: Element[],
   instance: InternalInstance<S>,
 ): void {
-  const isFragment = root.nodeType === 11
-  const els = isFragment
-    ? queryAll(root as unknown as ParentNode, '[data-on]')
-    : queryOwn(root, 'data-on')
-
-  // Include root itself if it carries data-on (e.g., the keyed item IS the button)
-  if (!isFragment && (root as HTMLElement).hasAttribute?.('data-on') && !els.includes(root))
-    els.unshift(root)
-
   for (const el of els) {
     const mEl = el as MicraElement
     if (mEl.__micraEvents) continue
@@ -81,25 +81,19 @@ export function bindDataOn<S extends StateRecord>(
 /**
  * Bind `@event="method"` shorthand attributes (Stimulus-style).
  * Bound once per element via `__micraAtBound` — re-renders are no-ops.
- * Supports the same modifiers as data-on: `@click.prevent="submit"`.
+ *
+ * @param els - Pre-computed list of elements with at least one @-prefixed attr
+ *              (from scan.ts — replaces the old `querySelectorAll('*')` walk)
  *
  * @example
  * <button @click="increment">+</button>
  * <form @submit.prevent="handleSubmit">
  */
 export function bindAtEvents<S extends StateRecord>(
-  root: Element,
+  els: Element[],
   instance: InternalInstance<S>,
 ): void {
-  const isFragment = root.nodeType === 11
-  const all = isFragment
-    ? queryAll(root as unknown as ParentNode, '*')
-    : queryOwnAll(root, '*')
-
-  // Include root itself for the regular-element case
-  if (!isFragment && !all.includes(root)) all.unshift(root)
-
-  for (const el of all) {
+  for (const el of els) {
     const mEl = el as MicraElement
     if (mEl.__micraAtBound) continue
 
@@ -133,25 +127,23 @@ export function bindAtEvents<S extends StateRecord>(
  * Numeric inputs (`type="number"` / `type="range"`) write numbers, not strings.
  * Checkbox inputs write booleans. Everything else writes strings.
  *
+ * @param bindings - Pre-computed model bindings from scan.ts
+ *                   (each carries { el, expr } where expr is the state key)
+ *
  * @example
  * <input data-model="search">   // updates state.search on every keystroke
  * <select data-model="sortBy">  // updates state.sortBy on change
  */
 export function bindModels<S extends StateRecord>(
-  root: Element,
+  bindings: CachedBinding[],
   instance: InternalInstance<S>,
 ): void {
-  const isFragment = root.nodeType === 11
-  const els = isFragment
-    ? queryAll(root as unknown as ParentNode, '[data-model]')
-    : queryOwn(root, 'data-model')
-
-  for (const el of els) {
+  for (const { el, expr } of bindings) {
     const mEl = el as MicraElement
     if (mEl.__micraModel) continue
     mEl.__micraModel = true
 
-    const key = (el as HTMLInputElement).dataset['model'] ?? ''
+    const key = expr.trim()
     const tag = el.tagName
     const inputEl = el as HTMLInputElement
     const inputType = inputEl.type

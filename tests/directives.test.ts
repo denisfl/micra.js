@@ -2,8 +2,31 @@
  * tests/directives.test.ts — DOM directive tests (section 3)
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { applyDirectives } from '../src/dom/directives'
+import { applyDirectives as _applyDirectives, validateDirectives as _validateDirectives } from '../src/dom/directives'
+import { scanComponent } from '../src/dom/scan'
 import type { InternalInstance, StateRecord } from '../src/types'
+
+// Shims: applyDirectives + validateDirectives now consume a ScanIndex.
+// The tests still pass an Element root — scan on first call, cache on the
+// root (mimicking what src/core/mount.ts does in production). Caching is
+// critical for data-if tests: once the el is detached, a fresh scan would
+// not find it.
+import type { MicraElement } from '../src/types'
+function applyDirectives(
+  root: Element,
+  state: StateRecord,
+  rawState: StateRecord,
+  inst: InternalInstance,
+): void {
+  const mRoot = root as MicraElement
+  const scan = mRoot.__micraScan ?? (mRoot.__micraScan = scanComponent(root))
+  _applyDirectives(scan, state, rawState, inst)
+}
+function validateDirectives(root: Element): void {
+  const mRoot = root as MicraElement
+  const scan = mRoot.__micraScan ?? (mRoot.__micraScan = scanComponent(root))
+  _validateDirectives(scan)
+}
 
 // Helper: create a minimal InternalInstance stub
 function makeInstance(state: StateRecord = {}): InternalInstance {
@@ -305,7 +328,6 @@ describe('3.5 data-model', () => {
 
 describe('3.5.bis class conflict warning', () => {
   it('warns when data-bind class: and data-class are on the same element', async () => {
-    const { validateDirectives } = await import('../src/dom/directives')
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const el = document.createElement('div')
     el.setAttribute('data-bind', 'class:cls')
@@ -316,7 +338,6 @@ describe('3.5.bis class conflict warning', () => {
   })
 
   it('does NOT warn when only data-bind has class', async () => {
-    const { validateDirectives } = await import('../src/dom/directives')
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const el = document.createElement('div')
     el.setAttribute('data-bind', 'class:cls')
@@ -326,7 +347,6 @@ describe('3.5.bis class conflict warning', () => {
   })
 
   it('does NOT warn for unrelated data-bind keys + data-class', async () => {
-    const { validateDirectives } = await import('../src/dom/directives')
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const el = document.createElement('div')
     el.setAttribute('data-bind', 'href:url')

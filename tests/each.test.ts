@@ -2,8 +2,20 @@
  * tests/each.test.ts — Keyed diff and non-keyed list tests (sections 4 & 5)
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderList } from '../src/dom/each'
+import { renderList as _renderList } from '../src/dom/each'
+import { scanComponent } from '../src/dom/scan'
 import type { InternalInstance, MicraTemplate, StateRecord } from '../src/types'
+
+// Shim: src/dom/each.ts now accepts a pre-scanned template list.
+// Tests still pass a root element — scan on call to keep test bodies stable.
+function renderList(
+  root: Element,
+  state: StateRecord,
+  rawState: StateRecord,
+  inst: InternalInstance,
+): void {
+  _renderList(scanComponent(root).each, state, rawState, inst)
+}
 
 function makeInstance(methods: Record<string, unknown> = {}): InternalInstance {
   return {

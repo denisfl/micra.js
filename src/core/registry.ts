@@ -12,6 +12,7 @@
 import type {
   ComponentDefinition,
   ComponentInstance,
+  ComponentMethods,
   InternalInstance,
   StateRecord,
 } from '../types'
@@ -27,19 +28,28 @@ export const _instances = new Map<HTMLElement, InternalInstance>()
 /**
  * Register a component definition under `name`.
  *
+ * Both state shape (`S`) and method set (`M`) are inferred from the literal,
+ * so `this.state.X` and `this.someMethod()` are fully typed inside the
+ * method bodies and lifecycle hooks.
+ *
  * @example
- * define('counter', { state: { count: 0 }, inc() { this.state.count++ } })
+ * define('counter', {
+ *   state: { count: 0 },
+ *   inc() { this.state.count++ },        // this.state.count: number ✓
+ *   reset() { this.state.count = 0 },    // this.reset() is also typed ✓
+ *   onCreate() { this.inc() },           // ✓
+ * })
  */
-export function define<S extends StateRecord>(
+export function define<S extends StateRecord, M>(
   name: string,
-  definition: ComponentDefinition<S>,
+  definition: ComponentDefinition<S, M>,
 ): void {
-  _registry.set(name, definition as ComponentDefinition)
+  _registry.set(name, definition as unknown as ComponentDefinition)
 }
 
 /**
  * Type-helper — returns `definition` unchanged but lets TypeScript infer `S`
- * from the `state` literal so all methods are typed with the correct `this`.
+ * and `M` from the literal so all methods are typed with the correct `this`.
  *
  * Use this when defining a component outside a `define()` call.
  *
@@ -50,9 +60,9 @@ export function define<S extends StateRecord>(
  * })
  * Micra.define('counter', counter)
  */
-export function defineComponent<S extends StateRecord>(
-  definition: ComponentDefinition<S>,
-): ComponentDefinition<S> {
+export function defineComponent<S extends StateRecord, M>(
+  definition: ComponentDefinition<S, M>,
+): ComponentDefinition<S, M> {
   return definition
 }
 
@@ -61,7 +71,7 @@ export function defineComponent<S extends StateRecord>(
  * Useful for DevTools / debugging.
  */
 export function instances(): ReadonlyMap<HTMLElement, ComponentInstance> {
-  return _instances
+  return _instances as unknown as ReadonlyMap<HTMLElement, ComponentInstance>
 }
 
 /**

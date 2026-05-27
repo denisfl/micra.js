@@ -4,36 +4,32 @@
  * Responsibilities:
  *   - data-text, data-html, data-if, data-show, data-bind, data-model
  *   - data-class (additive class toggling)
- *   - Directive result cache (built once per element, reused on re-renders)
  *
- * LLM NOTE: applyDirectives() is called on every render. The directive cache
- * (DirectiveCache on el.__micraCache) avoids repeated querySelectorAll on
- * re-renders — cache is built lazily on the first call for each root element.
+ * LLM NOTE: applyDirectives() is called on every render. It consumes a
+ * pre-computed ScanIndex (built once by scan.ts and cached on the element).
+ * The scan replaced 10+ querySelectorAll calls with a single TreeWalker pass.
  *
  * Important: this module does NOT handle data-each — see dom/each.ts.
  */
-import type { InternalInstance, StateRecord } from '../types';
+import type { InternalInstance, ScanIndex, StateRecord } from '../types';
 import { warn } from '../utils/expr';
 /**
  * Apply all non-each directives to a component subtree.
  *
- * For regular Elements: directive bindings are cached in `el.__micraCache`
- * after the first call — subsequent re-renders skip querySelectorAll entirely.
+ * Consumes a pre-computed ScanIndex. data-if runs first so subsequent
+ * directives don't write into a tree that's about to be detached this tick.
  *
- * For DocumentFragments (no-key each clones): always re-scan because these
- * fragments are new clones on every render.
- *
- * @param root     - Component root Element or DocumentFragment (no-key each clone)
+ * @param scan     - Pre-computed scan from scan.ts (cached per element)
  * @param state    - Expression state (may include item/index for each rows)
  * @param rawState - Raw (non-proxy) state for model sync
- * @param instance - Component instance (unused here, kept for future hooks)
  */
-export declare function applyDirectives<S extends StateRecord>(root: Element | DocumentFragment, state: StateRecord, rawState: StateRecord, _instance: InternalInstance<S>): void;
+export declare function applyDirectives<S extends StateRecord>(scan: ScanIndex, state: StateRecord, rawState: StateRecord, _instance: InternalInstance<S>): void;
 /**
  * Validate directive usage and emit dev warnings.
- * Called once after the initial render of a component.
+ * Called once after the initial render of a component, with the already-built
+ * scan so we don't walk the DOM again.
  *
  * @internal
  */
-export declare function validateDirectives(root: Element): void;
+export declare function validateDirectives(scan: ScanIndex): void;
 export { warn };

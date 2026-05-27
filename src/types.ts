@@ -32,14 +32,23 @@ export interface FetchOptions {
 }
 
 /**
- * The `this` context inside component methods and lifecycle hooks.
- * `S` is inferred from the component's `state` object.
+ * User-defined methods on a component definition. Any function-shaped property
+ * other than `state`, `onCreate`, `onDestroy` is treated as a method.
  *
- * @example
- * // state: { count: 0 } → S = { count: number }
- * increment() { this.state.count++ }  // count is number ✓
+ * LLM NOTE: this type is used as a structural HINT only — `M` in
+ * ComponentDefinition is unconstrained so TS can infer it from the literal
+ * without rejecting non-function siblings like `state`. The `[key: string]`
+ * shape here just documents intent.
  */
-export interface ComponentInstance<S extends StateRecord = StateRecord> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ComponentMethods = Record<string, (...args: any[]) => any>
+
+/**
+ * Built-in slots every instance gets: state, refs, $el, and the methods Micra
+ * itself injects (render, destroy, prop, fetch, emit, on). Kept separate from
+ * `M` so user methods can't accidentally shadow these names.
+ */
+export interface ComponentBuiltins<S extends StateRecord = StateRecord> {
   /** The root DOM element this component is mounted on. */
   readonly $el: HTMLElement
   /** Reactive state — any assignment triggers a batched re-render. */
@@ -69,10 +78,39 @@ export interface ComponentInstance<S extends StateRecord = StateRecord> {
 }
 
 /**
+ * The `this` context inside component methods and lifecycle hooks.
+ * `S` is inferred from the component's `state` object; `M` is inferred from
+ * the methods on the same definition object. Both `this.state.X` and
+ * `this.someMethod()` are fully typed inside method bodies.
+ *
+ * @example
+ * Micra.define('counter', {
+ *   state: { count: 0 },
+ *   inc() {
+ *     this.state.count++   // this.state.count: number ✓
+ *     this.dec()           // this.dec: () => void ✓
+ *     // this.foo()        // ❌ Property 'foo' does not exist
+ *   },
+ *   dec() { this.state.count-- },
+ * })
+ */
+export type ComponentInstance<
+  S extends StateRecord = StateRecord,
+  M = ComponentMethods,
+> = ComponentBuiltins<S> & M
+
+/**
  * Component definition passed to `Micra.define` or `Micra.mount`.
  *
- * `S` is inferred from the `state` property — all methods receive
- * `this: ComponentInstance<S>` automatically via `ThisType<>`.
+ * Both `S` (state shape) and `M` (method set) are inferred from the literal.
+ * All methods and lifecycle hooks receive `this: ComponentInstance<S, M>` via
+ * `ThisType<>` — so `this.state.X` and `this.someMethod()` are both typed.
+ *
+ * LLM NOTE: `M` is intentionally unconstrained here. A constraint like
+ * `M extends ComponentMethods` would force every property in the literal to
+ * be a function — which would reject `state`. Without the constraint, TS
+ * structurally infers `M` as "everything in the literal except the known
+ * lifecycle/state keys", which is exactly what we want.
  *
  * @example
  * Micra.define('counter', {
@@ -80,21 +118,23 @@ export interface ComponentInstance<S extends StateRecord = StateRecord> {
  *   inc() { this.state.count++ },  // this.state.count: number ✓
  * })
  */
-export type ComponentDefinition<S extends StateRecord = StateRecord> = {
+export type ComponentDefinition<
+  S extends StateRecord = StateRecord,
+  M = ComponentMethods,
+> = {
   /** Initial flat state. Becomes reactive on mount. */
   state?: S
   /**
    * Called once after mount in a microtask — safe for async data fetching.
    * @example async onCreate() { this.state.data = await this.fetch('/api/data') }
    */
-  onCreate?: () => void | Promise<void>
+  onCreate?(): void | Promise<void>
   /**
    * Called on destroy — clean up DOM listeners, timers, etc.
    * Event bus subscriptions added via `this.on()` are cleaned up automatically.
    */
-  onDestroy?: () => void
-  [method: string]: unknown
-} & ThisType<ComponentInstance<S>>
+  onDestroy?(): void
+} & M & ThisType<ComponentInstance<S, M>>
 
 // ── Internal types ────────────────────────────────────────────────────────────
 // These are NOT exported from src/index.ts.
@@ -108,7 +148,7 @@ export interface MicraElement extends HTMLElement {
   __micraAtBound?: true     // @event shorthand bound (per-element)
   __micraKey?: unknown      // keyed-diff key
   __micraEach?: true        // belongs to a no-key each list
-  __micraCache?: DirectiveCache  // cached directive scan result
+  __micraScan?: ScanIndex   // single-pass scan result (cached after 1st render)
 }
 
 /**
@@ -159,13 +199,16 @@ export interface CachedPairBinding {
 }
 
 /**
- * @internal Directive scan result — built once per Element, reused every render.
- * This is the core of the performance optimization.
+ * @internal Single-pass scan result — built once per Element via one TreeWalker
+ * traversal, reused every render. This is the core of the performance
+ * optimization: instead of 10+ querySelectorAll calls per render, the scanner
+ * classifies every directive/event/ref attribute in a single DOM walk.
  *
- * LLM NOTE: DirectiveCache is built lazily on first render and stored on the
- * element. It avoids repeated querySelectorAll calls on every re-render.
+ * LLM NOTE: ScanIndex is built lazily on first render and stored on
+ * `el.__micraScan`. Subsequent renders skip the scan entirely.
  */
-export interface DirectiveCache {
+export interface ScanIndex {
+  // Directives — applied on every render
   text:  CachedBinding[]
   html:  CachedBinding[]
   if:    CachedIfBinding[]
@@ -173,15 +216,27 @@ export interface DirectiveCache {
   bind:  CachedPairBinding[]
   model: CachedBinding[]
   class: CachedPairBinding[]
+  // Lists — <template data-each>
+  each:  Element[]
+  // Events — bound once per element
+  on:    Element[]          // [data-on]
+  atEvents: Element[]       // any element with at least one @-prefixed attribute
+  // Refs — collected into instance.refs every render
+  refs:  Element[]          // [data-ref]
 }
 
 /**
  * @internal Full instance as seen inside the runtime — extends the public
- * interface with private bookkeeping slots and an index signature for
+ * built-ins with private bookkeeping slots and an index signature for
  * dynamic method dispatch.
+ *
+ * Note: internally we don't carry the user-method generic `M`. Internal modules
+ * dispatch methods by string name (`instance[methodName]()`), which is what
+ * the index signature is for. The public `mount()` return value re-projects
+ * to `ComponentInstance<S, M>` so callers get full type inference.
  */
 export interface InternalInstance<S extends StateRecord = StateRecord>
-  extends ComponentInstance<S> {
+  extends ComponentBuiltins<S> {
   __micraSubs?: UnsubFn[]
   __micraListeners?: TrackedListener[]
   __micraDestroyed?: true

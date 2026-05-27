@@ -11,17 +11,23 @@
  * mount() is called by both the public Micra.mount() API and by start()
  * (which scans the DOM for [data-component] elements).
  */
-import type { ComponentDefinition, ComponentInstance, StateRecord } from '../types';
+import type { ComponentDefinition, ComponentInstance, StateRecord } from "../types";
 /**
  * Mount a component definition onto a DOM element.
  * Returns the component instance, or null if the root element is not found.
  *
  * Already-mounted elements return the existing instance.
  *
+ * Both `S` (state) and `M` (methods) are inferred from the literal — the
+ * returned instance is fully typed: `inst.state.X` and `inst.someMethod()`
+ * are checked.
+ *
  * @example
  * const instance = Micra.mount('#counter', {
  *   state: { count: 0 },
  *   inc() { this.state.count++ },
  * })
+ * instance?.inc()
+ * instance?.state.count
  */
-export declare function mount<S extends StateRecord>(selector: string | HTMLElement, definition: ComponentDefinition<S>): ComponentInstance<S> | null;
+export declare function mount<S extends StateRecord, M>(selector: string | HTMLElement, definition: ComponentDefinition<S, M>): ComponentInstance<S, M> | null;
