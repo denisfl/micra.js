@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Stimulus bench frame</title>
+    <style>
+      body { margin: 0; font-family: system-ui, sans-serif; font-size: 12px; padding: 8px; color: #666; }
+    </style>
+    <script defer src="../vendors/stimulus-3.2.2.umd.js"></script>
+  </head>
+  <body>
+    <small>Isolated benchmark frame: <strong>Stimulus 3.2.2</strong></small>
+    <script type="module">
+      import { adapter } from '../adapters/stimulus.adapter.js'
+      import { setupFrame } from './frame.js'
+      await new Promise(r => window.addEventListener('load', r))
+      setupFrame(adapter)
+    </script>
+  </body>
+</html>

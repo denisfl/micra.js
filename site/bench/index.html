@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../assets/styles.css" />
+    <link rel="stylesheet" href="./bench.css" />
+    <title>Micra.js — Live Benchmark</title>
+
+    <!--
+      Vendor libraries (Alpine, petite-vue, Stimulus) are NOT loaded on
+      this page — each lives in its own iframe under frames/<lib>.html
+      so their MutationObservers and reactive queues stay isolated.
+    -->
+  </head>
+  <body>
+    <div class="app">
+      <main class="main">
+        <div class="content">
+          <section class="hero">
+            <h2>Live benchmark — Micra vs the others</h2>
+            <p>
+              Run the same workload across reactive UI libraries on your own
+              machine. No pre-recorded numbers, no marketing slides — click
+              <strong>Run all</strong> and watch what happens.
+            </p>
+          </section>
+
+          <section class="bench-host">
+            <div class="bench-disclaimer">
+              <strong>v0.5 — experimental.</strong> Reactive frameworks
+              (Alpine, petite-vue) occasionally time out under heavy
+              iteration loads — re-running usually recovers. Use the
+              numbers below as a directional comparison, not a benchmark
+              suite ready for press. <a href="#how-we-measure">Methodology &amp; caveats →</a>
+            </div>
+
+            <div class="bench-controls">
+              <button class="btn btn-primary btn-lg" id="run-all">
+                <svg class="icon" aria-hidden="true">
+                  <use href="#icon-play"></use>
+                </svg>
+                Run all benchmarks
+              </button>
+              <button class="btn" id="reset">Reset</button>
+              <span class="bench-progress" id="progress"></span>
+            </div>
+
+            <div class="bench-env" id="env"></div>
+
+            <div class="bench-grid" id="results-grid">
+              <!-- filled by JS -->
+            </div>
+
+            <details class="bench-method" id="how-we-measure">
+              <summary>How we measure</summary>
+              <div class="bench-method-body">
+                <p>
+                  Each scenario is run N times (specific to the workload).
+                  Each iteration: fresh DOM, <code>setup()</code> →
+                  measure <code>run()</code> with
+                  <code>performance.now()</code> → <code>teardown()</code>,
+                  then a 16ms idle gap.
+                </p>
+                <p>
+                  <strong>Median</strong> is reported (more stable than mean
+                  for warm-up effects). Each library's adapter implements
+                  the scenario in its own idiomatic API — same observable
+                  behavior, different code shape.
+                </p>
+                <p>
+                  <strong>What "N/A" means:</strong> some scenarios don't
+                  map across paradigms. Stimulus isn't reactive, so list
+                  scenarios are N/A. htmx and hyperscript solve different
+                  problems entirely (server-driven, inline DSL) — they're in
+                  the comparison table on the main page but not benchmarked
+                  here.
+                </p>
+                <p>
+                  <strong>Known limitations (v0.5 — experimental):</strong>
+                  Alpine.js and petite-vue use async reactivity schedulers
+                  (Vue's queue, Alpine's nextTick). We wait for a
+                  <code>requestAnimationFrame</code> before stopping the
+                  timer so renders complete, but cumulative state across
+                  iterations can still cause stalls — when that happens, a
+                  scenario times out at 60s and shows
+                  <span class="cell-err">ERR</span>. Re-running usually
+                  recovers. Micra, vanilla and Stimulus are stable.
+                </p>
+                <p>
+                  Source code:
+                  <a
+                    href="https://github.com/denisfl/micra.js/tree/master/site/bench"
+                    target="_blank"
+                    rel="noopener"
+                    >github.com/denisfl/micra.js/site/bench</a
+                  >
+                  · libraries pinned in
+                  <code>vendors/</code>. Each adapter runs in its own
+                  iframe (<code>frames/&lt;lib&gt;.html</code>) so
+                  MutationObservers and reactive queues are isolated.
+                </p>
+              </div>
+            </details>
+          </section>
+        </div>
+
+        <footer class="doc-footer">
+          <div class="footer-meta">
+            <div class="footer-brand">
+              <strong>Micra<span>.js</span></strong>
+              <span class="footer-version">v2.1.0</span>
+            </div>
+            <div class="footer-lines">
+              <span>
+                <a class="footer-link" href="../">← Back to docs</a>
+                · <a class="footer-link" href="../bench-legacy.html">Detailed Micra-only bench</a>
+              </span>
+            </div>
+          </div>
+        </footer>
+      </main>
+    </div>
+
+    <!-- Icons sprite -->
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      style="display: none"
+      aria-hidden="true"
+    >
+      <symbol id="icon-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 0 1 0 1.971l-11.54 6.347a1.125 1.125 0 0 1-1.667-.985V5.653Z" />
+      </symbol>
+    </svg>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
