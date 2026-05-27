@@ -8,13 +8,13 @@
     </style>
     <!-- Defer global init so we control timing -->
     <script>window.deferLoadingAlpine = (start) => { window.__startAlpine = start }</script>
-    <script defer src="../vendors/alpine-3.14.1.min.js"></script>
+    <script defer src="../../vendors/alpine-3.14.1.min.js"></script>
   </head>
   <body>
     <small>Isolated benchmark frame: <strong>Alpine.js 3.14.1</strong></small>
     <script type="module">
-      import { adapter } from '../adapters/alpine.adapter.js'
-      import { setupFrame } from './frame.js'
+      import { adapter } from '../../adapters/alpine.adapter.js'
+      import { setupFrame } from '../frame.js'
       // Wait for Alpine script to attach
       await new Promise(r => window.addEventListener('load', r))
       // Start Alpine to make .reactive() and other API available.
