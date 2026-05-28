@@ -1,4 +1,4 @@
-/* Micra.js v2.2.0 — https://github.com/micra-js/micra — MIT */
+/* Micra.js v2.2.1 — https://github.com/micra-js/micra — MIT */
 
 // src/utils/fetch.ts
 function getCSRF() {
@@ -604,16 +604,24 @@ function renderKeyed(tmpl, items, keyAttr, marker, keyMap, state, rawState, inst
     }
   }
   const prevList = tmpl.__micraList;
-  let orderChanged = nextNodes.length !== prevList.length;
-  if (!orderChanged) {
-    for (let i = 0; i < nextNodes.length; i++) {
-      if (nextNodes[i] !== prevList[i]) {
-        orderChanged = true;
-        break;
+  if (prevList.length === 0) {
+    if (nextNodes.length) {
+      const frag = document.createDocumentFragment();
+      for (const node of nextNodes) frag.append(node);
+      marker.after(frag);
+    }
+  } else {
+    let orderChanged = nextNodes.length !== prevList.length;
+    if (!orderChanged) {
+      for (let i = 0; i < nextNodes.length; i++) {
+        if (nextNodes[i] !== prevList[i]) {
+          orderChanged = true;
+          break;
+        }
       }
     }
+    if (orderChanged) reorderKeyed(nextNodes, prevList, marker);
   }
-  if (orderChanged) reorderKeyed(nextNodes, prevList, marker);
   tmpl.__micraList = nextNodes;
 }
 function reorderKeyed(nextNodes, prevList, marker) {

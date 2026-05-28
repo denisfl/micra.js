@@ -171,15 +171,26 @@ function renderKeyed<S extends StateRecord>(
     if (!nextKeys.has(key)) { node.remove(); keyMap.delete(key) }
   }
 
-  // Skip DOM reorder when list order is unchanged (pure JS array compare, no DOM reads).
   const prevList = tmpl.__micraList
-  let orderChanged = nextNodes.length !== prevList.length
-  if (!orderChanged) {
-    for (let i = 0; i < nextNodes.length; i++) {
-      if (nextNodes[i] !== prevList[i]) { orderChanged = true; break }
+  if (prevList.length === 0) {
+    // First render (or refill after a clear): every node is new and already in
+    // order — batch into one fragment so the DOM takes a single insertion
+    // instead of N anchor.after() calls. Skips LIS entirely.
+    if (nextNodes.length) {
+      const frag = document.createDocumentFragment()
+      for (const node of nextNodes) frag.append(node)
+      marker.after(frag)
     }
+  } else {
+    // Skip DOM reorder when list order is unchanged (pure JS array compare, no DOM reads).
+    let orderChanged = nextNodes.length !== prevList.length
+    if (!orderChanged) {
+      for (let i = 0; i < nextNodes.length; i++) {
+        if (nextNodes[i] !== prevList[i]) { orderChanged = true; break }
+      }
+    }
+    if (orderChanged) reorderKeyed(nextNodes, prevList, marker)
   }
-  if (orderChanged) reorderKeyed(nextNodes, prevList, marker)
 
   tmpl.__micraList = nextNodes
 }

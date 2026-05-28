@@ -4,6 +4,19 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] — 2026-05-28
+
+### Performance — batched first list render
+
+- **First render of a keyed `data-each` list now inserts in a single DOM
+  operation.** `renderKeyed` previously appended each new row with an
+  individual `anchor.after(node)` call — N insertions for an N-row list. On the
+  initial render (no previous rows to diff against), all freshly-cloned rows are
+  now collected into one `DocumentFragment` and inserted with a single
+  `marker.after()`, skipping the LIS reorder pass entirely. The update, swap, and
+  reorder paths are unchanged.
+- No public-API change. Bundle stays at **5.4 KB gzip**.
+
 ## [2.2.0] — 2026-05-27
 
 ### Performance — single-pass DOM scan
