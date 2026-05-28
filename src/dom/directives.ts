@@ -36,7 +36,8 @@ function applyText(el: Element, expr: string, state: StateRecord): void {
  * for the full security model.
  */
 function applyHtml(el: Element, expr: string, state: StateRecord): void {
-  el.innerHTML = String(evalExpr(expr, state) ?? '')
+  const html = String(evalExpr(expr, state) ?? '')
+  if (el.innerHTML !== html) el.innerHTML = html
 }
 
 /**
@@ -72,7 +73,9 @@ function applyIf(binding: CachedIfBinding, state: StateRecord): void {
  * data-show — visibility toggle via `style.display`. Element stays in the DOM.
  */
 function applyShow(el: Element, expr: string, state: StateRecord): void {
-  (el as HTMLElement).style.display = evalExpr(expr, state) ? '' : 'none'
+  const desired = evalExpr(expr, state) ? '' : 'none'
+  const htmlEl = el as HTMLElement
+  if (htmlEl.style.display !== desired) htmlEl.style.display = desired
 }
 
 function applyBind(

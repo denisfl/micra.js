@@ -18,7 +18,7 @@ import type { StateRecord } from '../types';
  * const state = createReactiveState(raw, render)
  * state.count = 5  // triggers render() in next microtask
  */
-export declare function createReactiveState<S extends StateRecord>(obj: S, schedule: () => void): S;
+export declare function createReactiveState<S extends StateRecord>(obj: S, schedule: () => void, onKey?: (key: string) => void): S;
 /**
  * Return a debounce function that defers `render` to the next microtask.
  * Multiple calls within the same tick collapse to a single render.

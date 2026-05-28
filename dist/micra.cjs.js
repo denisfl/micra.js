@@ -176,27 +176,32 @@ function safeStateHas(state, key) {
   return false;
 }
 function evalExpr(expr, state) {
-  if (SIMPLE_PATH.test(expr)) {
-    const parts = expr.split(".");
-    if (!safeStateHas(state, parts[0])) return void 0;
-    return parts.reduce(
+  let cached = exprCache.get(expr);
+  if (!cached) {
+    if (SIMPLE_PATH.test(expr)) {
+      cached = { kind: "path", parts: expr.split(".") };
+    } else {
+      try {
+        cached = {
+          kind: "fn",
+          fn: new Function("$s", "$safe", `with($safe){with($s){return (${expr})}}`)
+        };
+      } catch {
+        warn(`invalid expression "${expr}"`);
+        cached = { kind: "fn", fn: () => void 0 };
+      }
+    }
+    exprCache.set(expr, cached);
+  }
+  if (cached.kind === "path") {
+    if (!safeStateHas(state, cached.parts[0])) return void 0;
+    return cached.parts.reduce(
       (obj, key) => obj != null ? obj[key] : void 0,
       state
     );
   }
-  if (!exprCache.has(expr)) {
-    try {
-      exprCache.set(
-        expr,
-        new Function("$s", "$safe", `with($safe){with($s){return (${expr})}}`)
-      );
-    } catch {
-      warn(`invalid expression "${expr}"`);
-      exprCache.set(expr, () => void 0);
-    }
-  }
   try {
-    return exprCache.get(expr)(safeStateWrap(state), SAFE_OUTER);
+    return cached.fn(safeStateWrap(state), SAFE_OUTER);
   } catch (e) {
     if (!warnedRuntime.has(expr)) {
       warnedRuntime.add(expr);
@@ -234,11 +239,12 @@ function emit(event, payload) {
 }
 
 // src/core/reactive.ts
-function createReactiveState(obj, schedule) {
+function createReactiveState(obj, schedule, onKey) {
   return new Proxy(obj, {
     set(target, key, value) {
       ;
       target[key] = value;
+      onKey == null ? void 0 : onKey(key);
       schedule();
       return true;
     }
@@ -264,7 +270,8 @@ function applyText(el, expr, state) {
 }
 function applyHtml(el, expr, state) {
   var _a;
-  el.innerHTML = String((_a = evalExpr(expr, state)) != null ? _a : "");
+  const html = String((_a = evalExpr(expr, state)) != null ? _a : "");
+  if (el.innerHTML !== html) el.innerHTML = html;
 }
 function applyIf(binding, state) {
   const el = binding.el;
@@ -281,7 +288,9 @@ function applyIf(binding, state) {
   }
 }
 function applyShow(el, expr, state) {
-  el.style.display = evalExpr(expr, state) ? "" : "none";
+  const desired = evalExpr(expr, state) ? "" : "none";
+  const htmlEl = el;
+  if (htmlEl.style.display !== desired) htmlEl.style.display = desired;
 }
 function applyBind(el, pairs, state) {
   for (const [attr, valExpr] of pairs) {
@@ -542,7 +551,7 @@ function scanFragment(frag) {
 }
 
 // src/dom/each.ts
-function renderList(templates, state, rawState, instance) {
+function renderList(templates, state, rawState, instance, triggerKey) {
   var _a;
   for (const tmplEl of templates) {
     if (tmplEl.tagName !== "TEMPLATE") continue;
@@ -559,22 +568,22 @@ function renderList(templates, state, rawState, instance) {
     }
     const marker = tmpl.__micraMarker;
     const keyMap = tmpl.__micraNodes;
-    const parent = marker.parentNode;
-    if (!parent) continue;
+    if (!marker.parentNode) continue;
     if (!Array.isArray(items)) {
       tmpl.__micraList.forEach((n) => n.remove());
       tmpl.__micraList = [];
       keyMap.clear();
       continue;
     }
+    const canSkipUnchanged = triggerKey !== null && triggerKey !== "MULTIPLE" && triggerKey === itemsExpr;
     if (keyAttr) {
-      renderKeyed(tmpl, items, keyAttr, marker, keyMap, parent, state, rawState, instance);
+      renderKeyed(tmpl, items, keyAttr, marker, keyMap, state, rawState, instance, canSkipUnchanged);
     } else {
-      renderNoKey(tmpl, items, marker, parent, state, rawState, instance);
+      renderNoKey(tmpl, items, marker, state, rawState, instance);
     }
   }
 }
-function renderKeyed(tmpl, items, keyAttr, marker, keyMap, parent, state, rawState, instance) {
+function renderKeyed(tmpl, items, keyAttr, marker, keyMap, state, rawState, instance, canSkipUnchanged) {
   var _a;
   const nextKeys = /* @__PURE__ */ new Set();
   const nextNodes = [];
@@ -608,11 +617,17 @@ function renderKeyed(tmpl, items, keyAttr, marker, keyMap, parent, state, rawSta
       bindDataOn(rowScan2.on, instance);
       bindAtEvents(rowScan2.atEvents, instance);
       bindModels(rowScan2.model, instance);
+      node._itemState = Object.create(state);
+    } else if (canSkipUnchanged && node.__micraItem === item && node.__micraIndex === index) {
+      nextNodes.push(node);
+      continue;
     }
-    const itemState = Object.assign(
-      Object.create(state),
-      { item, index, $index: index }
-    );
+    node.__micraItem = item;
+    node.__micraIndex = index;
+    const itemState = node._itemState;
+    itemState.item = item;
+    itemState.index = index;
+    itemState.$index = index;
     const rowScan = (_a = node.__micraScan) != null ? _a : node.__micraScan = scanComponent(node);
     applyDirectives(rowScan, itemState, rawState, instance);
     nextNodes.push(node);
@@ -623,14 +638,56 @@ function renderKeyed(tmpl, items, keyAttr, marker, keyMap, parent, state, rawSta
       keyMap.delete(key);
     }
   }
-  let cursor = marker;
-  for (const node of nextNodes) {
-    if (cursor.nextSibling !== node) parent.insertBefore(node, cursor.nextSibling);
-    cursor = node;
+  const prevList = tmpl.__micraList;
+  let orderChanged = nextNodes.length !== prevList.length;
+  if (!orderChanged) {
+    for (let i = 0; i < nextNodes.length; i++) {
+      if (nextNodes[i] !== prevList[i]) {
+        orderChanged = true;
+        break;
+      }
+    }
   }
+  if (orderChanged) reorderKeyed(nextNodes, prevList, marker);
   tmpl.__micraList = nextNodes;
 }
-function renderNoKey(tmpl, items, marker, parent, state, rawState, instance) {
+function reorderKeyed(nextNodes, prevList, marker) {
+  const prevPos = /* @__PURE__ */ new Map();
+  for (let i = 0; i < prevList.length; i++) prevPos.set(prevList[i], i);
+  const n = nextNodes.length;
+  const tails = [];
+  const tailIdx = [];
+  const prev = new Array(n).fill(-1);
+  for (let i = 0; i < n; i++) {
+    const p = prevPos.get(nextNodes[i]);
+    if (p === void 0) continue;
+    let lo = 0, hi = tails.length;
+    while (lo < hi) {
+      const m = lo + hi >> 1;
+      tails[m] < p ? lo = m + 1 : hi = m;
+    }
+    if (lo > 0) prev[i] = tailIdx[lo - 1];
+    tails[lo] = p;
+    tailIdx[lo] = i;
+  }
+  const stable = /* @__PURE__ */ new Set();
+  let idx = tailIdx[tails.length - 1];
+  while (idx >= 0) {
+    stable.add(idx);
+    idx = prev[idx];
+  }
+  let anchor = marker;
+  for (let i = 0; i < n; i++) {
+    const node = nextNodes[i];
+    if (stable.has(i)) {
+      anchor = node;
+      continue;
+    }
+    anchor.after(node);
+    anchor = node;
+  }
+}
+function renderNoKey(tmpl, items, marker, state, rawState, instance) {
   tmpl.__micraList.forEach((n) => n.remove());
   tmpl.__micraList = [];
   const frag = document.createDocumentFragment();
@@ -652,11 +709,12 @@ function renderNoKey(tmpl, items, marker, parent, state, rawState, instance) {
     });
     tmpl.__micraList.push(...nodes);
   }
-  parent.insertBefore(frag, marker.nextSibling);
+  marker.after(frag);
 }
 
 // src/dom/refs.ts
 function collectRefs(els, instance) {
+  if (!els.length) return;
   instance.refs = {};
   for (const el of els) {
     const name = el.dataset["ref"];
@@ -699,8 +757,12 @@ function mount(selector, definition) {
     return unsub;
   };
   let isRendering = false;
+  let _triggerKey = null;
   const schedule = createScheduler(() => instance.render());
-  instance.state = createReactiveState(rawState, schedule);
+  instance.state = createReactiveState(rawState, schedule, (key) => {
+    if (_triggerKey === null) _triggerKey = key;
+    else if (_triggerKey !== key) _triggerKey = "MULTIPLE";
+  });
   const boundMethods = /* @__PURE__ */ new Map();
   const exprState = new Proxy(rawState, {
     get(target, key) {
@@ -724,6 +786,8 @@ function mount(selector, definition) {
   instance.render = function() {
     var _a2;
     if (instance.__micraDestroyed) return;
+    const triggerKey = _triggerKey;
+    _triggerKey = null;
     if (isRendering) {
       if (!warnedReentry) {
         warn(
@@ -738,7 +802,7 @@ function mount(selector, definition) {
       const mRoot2 = root;
       const scan = (_a2 = mRoot2.__micraScan) != null ? _a2 : mRoot2.__micraScan = scanComponent(root);
       applyDirectives(scan, exprState, rawState, instance);
-      renderList(scan.each, exprState, rawState, instance);
+      renderList(scan.each, exprState, rawState, instance, triggerKey);
       bindDataOn(scan.on, instance);
       bindAtEvents(scan.atEvents, instance);
       bindModels(scan.model, instance);

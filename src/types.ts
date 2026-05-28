@@ -149,6 +149,9 @@ export interface MicraElement extends HTMLElement {
   __micraKey?: unknown      // keyed-diff key
   __micraEach?: true        // belongs to a no-key each list
   __micraScan?: ScanIndex   // single-pass scan result (cached after 1st render)
+  __micraItem?: StateRecord  // keyed row: last-rendered item ref (for skip check)
+  __micraIndex?: number      // keyed row: last-rendered index (for skip check)
+  _itemState?: StateRecord  // keyed row: reused itemState (avoids Object.create per render)
 }
 
 /**
@@ -166,7 +169,7 @@ export interface TrackedListener {
 export interface MicraTemplate extends HTMLTemplateElement {
   __micraMarker?: Comment
   __micraNodes: Map<unknown, MicraElement>
-  __micraList: ChildNode[]
+  __micraList: MicraElement[]
   __micraNoKeyWarned?: true
 }
 

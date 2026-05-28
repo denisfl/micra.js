@@ -6,6 +6,14 @@
     <style>
       body { margin: 0; font-family: system-ui, sans-serif; font-size: 12px; padding: 8px; color: #666; }
     </style>
+    <!-- Silence Alpine's "can't redefine non-configurable property" error — a known
+         Alpine 3.x bug when magic properties (like $nextTick) are registered more
+         than once. Does not affect timing measurements. -->
+    <script>
+      window.addEventListener('error', (e) => {
+        if (e.message && e.message.includes('non-configurable')) e.preventDefault()
+      })
+    </script>
     <!-- Defer global init so we control timing -->
     <script>window.deferLoadingAlpine = (start) => { window.__startAlpine = start }</script>
     <script defer src="../../vendors/alpine-3.14.1.min.js"></script>

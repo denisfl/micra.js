@@ -19,9 +19,10 @@ import type { InternalInstance, StateRecord } from '../types';
  * Process all `<template data-each>` elements found by the scanner.
  * Scoped itemState makes `item`, `index`, `$index` available in row expressions.
  *
- * @param templates - Pre-scanned list of <template data-each> elements
- * @param state     - Expression state (proxy merging rawState + instance)
- * @param rawState  - Raw (non-proxy) state — used for model binding
- * @param instance  - Component instance (for event binding)
+ * @param templates  - Pre-scanned list of <template data-each> elements
+ * @param state      - Expression state (proxy merging rawState + instance)
+ * @param rawState   - Raw (non-proxy) state — used for model binding
+ * @param instance   - Component instance (for event binding)
+ * @param triggerKey - Which state key triggered this render (null = initial, 'MULTIPLE' = batch)
  */
-export declare function renderList<S extends StateRecord>(templates: Element[], state: StateRecord, rawState: StateRecord, instance: InternalInstance<S>): void;
+export declare function renderList<S extends StateRecord>(templates: Element[], state: StateRecord, rawState: StateRecord, instance: InternalInstance<S>, triggerKey: string | null | 'MULTIPLE'): void;

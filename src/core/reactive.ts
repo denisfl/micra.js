@@ -20,11 +20,12 @@ import type { StateRecord } from '../types'
  * const state = createReactiveState(raw, render)
  * state.count = 5  // triggers render() in next microtask
  */
-export function createReactiveState<S extends StateRecord>(obj: S, schedule: () => void): S {
+export function createReactiveState<S extends StateRecord>(obj: S, schedule: () => void, onKey?: (key: string) => void): S {
   return new Proxy(obj, {
     set(target, key: string, value: unknown) {
       // Cast through StateRecord — TypeScript cannot write through a generic index
       ;(target as StateRecord)[key] = value
+      onKey?.(key)
       schedule()
       return true
     },

@@ -110,7 +110,7 @@ if (watch) {
   console.log('\n✅ Build complete\n')
 
   // ── Bundle size guard ──────────────────────────────────────────────────────
-  const MAX_GZIP_BYTES = 5 * 1024  // 5 KB
+  const MAX_GZIP_BYTES = 5.5 * 1024  // 5.5 KB — raised from 5 KB for v2.3 perf optimisations
   const minified  = readFileSync('dist/micra.min.js')
   const gzipSize  = gzipSync(minified).length
   const kbStr     = (gzipSize / 1024).toFixed(1)

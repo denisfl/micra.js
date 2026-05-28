@@ -30,16 +30,18 @@ import { scanComponent, scanFragment } from './scan'
  * Process all `<template data-each>` elements found by the scanner.
  * Scoped itemState makes `item`, `index`, `$index` available in row expressions.
  *
- * @param templates - Pre-scanned list of <template data-each> elements
- * @param state     - Expression state (proxy merging rawState + instance)
- * @param rawState  - Raw (non-proxy) state — used for model binding
- * @param instance  - Component instance (for event binding)
+ * @param templates  - Pre-scanned list of <template data-each> elements
+ * @param state      - Expression state (proxy merging rawState + instance)
+ * @param rawState   - Raw (non-proxy) state — used for model binding
+ * @param instance   - Component instance (for event binding)
+ * @param triggerKey - Which state key triggered this render (null = initial, 'MULTIPLE' = batch)
  */
 export function renderList<S extends StateRecord>(
   templates: Element[],
   state: StateRecord,
   rawState: StateRecord,
   instance: InternalInstance<S>,
+  triggerKey: string | null | 'MULTIPLE',
 ): void {
   for (const tmplEl of templates) {
     if (tmplEl.tagName !== 'TEMPLATE') continue
@@ -60,10 +62,9 @@ export function renderList<S extends StateRecord>(
 
     const marker = tmpl.__micraMarker
     const keyMap = tmpl.__micraNodes
-    const parent = marker.parentNode
     // The template (and its marker) is currently detached — likely a data-if
     // ancestor unmounted this subtree. Nothing to do until it returns.
-    if (!parent) continue
+    if (!marker.parentNode) continue
 
     // Empty / non-array: clear all rendered rows
     if (!Array.isArray(items)) {
@@ -73,10 +74,16 @@ export function renderList<S extends StateRecord>(
       continue
     }
 
+    // canSkipUnchanged: true when only this list's state key changed — rows
+    // whose item reference and index are both unchanged can skip applyDirectives.
+    const canSkipUnchanged = triggerKey !== null &&
+                             triggerKey !== 'MULTIPLE' &&
+                             triggerKey === itemsExpr
+
     if (keyAttr) {
-      renderKeyed(tmpl, items as StateRecord[], keyAttr, marker, keyMap, parent, state, rawState, instance)
+      renderKeyed(tmpl, items as StateRecord[], keyAttr, marker, keyMap, state, rawState, instance, canSkipUnchanged)
     } else {
-      renderNoKey(tmpl, items as StateRecord[], marker, parent, state, rawState, instance)
+      renderNoKey(tmpl, items as StateRecord[], marker, state, rawState, instance)
     }
   }
 }
@@ -89,10 +96,10 @@ function renderKeyed<S extends StateRecord>(
   keyAttr: string,
   marker: Comment,
   keyMap: Map<unknown, MicraElement>,
-  parent: Node,
   state: StateRecord,
   rawState: StateRecord,
   instance: InternalInstance<S>,
+  canSkipUnchanged: boolean,
 ): void {
   const nextKeys  = new Set<unknown>()
   const nextNodes: MicraElement[] = []
@@ -132,12 +139,26 @@ function renderKeyed<S extends StateRecord>(
       bindDataOn(rowScan.on, instance)
       bindAtEvents(rowScan.atEvents, instance)
       bindModels(rowScan.model, instance)
+      // itemState is created once per node and reused across renders.
+      // item / index / $index are mutated in place each render — avoids
+      // Object.create + assign on every cycle and lets safeWrapCache hit.
+      node._itemState = Object.create(state) as StateRecord
+    } else if (canSkipUnchanged && node.__micraItem === item && node.__micraIndex === index) {
+      // Item reference and index are unchanged, and no other state key changed
+      // this cycle — the DOM already reflects the latest values. Skip re-render.
+      nextNodes.push(node)
+      continue
     }
 
-    const itemState = Object.assign(
-      Object.create(state) as StateRecord,
-      { item, index, $index: index },
-    )
+    node.__micraItem  = item
+    node.__micraIndex = index
+
+    // Reuse the cached itemState, just update the per-row values.
+    const itemState = node._itemState!
+    itemState.item = item
+    itemState.index = index
+    itemState.$index = index
+
     // Use the cached scan if present (created above on first sight of this key);
     // older paths may pass a node we haven't scanned yet.
     const rowScan = node.__micraScan ?? (node.__micraScan = scanComponent(node))
@@ -150,14 +171,62 @@ function renderKeyed<S extends StateRecord>(
     if (!nextKeys.has(key)) { node.remove(); keyMap.delete(key) }
   }
 
-  // Insert / reorder nodes after marker (insertBefore is no-op if already in place)
-  let cursor: Node = marker
-  for (const node of nextNodes) {
-    if (cursor.nextSibling !== node) parent.insertBefore(node, cursor.nextSibling)
-    cursor = node
+  // Skip DOM reorder when list order is unchanged (pure JS array compare, no DOM reads).
+  const prevList = tmpl.__micraList
+  let orderChanged = nextNodes.length !== prevList.length
+  if (!orderChanged) {
+    for (let i = 0; i < nextNodes.length; i++) {
+      if (nextNodes[i] !== prevList[i]) { orderChanged = true; break }
+    }
   }
+  if (orderChanged) reorderKeyed(nextNodes, prevList, marker)
 
   tmpl.__micraList = nextNodes
+}
+
+// ── Keyed list reorder (LIS) ───────────────────────────────────────────────────
+
+/**
+ * Move DOM nodes to match `nextNodes` order using the minimum number of moves.
+ *
+ * Computes the Longest Increasing Subsequence of each node's position in prevList —
+ * nodes in the LIS keep their place. Only the others are re-inserted via anchor.after().
+ *
+ * Complexity: O(n log n) for LIS, O(k) DOM operations where k = nodes that moved.
+ * For a 2-node swap this means 2 DOM ops instead of n.
+ */
+function reorderKeyed(nextNodes: MicraElement[], prevList: MicraElement[], marker: Comment): void {
+  const prevPos = new Map<MicraElement, number>()
+  for (let i = 0; i < prevList.length; i++) prevPos.set(prevList[i]!, i)
+
+  const n = nextNodes.length
+  const tails: number[] = []     // patience sort: smallest tail at each LIS length
+  const tailIdx: number[] = []   // index into nextNodes for each tail
+  const prev: number[] = new Array(n).fill(-1)
+
+  for (let i = 0; i < n; i++) {
+    const p = prevPos.get(nextNodes[i]!)
+    if (p === undefined) continue  // new node — always moved
+    let lo = 0, hi = tails.length
+    while (lo < hi) { const m = (lo + hi) >> 1; tails[m]! < p ? lo = m + 1 : hi = m }
+    if (lo > 0) prev[i] = tailIdx[lo - 1]!
+    tails[lo] = p
+    tailIdx[lo] = i
+  }
+
+  // Reconstruct stable (non-moving) set from LIS parent chain
+  const stable = new Set<number>()
+  let idx: number = tailIdx[tails.length - 1]!
+  while (idx >= 0) { stable.add(idx); idx = prev[idx]! }
+
+  // Move unstable nodes into position; stable (LIS) nodes serve as anchors
+  let anchor: ChildNode = marker
+  for (let i = 0; i < n; i++) {
+    const node = nextNodes[i]!
+    if (stable.has(i)) { anchor = node; continue }
+    anchor.after(node)
+    anchor = node
+  }
 }
 
 // ── Non-keyed (full re-render) ─────────────────────────────────────────────────
@@ -166,7 +235,6 @@ function renderNoKey<S extends StateRecord>(
   tmpl: MicraTemplate,
   items: StateRecord[],
   marker: Comment,
-  parent: Node,
   state: StateRecord,
   rawState: StateRecord,
   instance: InternalInstance<S>,
@@ -192,5 +260,5 @@ function renderNoKey<S extends StateRecord>(
     nodes.forEach(n => { n.__micraEach = true; frag.append(n) })
     tmpl.__micraList.push(...nodes)
   }
-  parent.insertBefore(frag, marker.nextSibling)
+  marker.after(frag)
 }

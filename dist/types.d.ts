@@ -126,6 +126,9 @@ export interface MicraElement extends HTMLElement {
     __micraKey?: unknown;
     __micraEach?: true;
     __micraScan?: ScanIndex;
+    __micraItem?: StateRecord;
+    __micraIndex?: number;
+    _itemState?: StateRecord;
 }
 /**
  * @internal A DOM listener tracked for cleanup on destroy().
@@ -141,7 +144,7 @@ export interface TrackedListener {
 export interface MicraTemplate extends HTMLTemplateElement {
     __micraMarker?: Comment;
     __micraNodes: Map<unknown, MicraElement>;
-    __micraList: ChildNode[];
+    __micraList: MicraElement[];
     __micraNoKeyWarned?: true;
 }
 /**

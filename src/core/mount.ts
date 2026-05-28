@@ -19,6 +19,7 @@ import type {
   EventHandler,
   InternalInstance,
   MicraElement,
+
   StateRecord,
   UnsubFn,
 } from "../types";
@@ -107,8 +108,14 @@ export function mount<S extends StateRecord, M>(
 
   // ── Render ────────────────────────────────────────────────────────────────
   let isRendering = false;
+  // Track which state key triggered the current render cycle.
+  // 'MULTIPLE' means more than one key was written before the microtask fired.
+  let _triggerKey: string | null | "MULTIPLE" = null;
   const schedule = createScheduler(() => instance.render());
-  instance.state = createReactiveState(rawState, schedule) as S;
+  instance.state = createReactiveState(rawState, schedule, (key) => {
+    if (_triggerKey === null) _triggerKey = key;
+    else if (_triggerKey !== key) _triggerKey = "MULTIPLE";
+  }) as S;
 
   // Expression state: proxy that falls back to instance methods so expressions
   // like `data-text="formatDate(item.date)"` can call component methods.
@@ -149,6 +156,8 @@ export function mount<S extends StateRecord, M>(
   let warnedReentry = false;
   instance.render = function () {
     if (instance.__micraDestroyed) return;
+    const triggerKey = _triggerKey;
+    _triggerKey = null;
     if (isRendering) {
       if (!warnedReentry) {
         warn(
@@ -166,7 +175,7 @@ export function mount<S extends StateRecord, M>(
       const scan =
         mRoot.__micraScan ?? (mRoot.__micraScan = scanComponent(root));
       applyDirectives(scan, exprState, rawState, instance);
-      renderList(scan.each, exprState, rawState, instance);
+      renderList(scan.each, exprState, rawState, instance, triggerKey);
       bindDataOn(scan.on, instance);
       bindAtEvents(scan.atEvents, instance);
       bindModels(scan.model, instance);
@@ -187,7 +196,7 @@ export function mount<S extends StateRecord, M>(
     );
     instance.__micraListeners = [];
 
-    // Clear per-element flags & cached directive scan so a future re-mount of the same DOM works.
+    // Clear per-element flags & cached scan so a future re-mount of the same DOM works.
     const clearFlags = (el: Element) => {
       const m = el as MicraElement;
       delete m.__micraEvents;

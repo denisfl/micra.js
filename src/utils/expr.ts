@@ -29,8 +29,15 @@ import type { StateRecord } from '../types'
 
 // LLM NOTE: exprCache is module-level (shared across all components).
 // This is intentional — most apps reuse the same expressions.
-type Compiled = (state: object, safe: object) => unknown
-const exprCache = new Map<string, Compiled>()
+
+// Compiled fn for complex expressions; pre-split parts for simple dot-paths.
+// Storing parts once avoids the SIMPLE_PATH regex test + split on every evalExpr call.
+type CompiledFn = (state: object, safe: object) => unknown
+type CachedEntry =
+  | { kind: 'fn';   fn:    CompiledFn }
+  | { kind: 'path'; parts: string[]   }
+
+const exprCache = new Map<string, CachedEntry>()
 // Expressions whose runtime error we have already warned about. Prevents log spam
 // when the same `data-text="item.naame"` typo fires every render.
 const warnedRuntime = new Set<string>()
@@ -141,32 +148,38 @@ function safeStateHas(state: object, key: PropertyKey): boolean {
  * evalExpr('price * qty', { price: 9.99, qty: 3 })   // → 29.97
  */
 export function evalExpr(expr: string, state: StateRecord): unknown {
+  let cached = exprCache.get(expr)
+
+  if (!cached) {
+    // Determine once whether this is a simple dot-path and cache the result.
+    if (SIMPLE_PATH.test(expr)) {
+      cached = { kind: 'path', parts: expr.split('.') }
+    } else {
+      try {
+        cached = {
+          kind: 'fn',
+          fn: new Function('$s', '$safe', `with($safe){with($s){return (${expr})}}`) as CompiledFn,
+        }
+      } catch {
+        warn(`invalid expression "${expr}"`)
+        cached = { kind: 'fn', fn: () => undefined }
+      }
+    }
+    exprCache.set(expr, cached)
+  }
+
   // Fast-path: simple property access — no Function() needed.
   // Still guarded so bare access to Object.prototype names returns undefined.
-  if (SIMPLE_PATH.test(expr)) {
-    const parts = expr.split('.')
-    if (!safeStateHas(state, parts[0]!)) return undefined
-    return parts.reduce<unknown>((obj, key) =>
-      obj != null ? (obj as StateRecord)[key] : undefined,
+  if (cached.kind === 'path') {
+    if (!safeStateHas(state, cached.parts[0]!)) return undefined
+    return cached.parts.reduce<unknown>(
+      (obj, key) => (obj != null ? (obj as StateRecord)[key] : undefined),
       state,
     )
   }
 
-  if (!exprCache.has(expr)) {
-    try {
-      // Two with() statements: $s wins for state keys; $safe shadows globals.
-      exprCache.set(
-        expr,
-        new Function('$s', '$safe', `with($safe){with($s){return (${expr})}}`) as Compiled,
-      )
-    } catch {
-      warn(`invalid expression "${expr}"`)
-      exprCache.set(expr, () => undefined)
-    }
-  }
-
   try {
-    return exprCache.get(expr)!(safeStateWrap(state), SAFE_OUTER)
+    return cached.fn(safeStateWrap(state), SAFE_OUTER)
   } catch (e) {
     if (!warnedRuntime.has(expr)) {
       warnedRuntime.add(expr)

@@ -26,6 +26,7 @@ export function collectRefs<S extends StateRecord>(
   els: Element[],
   instance: InternalInstance<S>,
 ): void {
+  if (!els.length) return
   instance.refs = {}
   for (const el of els) {
     const name = (el as MicraElement).dataset['ref']
