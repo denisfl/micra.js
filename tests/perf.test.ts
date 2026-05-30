@@ -26,6 +26,17 @@ function buildRoot(n: number) {
   return root
 }
 
+// Build a root with N rows but no data-key — exercises the positional-reuse path.
+function buildNoKeyRoot(_n: number) {
+  const root = document.createElement('div')
+  const tmpl = document.createElement('template')
+  tmpl.setAttribute('data-each', 'items')
+  tmpl.innerHTML = `<div><span data-text="item.name"></span></div>`
+  root.appendChild(tmpl)
+  document.body.appendChild(root)
+  return root
+}
+
 function makeItems(n: number) {
   return Array.from({ length: n }, (_, i) => ({ id: i + 1, name: `Item ${i + 1}` }))
 }
@@ -73,6 +84,21 @@ describe('11.1 render time', () => {
     await Promise.resolve()
     const elapsed = performance.now() - t0
     expect(elapsed).toBeLessThan(500)
+  })
+
+  it('500-item non-keyed re-render (positional reuse, all updated) < 200ms', async () => {
+    // Pins the positional-reuse win for non-keyed lists. Before B5 this
+    // path removed and re-cloned every node — same operation took >500ms
+    // for 500 rows. With reuse the budget is the keyed-update budget.
+    const root = buildNoKeyRoot(500)
+    const inst = mount(root, { state: { items: makeItems(500) } })!
+    await Promise.resolve()
+
+    const t0 = performance.now()
+    inst.state.items = makeItems(500).map(it => ({ ...it, name: `Updated ${it.id}` }))
+    await Promise.resolve()
+    const elapsed = performance.now() - t0
+    expect(elapsed).toBeLessThan(200)
   })
 })
 

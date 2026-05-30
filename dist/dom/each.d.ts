@@ -4,7 +4,8 @@
  * Responsibilities:
  *   - Process `<template data-each="items" data-key="id">` elements
  *   - Keyed diff: reuse/reorder DOM nodes by key — O(n) with a Map
- *   - Non-keyed fallback: full replace (no key → warn in dev, full re-render)
+ *   - Non-keyed fallback: length-based positional reuse — min(old, new) rows
+ *     are kept as-is, the tail is removed or new rows are appended
  *   - Apply directives to each row with a scoped itemState
  *
  * LLM NOTE: renderList() is called on every render cycle AFTER applyDirectives().
@@ -12,7 +13,9 @@
  * Each row node gets its own ScanIndex cached on `node.__micraScan` so
  * re-renders of that row don't re-walk the DOM.
  * Keyed mode (data-key present) mutates the DOM in-place — nodes are
- * created once and reused. Non-keyed mode removes all nodes and re-clones.
+ * created once and reused. Non-keyed mode also reuses existing nodes
+ * positionally: only the length delta is touched, the rest gets a fresh
+ * itemState and re-applies directives.
  */
 import type { InternalInstance, StateRecord } from '../types';
 /**

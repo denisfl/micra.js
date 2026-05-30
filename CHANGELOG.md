@@ -41,6 +41,44 @@ All notable changes to Micra.js will be documented in this file. Format follows
   event via `declare module 'micra.js'` and drop the explicit generic.
   No runtime impact.
 
+### Performance — non-keyed `data-each` now reuses DOM nodes
+
+- **Non-keyed `<template data-each>` no longer re-renders the whole list
+  on every update.** The new path keeps the first `min(prev, next)` row
+  nodes in place — only the length delta is touched (tail removed when
+  the list shrinks, new rows cloned when it grows). Each retained row
+  gets a fresh `itemState` and a re-applied directive pass through its
+  cached `__micraScan`, so content updates correctly without the
+  remove/re-clone overhead.
+- Row identity is now stable across renders for the no-key path: event
+  listeners bound via `data-on` / `@event` / `data-model` survive
+  re-renders without re-binding, and DOM-level state (focus, scroll,
+  CSS transitions) is preserved on retained rows.
+- Items that didn't change (same reference + same index) skip
+  `applyDirectives` entirely when only the `data-each` source array is
+  the trigger for this render cycle — same `canSkipUnchanged`
+  optimisation the keyed path already had.
+- Bundle: **5.5 KB gzip** (raised guard from 5.4 → 5.5 to give the
+  shared row-creation helper room; net code is slightly smaller after
+  factoring `createRowNode` out of both keyed and non-keyed paths).
+
+### Breaking — non-keyed multi-root rows now wrap in `<micra-each-item>`
+
+- Templates whose `data-each` content has more than one top-level node
+  now render each row inside a `<micra-each-item style="display:contents">`
+  wrapper, mirroring the keyed path's existing behaviour. The wrapper is
+  visually inert (CSS `display:contents` opts out of the box model) but
+  it does add one node to the parse tree.
+- Impact:
+  - **CSS:** child selectors that targeted `parent > .row` will now
+    match `parent > micra-each-item` instead. Use descendant selectors
+    (`parent .row`) or update the rules.
+  - **Invalid HTML contexts:** templates whose rows are `<tr>` / `<td>` /
+    `<li>` inside `<tbody>` / `<tr>` / `<ul>` cannot legally have a
+    wrapper between the parent and the row. Hoist the wrapper into the
+    template (so the row is single-rooted) or use a `data-key`.
+- Single-root templates are unchanged — by far the common case.
+
 ## [2.2.1] — 2026-05-28
 
 ### Performance — batched first list render

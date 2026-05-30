@@ -10,7 +10,8 @@
  *     even *visit* those nodes.
  *   - <template> contents are not visited (browser TreeWalker default).
  *     `<template data-each>` itself IS visited and classified into scan.each;
- *     its children are processed by each.ts on every render via scanFragment.
+ *     its children are processed by each.ts on every render — fresh rows
+ *     are wrapped in a per-row element and scanned via scanComponent.
  *
  * Hot-path notes:
  *   - We read `el.attributes` once and switch by suffix. No allocations per
@@ -166,24 +167,3 @@ export function scanComponent(root: Element): ScanIndex {
   return scan;
 }
 
-/**
- * Scan a DocumentFragment (no-key each clone). Not cached — these fragments
- * are temporary and re-cloned every render.
- */
-export function scanFragment(frag: DocumentFragment): ScanIndex {
-  const scan = emptyScan();
-
-  const walker = document.createTreeWalker(
-    frag,
-    NodeFilter.SHOW_ELEMENT,
-    NESTED_COMPONENT_FILTER,
-  );
-
-  let node: Element | null = walker.nextNode() as Element | null;
-  while (node) {
-    classify(node, scan);
-    node = walker.nextNode() as Element | null;
-  }
-
-  return scan;
-}

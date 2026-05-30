@@ -114,7 +114,17 @@ With `data-key`, Micra uses keyed diffing:
 
 This keeps DOM state stable and avoids full list replacement.
 
-Without `data-key`, Micra falls back to a simple full re-render of the list.
+Without `data-key`, Micra falls back to a **positional reuse** diff:
+the first `min(prev, next)` row nodes are kept in place, the tail is
+removed when the list shrinks, and fresh rows are cloned for the growth
+delta. Reused rows get a re-applied directive pass through their cached
+scan, so content updates without remove-and-re-clone overhead. Compared
+to keyed diffing this still misses two things: identity is positional
+(reordering treats the entire list as "every row changed"), and rows
+with more than one top-level node are wrapped in `<micra-each-item
+style="display:contents">` so each row corresponds to one stable DOM
+node. Use `data-key` when row identity matters (reordering, animation,
+preserving focus on a moved row).
 
 ## Multiple instances of the same component
 

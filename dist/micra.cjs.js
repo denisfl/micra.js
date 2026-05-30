@@ -536,20 +536,6 @@ function scanComponent(root) {
   }
   return scan;
 }
-function scanFragment(frag) {
-  const scan = emptyScan();
-  const walker = document.createTreeWalker(
-    frag,
-    NodeFilter.SHOW_ELEMENT,
-    NESTED_COMPONENT_FILTER
-  );
-  let node = walker.nextNode();
-  while (node) {
-    classify(node, scan);
-    node = walker.nextNode();
-  }
-  return scan;
-}
 
 // src/dom/each.ts
 function renderList(templates, state, rawState, instance, triggerKey) {
@@ -580,9 +566,27 @@ function renderList(templates, state, rawState, instance, triggerKey) {
     if (keyAttr) {
       renderKeyed(tmpl, items, keyAttr, marker, keyMap, state, rawState, instance, canSkipUnchanged);
     } else {
-      renderNoKey(tmpl, items, marker, state, rawState, instance);
+      renderNoKey(tmpl, items, marker, state, rawState, instance, canSkipUnchanged);
     }
   }
+}
+function createRowNode(tmpl, state, instance) {
+  const frag = tmpl.content.cloneNode(true);
+  let node;
+  if (frag.childNodes.length === 1) {
+    node = frag.firstElementChild;
+  } else {
+    node = document.createElement("micra-each-item");
+    node.style.display = "contents";
+    node.append(frag);
+  }
+  const rowScan = scanComponent(node);
+  node.__micraScan = rowScan;
+  node._itemState = Object.create(state);
+  bindDataOn(rowScan.on, instance);
+  bindAtEvents(rowScan.atEvents, instance);
+  bindModels(rowScan.model, instance);
+  return node;
 }
 function renderKeyed(tmpl, items, keyAttr, marker, keyMap, state, rawState, instance, canSkipUnchanged) {
   var _a;
@@ -603,22 +607,9 @@ function renderKeyed(tmpl, items, keyAttr, marker, keyMap, state, rawState, inst
     nextKeys.add(key);
     let node = keyMap.get(key);
     if (!node) {
-      const frag = tmpl.content.cloneNode(true);
-      if (frag.childNodes.length === 1) {
-        node = frag.firstElementChild;
-      } else {
-        node = document.createElement("micra-each-item");
-        node.style.display = "contents";
-        node.append(frag);
-      }
+      node = createRowNode(tmpl, state, instance);
       node.__micraKey = key;
       keyMap.set(key, node);
-      const rowScan2 = scanComponent(node);
-      node.__micraScan = rowScan2;
-      bindDataOn(rowScan2.on, instance);
-      bindAtEvents(rowScan2.atEvents, instance);
-      bindModels(rowScan2.model, instance);
-      node._itemState = Object.create(state);
     } else if (canSkipUnchanged && node.__micraItem === item && node.__micraIndex === index) {
       nextNodes.push(node);
       continue;
@@ -696,29 +687,51 @@ function reorderKeyed(nextNodes, prevList, marker) {
     anchor = node;
   }
 }
-function renderNoKey(tmpl, items, marker, state, rawState, instance) {
-  tmpl.__micraList.forEach((n) => n.remove());
-  tmpl.__micraList = [];
-  const frag = document.createDocumentFragment();
-  for (const [index, item] of items.entries()) {
-    const clone = tmpl.content.cloneNode(true);
-    const itemState = Object.assign(
-      Object.create(state),
-      { item, index, $index: index }
-    );
-    const fragScan = scanFragment(clone);
-    applyDirectives(fragScan, itemState, rawState, instance);
-    bindDataOn(fragScan.on, instance);
-    bindAtEvents(fragScan.atEvents, instance);
-    bindModels(fragScan.model, instance);
-    const nodes = Array.from(clone.childNodes);
-    nodes.forEach((n) => {
-      n.__micraEach = true;
-      frag.append(n);
-    });
-    tmpl.__micraList.push(...nodes);
+function renderNoKey(tmpl, items, marker, state, rawState, instance, canSkipUnchanged) {
+  const prevList = tmpl.__micraList;
+  const prevLen = prevList.length;
+  const nextLen = items.length;
+  const reuseLen = nextLen < prevLen ? nextLen : prevLen;
+  const nextList = new Array(nextLen);
+  for (let i = 0; i < reuseLen; i++) {
+    const node = prevList[i];
+    const item = items[i];
+    if (canSkipUnchanged && node.__micraItem === item && node.__micraIndex === i) {
+      nextList[i] = node;
+      continue;
+    }
+    node.__micraItem = item;
+    node.__micraIndex = i;
+    const itemState = node._itemState;
+    itemState.item = item;
+    itemState.index = i;
+    itemState.$index = i;
+    applyDirectives(node.__micraScan, itemState, rawState, instance);
+    nextList[i] = node;
   }
-  marker.after(frag);
+  for (let i = nextLen; i < prevLen; i++) {
+    prevList[i].remove();
+  }
+  if (nextLen > prevLen) {
+    const frag = document.createDocumentFragment();
+    for (let i = prevLen; i < nextLen; i++) {
+      const node = createRowNode(tmpl, state, instance);
+      const item = items[i];
+      const itemState = node._itemState;
+      itemState.item = item;
+      itemState.index = i;
+      itemState.$index = i;
+      node.__micraEach = true;
+      node.__micraItem = item;
+      node.__micraIndex = i;
+      applyDirectives(node.__micraScan, itemState, rawState, instance);
+      nextList[i] = node;
+      frag.append(node);
+    }
+    const anchor = prevLen > 0 ? nextList[prevLen - 1] : marker;
+    anchor.after(frag);
+  }
+  tmpl.__micraList = nextList;
 }
 
 // src/dom/refs.ts

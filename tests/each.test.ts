@@ -242,8 +242,8 @@ describe('4.4 Keyed — edge cases', () => {
 
 // ── 5. Non-keyed list ─────────────────────────────────────────────────────────
 
-describe('5.1 Non-keyed — full re-render', () => {
-  it('creates new DOM nodes on every render', () => {
+describe('5.1 Non-keyed — positional reuse', () => {
+  it('reuses existing DOM nodes positionally on re-render', () => {
     const { root, state } = makeNoKeyRoot([{ id: 1, name: 'A' }])
     render(root, state)
     const firstRows = getRows(root)
@@ -252,19 +252,100 @@ describe('5.1 Non-keyed — full re-render', () => {
     render(root, state)
     const secondRows = getRows(root)
 
-    // Non-keyed: nodes are always re-created
-    expect(secondRows[0]).not.toBe(firstRows[0])
+    // Non-keyed reuses by position — same DOM node for index 0
+    expect(secondRows[0]).toBe(firstRows[0])
   })
 
-  it('removes old nodes before inserting new ones', () => {
-    const { root, state } = makeNoKeyRoot([{ id: 1, name: 'A' }, { id: 2, name: 'B' }])
+  it('removes tail nodes when the list shrinks; keeps head nodes', () => {
+    const { root, state } = makeNoKeyRoot([
+      { id: 1, name: 'A' },
+      { id: 2, name: 'B' },
+      { id: 3, name: 'C' },
+    ])
     render(root, state)
-    expect(getTexts(root)).toHaveLength(2)
+    const before = getRows(root)
+    expect(getTexts(root)).toHaveLength(3)
 
-    state.items = [{ id: 3, name: 'C' }]
+    state.items = [{ id: 1, name: 'A' }]
     render(root, state)
-    expect(getTexts(root)).toHaveLength(1)
-    expect(getTexts(root)[0]).toBe('C')
+    const after = getRows(root)
+
+    expect(getTexts(root)).toEqual(['A'])
+    expect(after[0]).toBe(before[0])  // head node preserved
+  })
+
+  it('appends new nodes when the list grows; keeps existing nodes', () => {
+    const { root, state } = makeNoKeyRoot([{ id: 1, name: 'A' }])
+    render(root, state)
+    const before = getRows(root)
+
+    state.items = [{ id: 1, name: 'A' }, { id: 2, name: 'B' }, { id: 3, name: 'C' }]
+    render(root, state)
+    const after = getRows(root)
+
+    expect(getTexts(root)).toEqual(['A', 'B', 'C'])
+    expect(after[0]).toBe(before[0])  // head node preserved across growth
+  })
+
+  it('updates content when an item at the same index changes', () => {
+    const { root, state } = makeNoKeyRoot([{ id: 1, name: 'Old' }])
+    render(root, state)
+    const before = getRows(root)
+
+    state.items = [{ id: 1, name: 'New' }]
+    render(root, state)
+    const after = getRows(root)
+
+    expect(getTexts(root)).toEqual(['New'])
+    // Same DOM node — directives re-applied in place
+    expect(after[0]).toBe(before[0])
+  })
+
+  it('event listeners survive node reuse (bound once on creation)', async () => {
+    const { mount } = await import('../src/core/mount')
+    const { instances } = await import('../src/core/registry')
+    ;(instances() as Map<HTMLElement, unknown>).clear()
+
+    const root = document.createElement('div')
+    root.innerHTML = `
+      <template data-each="items">
+        <button data-on="click:hit" data-text="item.name"></button>
+      </template>
+    `
+    document.body.appendChild(root)
+
+    const hit = vi.fn()
+    const inst = mount(root, {
+      state: { items: [{ name: 'A' }] },
+      hit,
+    })!
+    const btn = root.querySelector('button')!
+    btn.click()
+    expect(hit).toHaveBeenCalledTimes(1)
+
+    inst.state.items = [{ name: 'A-updated' }]
+    await Promise.resolve()
+    // Same node — listener still active, no double-binding either.
+    expect(root.querySelector('button')).toBe(btn)
+    btn.click()
+    expect(hit).toHaveBeenCalledTimes(2)
+
+    document.body.removeChild(root)
+  })
+
+  it('multi-root template rows are wrapped in <micra-each-item>', () => {
+    const root = document.createElement('div')
+    const tmpl = document.createElement('template')
+    tmpl.setAttribute('data-each', 'items')
+    tmpl.innerHTML = `<span data-text="item.a"></span><span data-text="item.b"></span>`
+    root.appendChild(tmpl)
+    const state: StateRecord = { items: [{ a: 'A1', b: 'B1' }, { a: 'A2', b: 'B2' }] }
+    render(root, state)
+
+    const wrappers = root.querySelectorAll('micra-each-item')
+    expect(wrappers.length).toBe(2)
+    expect(wrappers[0]!.querySelectorAll('span').length).toBe(2)
+    expect(getTexts(root)).toEqual(['A1', 'B1', 'A2', 'B2'])
   })
 })
 

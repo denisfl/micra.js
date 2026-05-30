@@ -376,7 +376,7 @@ Micra.define('list', {
 ```
 
 - `data-each` iterates over `state[expression]`
-- `data-key` must be a unique property — enables keyed diffing (add/remove without full re-render)
+- `data-key` must be a unique property — enables keyed diffing (stable node identity on reorder). Without `data-key`, Micra still reuses row nodes positionally, but reorders count as "every row changed"
 - Inside the template, `data-text`, `data-bind`, etc. reference item properties directly
 
 ## Event bus (cross-component communication)

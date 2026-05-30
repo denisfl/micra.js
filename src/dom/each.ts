@@ -4,7 +4,8 @@
  * Responsibilities:
  *   - Process `<template data-each="items" data-key="id">` elements
  *   - Keyed diff: reuse/reorder DOM nodes by key — O(n) with a Map
- *   - Non-keyed fallback: full replace (no key → warn in dev, full re-render)
+ *   - Non-keyed fallback: length-based positional reuse — min(old, new) rows
+ *     are kept as-is, the tail is removed or new rows are appended
  *   - Apply directives to each row with a scoped itemState
  *
  * LLM NOTE: renderList() is called on every render cycle AFTER applyDirectives().
@@ -12,7 +13,9 @@
  * Each row node gets its own ScanIndex cached on `node.__micraScan` so
  * re-renders of that row don't re-walk the DOM.
  * Keyed mode (data-key present) mutates the DOM in-place — nodes are
- * created once and reused. Non-keyed mode removes all nodes and re-clones.
+ * created once and reused. Non-keyed mode also reuses existing nodes
+ * positionally: only the length delta is touched, the rest gets a fresh
+ * itemState and re-applies directives.
  */
 
 import type {
@@ -24,7 +27,7 @@ import type {
 import { evalExpr, warn } from '../utils/expr'
 import { applyDirectives } from './directives'
 import { bindDataOn, bindAtEvents, bindModels } from './events'
-import { scanComponent, scanFragment } from './scan'
+import { scanComponent } from './scan'
 
 /**
  * Process all `<template data-each>` elements found by the scanner.
@@ -83,9 +86,40 @@ export function renderList<S extends StateRecord>(
     if (keyAttr) {
       renderKeyed(tmpl, items as StateRecord[], keyAttr, marker, keyMap, state, rawState, instance, canSkipUnchanged)
     } else {
-      renderNoKey(tmpl, items as StateRecord[], marker, state, rawState, instance)
+      renderNoKey(tmpl, items as StateRecord[], marker, state, rawState, instance, canSkipUnchanged)
     }
   }
+}
+
+// ── Row node creation (shared by both paths) ──────────────────────────────────
+
+/**
+ * Clone the template into a fresh row node, wrapping multi-root content in
+ * `<micra-each-item style="display:contents">` so the row always corresponds
+ * to a single, stable DOM element. Scans, binds listeners once, and caches
+ * an empty itemState prototyped from `state` (filled in by the caller).
+ */
+function createRowNode<S extends StateRecord>(
+  tmpl: MicraTemplate,
+  state: StateRecord,
+  instance: InternalInstance<S>,
+): MicraElement {
+  const frag = tmpl.content.cloneNode(true) as DocumentFragment
+  let node: MicraElement
+  if (frag.childNodes.length === 1) {
+    node = frag.firstElementChild as MicraElement
+  } else {
+    node = document.createElement('micra-each-item') as MicraElement
+    node.style.display = 'contents'
+    node.append(frag)
+  }
+  const rowScan = scanComponent(node)
+  node.__micraScan = rowScan
+  node._itemState = Object.create(state) as StateRecord
+  bindDataOn(rowScan.on, instance)
+  bindAtEvents(rowScan.atEvents, instance)
+  bindModels(rowScan.model, instance)
+  return node
 }
 
 // ── Keyed diff ────────────────────────────────────────────────────────────────
@@ -121,28 +155,9 @@ function renderKeyed<S extends StateRecord>(
     let node = keyMap.get(key) as MicraElement | undefined
 
     if (!node) {
-      // Clone template and wrap multi-root fragments in a display:contents element
-      const frag = tmpl.content.cloneNode(true) as DocumentFragment
-      if (frag.childNodes.length === 1) {
-        node = frag.firstElementChild as MicraElement
-      } else {
-        node = document.createElement('micra-each-item') as MicraElement
-        node.style.display = 'contents'
-        node.append(frag)
-      }
+      node = createRowNode(tmpl, state, instance)
       node.__micraKey = key
       keyMap.set(key, node)
-      // Bind data-on / @event / data-model listeners once per row node.
-      // Scan the row, cache the scan on the node for future re-renders.
-      const rowScan = scanComponent(node)
-      node.__micraScan = rowScan
-      bindDataOn(rowScan.on, instance)
-      bindAtEvents(rowScan.atEvents, instance)
-      bindModels(rowScan.model, instance)
-      // itemState is created once per node and reused across renders.
-      // item / index / $index are mutated in place each render — avoids
-      // Object.create + assign on every cycle and lets safeWrapCache hit.
-      node._itemState = Object.create(state) as StateRecord
     } else if (canSkipUnchanged && node.__micraItem === item && node.__micraIndex === index) {
       // Item reference and index are unchanged, and no other state key changed
       // this cycle — the DOM already reflects the latest values. Skip re-render.
@@ -240,8 +255,14 @@ function reorderKeyed(nextNodes: MicraElement[], prevList: MicraElement[], marke
   }
 }
 
-// ── Non-keyed (full re-render) ─────────────────────────────────────────────────
+// ── Non-keyed (positional reuse) ──────────────────────────────────────────────
 
+/**
+ * Diff a non-keyed list by length: reuse the first min(prev, next) DOM nodes,
+ * remove the tail when the list shrinks, clone fresh rows for the growth delta.
+ * Multi-root template rows are wrapped in `<micra-each-item style="display:contents">`
+ * — same as keyed mode — so the reused list is one DOM node per row.
+ */
 function renderNoKey<S extends StateRecord>(
   tmpl: MicraTemplate,
   items: StateRecord[],
@@ -249,27 +270,58 @@ function renderNoKey<S extends StateRecord>(
   state: StateRecord,
   rawState: StateRecord,
   instance: InternalInstance<S>,
+  canSkipUnchanged: boolean,
 ): void {
-  tmpl.__micraList.forEach(n => n.remove())
-  tmpl.__micraList = []
+  const prevList = tmpl.__micraList
+  const prevLen = prevList.length
+  const nextLen = items.length
+  const reuseLen = nextLen < prevLen ? nextLen : prevLen
+  const nextList: MicraElement[] = new Array(nextLen)
 
-  const frag = document.createDocumentFragment()
-  for (const [index, item] of items.entries()) {
-    const clone = tmpl.content.cloneNode(true) as DocumentFragment
-    const itemState = Object.assign(
-      Object.create(state) as StateRecord,
-      { item, index, $index: index },
-    )
-    // Fresh clone each render → fresh scan each render (uncached).
-    const fragScan = scanFragment(clone)
-    applyDirectives(fragScan, itemState, rawState, instance)
-    bindDataOn(fragScan.on, instance)
-    bindAtEvents(fragScan.atEvents, instance)
-    bindModels(fragScan.model, instance)
-
-    const nodes = Array.from(clone.childNodes) as MicraElement[]
-    nodes.forEach(n => { n.__micraEach = true; frag.append(n) })
-    tmpl.__micraList.push(...nodes)
+  // 1. Reuse [0, reuseLen): refresh itemState, re-apply directives in place.
+  for (let i = 0; i < reuseLen; i++) {
+    const node = prevList[i]!
+    const item = items[i]!
+    if (canSkipUnchanged && node.__micraItem === item && node.__micraIndex === i) {
+      nextList[i] = node
+      continue
+    }
+    node.__micraItem = item
+    node.__micraIndex = i
+    const itemState = node._itemState!
+    itemState.item = item
+    itemState.index = i
+    itemState.$index = i
+    applyDirectives(node.__micraScan!, itemState, rawState, instance)
+    nextList[i] = node
   }
-  marker.after(frag)
+
+  // 2. Shrink: remove tail nodes [nextLen, prevLen).
+  for (let i = nextLen; i < prevLen; i++) {
+    prevList[i]!.remove()
+  }
+
+  // 3. Grow: clone and attach fresh rows for [prevLen, nextLen).
+  if (nextLen > prevLen) {
+    const frag = document.createDocumentFragment()
+    for (let i = prevLen; i < nextLen; i++) {
+      const node = createRowNode(tmpl, state, instance)
+      const item = items[i]!
+      const itemState = node._itemState!
+      itemState.item = item
+      itemState.index = i
+      itemState.$index = i
+      node.__micraEach = true
+      node.__micraItem = item
+      node.__micraIndex = i
+      applyDirectives(node.__micraScan!, itemState, rawState, instance)
+      nextList[i] = node
+      frag.append(node)
+    }
+    // Insert after the last reused node, or the marker if the list was empty.
+    const anchor: ChildNode = prevLen > 0 ? nextList[prevLen - 1]! : marker
+    anchor.after(frag)
+  }
+
+  tmpl.__micraList = nextList
 }
