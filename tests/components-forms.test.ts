@@ -2,8 +2,8 @@
  * tests/components-forms.test.ts — Combobox, Toggle, Tag-input, Date-picker, Slider.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { mount } from '../src/core/mount'
 import { registry, instances } from '../src/core/registry'
+import { mountForTest } from './helpers/mount'
 
 beforeEach(() => {
   ;(registry() as Map<string, unknown>).clear()
@@ -11,14 +11,9 @@ beforeEach(() => {
   document.body.innerHTML = ''
 })
 
-function mountIn(html: string, def: object, props: Record<string, string> = {}) {
-  const wrap = document.createElement('div')
-  wrap.innerHTML = html.trim()
-  const root = wrap.firstElementChild as HTMLElement
-  for (const [k, v] of Object.entries(props)) root.dataset[k] = v
-  document.body.appendChild(root)
-  return { root, inst: mount(root, def as never) as never }
-}
+// Local adapter — this file's tests use a positional `props` argument.
+const mountIn = (html: string, def: object, props: Record<string, string> = {}) =>
+  mountForTest(html, def as never, { props })
 
 const tick = () => Promise.resolve()
 

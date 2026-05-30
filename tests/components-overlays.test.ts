@@ -7,9 +7,9 @@
  * independent of the HTML pages (drift risk acknowledged — keep in sync).
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mount } from '../src/core/mount'
 import { registry, instances } from '../src/core/registry'
 import { emit } from '../src/core/bus'
+import { mountForTest as mountIn } from './helpers/mount'
 
 beforeEach(() => {
   ;(registry() as Map<string, unknown>).clear()
@@ -25,14 +25,6 @@ afterEach(() => {
 
 function tick() {
   return Promise.resolve()
-}
-
-function mountIn<S extends object>(html: string, def: object) {
-  const wrap = document.createElement('div')
-  wrap.innerHTML = html.trim()
-  const root = wrap.firstElementChild as HTMLElement
-  document.body.appendChild(root)
-  return { root, inst: mount(root, def as never) as never }
 }
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
@@ -246,11 +238,9 @@ describe('Tooltip (tooltip-demo)', () => {
   }
 
   it('reads label and placement from data-* props', () => {
-    const wrap = document.createElement('div')
-    wrap.dataset['label'] = 'Saved 3 min ago'
-    wrap.dataset['placement'] = 'bottom'
-    document.body.appendChild(wrap)
-    const inst = mount(wrap, def as never) as never as { state: { label: string; placement: string } }
+    const { inst } = mountIn('<div></div>', def, {
+      props: { label: 'Saved 3 min ago', placement: 'bottom' },
+    }) as { inst: { state: { label: string; placement: string } } }
     // onCreate runs in microtask, so we await
     return Promise.resolve().then(() => {
       expect(inst.state.label).toBe('Saved 3 min ago')

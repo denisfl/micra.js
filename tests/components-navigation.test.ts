@@ -2,22 +2,14 @@
  * tests/components-navigation.test.ts — Tabs, Accordion, Breadcrumb demos.
  */
 import { describe, it, expect, beforeEach } from 'vitest'
-import { mount } from '../src/core/mount'
 import { registry, instances } from '../src/core/registry'
+import { mountForTest as mountIn } from './helpers/mount'
 
 beforeEach(() => {
   ;(registry() as Map<string, unknown>).clear()
   ;(instances() as Map<HTMLElement, unknown>).clear()
   document.body.innerHTML = ''
 })
-
-function mountIn(html: string, def: object) {
-  const wrap = document.createElement('div')
-  wrap.innerHTML = html.trim()
-  const root = wrap.firstElementChild as HTMLElement
-  document.body.appendChild(root)
-  return { root, inst: mount(root, def as never) as never }
-}
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 

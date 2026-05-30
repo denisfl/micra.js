@@ -2,8 +2,8 @@
  * tests/recipes-and-table.test.ts — Data component (Table) + 6 recipes.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mount } from '../src/core/mount'
 import { registry, instances } from '../src/core/registry'
+import { mountForTest as mountIn } from './helpers/mount'
 
 beforeEach(() => {
   ;(registry() as Map<string, unknown>).clear()
@@ -12,14 +12,6 @@ beforeEach(() => {
 })
 
 afterEach(() => vi.unstubAllGlobals())
-
-function mountIn(html: string, def: object) {
-  const wrap = document.createElement('div')
-  wrap.innerHTML = html.trim()
-  const root = wrap.firstElementChild as HTMLElement
-  document.body.appendChild(root)
-  return { root, inst: mount(root, def as never) as never }
-}
 
 const tick = () => Promise.resolve()
 
