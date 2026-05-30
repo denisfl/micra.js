@@ -533,6 +533,59 @@ Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeo
 </script>
 ```
 
+## Recipe 11 — htmx bridge (server-driven HTML swaps + Micra islands)
+
+Wire htmx for server-driven DOM swaps and Micra for local reactivity on
+the same page. Twelve lines of glue, written once.
+
+```html
+<main hx-get="/page/home" hx-trigger="load" hx-swap="innerHTML"></main>
+
+<script src="https://cdn.jsdelivr.net/npm/htmx.org@2/dist/htmx.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@2.2.1/dist/micra.min.js"></script>
+<script>
+  Micra.define('counter', {
+    state: { count: 0 },
+    inc() { this.state.count++ },
+  })
+
+  Micra.start()  // initial mount
+
+  // Mount new [data-component] arriving via htmx swap.
+  document.body.addEventListener('htmx:afterSettle', (e) => {
+    Micra.start(e.target)
+  })
+
+  // Destroy Micra instances inside HTML about to be replaced.
+  document.body.addEventListener('htmx:beforeSwap', (e) => {
+    Micra.instances().forEach((inst, root) => {
+      if (e.target.contains(root)) inst.destroy()
+    })
+  })
+
+  // Bridge server-sent HX-Trigger events into the Micra bus.
+  document.body.addEventListener('htmx:trigger', (e) => {
+    const d = e.detail
+    if (typeof d === 'string') return Micra.emit(d)
+    for (const [k, v] of Object.entries(d)) Micra.emit(k, v)
+  })
+</script>
+```
+
+Rules of thumb:
+
+- **Never put `hx-swap` directly on a `[data-component]` element that
+  swaps its own `innerHTML`** — the cached directive scan points at gone
+  DOM. Use a wrapper as the swap target.
+- **`Micra.start()` is idempotent**, so re-scanning a subtree that
+  contains already-mounted siblings is safe.
+- **Always scope to `e.target`** in the bridge, not `document` — scanning
+  the whole page on every swap is wasteful.
+
+Full reference with state-survival patterns, `hx-vals`/`hx-include`
+bridging, and per-component loading state lives in
+`docs/recipes/htmx.md`.
+
 ---
 
 # Anti-pattern reference (what LLMs gravitate to — DO NOT)

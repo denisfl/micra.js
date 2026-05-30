@@ -130,6 +130,17 @@
       >
         <path d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25" />
       </symbol>
+      <symbol
+        id="icon-arrows-right-left"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+      </symbol>
     </svg>
 
     <div class="app">
@@ -158,6 +169,7 @@
           <span class="sidebar-group">Recipes</span>
           <a href="./todo-app.html"><span class="dot"></span>Todo app</a>
           <a href="./sse.html"><span class="dot"></span>Server-Sent Events</a>
+          <a href="./htmx.html"><span class="dot"></span>htmx bridge</a>
           <a href="./form-validation.html"
             ><span class="dot"></span>Form validation</a
           >
@@ -206,6 +218,20 @@
                   into <span class="inline-code">onCreate</span> /
                   <span class="inline-code">onDestroy</span> — single stream,
                   named events, multi-stream, manual reconnect.</span
+                >
+              </a>
+              <a href="./htmx.html" class="component-card">
+                <svg class="icon icon-lg" aria-hidden="true">
+                  <use href="#icon-arrows-right-left"></use>
+                </svg>
+                <strong>htmx bridge</strong>
+                <span
+                  >Twelve lines of glue:
+                  <span class="inline-code">htmx:afterSettle</span> mounts new
+                  islands, <span class="inline-code">htmx:beforeSwap</span>
+                  destroys old ones,
+                  <span class="inline-code">HX-Trigger</span> bridges to the
+                  Micra bus.</span
                 >
               </a>
               <a href="./form-validation.html" class="component-card">

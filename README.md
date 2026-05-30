@@ -182,6 +182,7 @@ this.on(event, handler)
 - Recipes:
   - [Todo app](./docs/recipes/todo-app.md)
   - [Server-sent events (SSE)](./docs/recipes/sse.md)
+  - [htmx bridge](./docs/recipes/htmx.md)
 
 ## Code generation with LLMs
 
