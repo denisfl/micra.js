@@ -378,4 +378,141 @@ describe("9. SSR-friendly", () => {
     expect(inst.prop("perPage", 10)).toBe(25);
     expect(inst.prop("currentPage", 1)).toBe(2);
   });
+
+  // ── Hydration contract ────────────────────────────────────────────────────
+  // These tests pin the visible behavior during the synchronous mount() call.
+  // The contract is intentionally simple: initial render uses the state
+  // literal — server-rendered DOM that already matches it doesn't change;
+  // anything else is overwritten so the state stays the source of truth.
+
+  it("data-text: SSR text matching state is preserved on mount", () => {
+    // No-flicker case — server rendered "Hello SSR", state literal matches.
+    const el = document.createElement("div");
+    const span = document.createElement("span");
+    span.setAttribute("data-text", "title");
+    span.textContent = "Hello SSR";
+    el.appendChild(span);
+    document.body.appendChild(el);
+
+    mount(el, { state: { title: "Hello SSR" } });
+    expect(span.textContent).toBe("Hello SSR");
+  });
+
+  it("data-text: SSR text different from state is overwritten on mount", () => {
+    // State-wins case — server pre-rendered a stale value.
+    const el = document.createElement("div");
+    const span = document.createElement("span");
+    span.setAttribute("data-text", "title");
+    span.textContent = "Stale value";
+    el.appendChild(span);
+    document.body.appendChild(el);
+
+    mount(el, { state: { title: "Fresh value" } });
+    expect(span.textContent).toBe("Fresh value");
+  });
+
+  it("data-bind: SSR attribute matching state stays after mount", () => {
+    const el = document.createElement("div");
+    const a = document.createElement("a");
+    a.setAttribute("data-bind", "href:url");
+    a.setAttribute("href", "/users/42");
+    el.appendChild(a);
+    document.body.appendChild(el);
+
+    mount(el, { state: { url: "/users/42" } });
+    expect(a.getAttribute("href")).toBe("/users/42");
+  });
+
+  it("data-bind: SSR attribute different from state is overwritten", () => {
+    const el = document.createElement("div");
+    const a = document.createElement("a");
+    a.setAttribute("data-bind", "href:url");
+    a.setAttribute("href", "/users/1");
+    el.appendChild(a);
+    document.body.appendChild(el);
+
+    mount(el, { state: { url: "/users/42" } });
+    expect(a.getAttribute("href")).toBe("/users/42");
+  });
+
+  it("data-if=false at mount: SSR-rendered element is detached", () => {
+    // Server rendered the element visible, state says it should be gone.
+    const el = document.createElement("div");
+    const banner = document.createElement("p");
+    banner.setAttribute("data-if", "show");
+    banner.textContent = "Banner";
+    el.appendChild(banner);
+    document.body.appendChild(el);
+
+    mount(el, { state: { show: false } });
+    // data-if true-unmount: parent no longer contains the element after mount.
+    expect(el.contains(banner)).toBe(false);
+  });
+
+  it("data-show=false at mount: SSR-rendered element is hidden via style", () => {
+    const el = document.createElement("div");
+    const banner = document.createElement("p");
+    banner.setAttribute("data-show", "show");
+    banner.textContent = "Banner";
+    el.appendChild(banner);
+    document.body.appendChild(el);
+
+    mount(el, { state: { show: false } });
+    // data-show keeps element in DOM but flips display.
+    expect(el.contains(banner)).toBe(true);
+    expect(banner.style.display).toBe("none");
+  });
+
+  it("two-stage hydration: initial render uses state literal, onCreate may trigger a second render", async () => {
+    // This pins the documented contract: if you initialize state from
+    // props inside onCreate, there are TWO renders — the initial render
+    // uses the literal state, then onCreate runs in a microtask and may
+    // mutate state, triggering a second render. Tests that rely on
+    // post-onCreate state must await a microtask.
+    const el = document.createElement("div");
+    el.dataset["page"] = "42";
+    const span = document.createElement("span");
+    span.setAttribute("data-text", "page");
+    el.appendChild(span);
+    document.body.appendChild(el);
+
+    const inst = mount(el, {
+      state: { page: 1 },
+      onCreate() {
+        this.state.page = this.prop("page", 1);
+      },
+    })!;
+
+    // Stage 1: synchronous initial render — DOM reflects the literal state,
+    // NOT the prop yet. Server-rendered text would flicker here if it
+    // initially showed "42".
+    expect(span.textContent).toBe("1");
+    expect(inst.state.page).toBe(1);
+
+    // Stage 2: onCreate fires in a microtask, mutates state, schedules a render.
+    await Promise.resolve(); // flush onCreate
+    await Promise.resolve(); // flush scheduled render
+    expect(span.textContent).toBe("42");
+    expect(inst.state.page).toBe(42);
+  });
+
+  it("no-flicker hydration: state literal seeded with the server value avoids the second render", async () => {
+    // The canonical no-flicker pattern: the server inlines the initial
+    // state directly into the definition's state literal (via an SSR
+    // template), so the synchronous mount-time render already matches the
+    // server-rendered DOM. No onCreate prop read, no second render.
+    const el = document.createElement("div");
+    const span = document.createElement("span");
+    span.setAttribute("data-text", "page");
+    span.textContent = "42";
+    el.appendChild(span);
+    document.body.appendChild(el);
+
+    mount(el, { state: { page: 42 } });
+    // Synchronously after mount, the DOM still says "42" — no overwrite.
+    expect(span.textContent).toBe("42");
+    // And a microtask later, still "42" — no second render queued.
+    await Promise.resolve();
+    expect(span.textContent).toBe("42");
+  });
 });
