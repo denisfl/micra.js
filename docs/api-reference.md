@@ -107,10 +107,15 @@ Micra.start(document.getElementById("sidebar")!);
 ### `Micra.on()`
 
 ```ts
-function on<T = unknown>(event: string, handler: EventHandler<T>): UnsubFn;
+function on<K extends string>(
+  event: K,
+  handler: (payload: EventPayload<K>) => void,
+): UnsubFn;
 ```
 
-Subscribes to a global event.
+Subscribes to a global event. Payload type is resolved through the
+augmentable [`MicraEvents`](#micraevents) interface — events not declared
+there fall back to `unknown` (backward-compatible with untyped usage).
 
 - **event**: event name
 - **handler**: callback for the payload
@@ -127,7 +132,10 @@ const unsub = Micra.on("user:updated", (user) => {
 ### `Micra.off()`
 
 ```ts
-function off(event: string, handler: EventHandler): void;
+function off<K extends string>(
+  event: K,
+  handler: (payload: EventPayload<K>) => void,
+): void;
 ```
 
 Removes a specific global event handler.
@@ -150,13 +158,17 @@ Micra.off("modal:open", onOpen);
 ### `Micra.emit()`
 
 ```ts
-function emit(event: string, payload?: unknown): void;
+function emit<K extends string>(event: K, ...args: EmitArgs<K>): void;
 ```
 
-Publishes an event on the global bus.
+Publishes an event on the global bus. When the event is declared in
+[`MicraEvents`](#micraevents), the payload type and arity are enforced
+by the compiler — required if the declared payload doesn't include
+`undefined`/`void`, optional otherwise. Unknown events accept any
+optional payload.
 
 - **event**: event name
-- **payload**: optional payload
+- **payload**: typed by `MicraEvents` if declared, otherwise `unknown`
 - **returns**: `void`
 
 Example:
@@ -327,18 +339,19 @@ await this.fetch("/api/invite", {
 ### `emit()`
 
 ```ts
-emit(event: string, payload?: unknown): void
+emit<K extends string>(event: K, ...args: EmitArgs<K>): void
 ```
 
-Shortcut to `Micra.emit()`.
+Shortcut to `Micra.emit()`. Same `MicraEvents` typing rules apply.
 
 ### `on()`
 
 ```ts
-on<T = unknown>(event: string, handler: EventHandler<T>): UnsubFn
+on<K extends string>(event: K, handler: (payload: EventPayload<K>) => void): UnsubFn
 ```
 
-Shortcut to `Micra.on()` with auto-cleanup on destroy.
+Shortcut to `Micra.on()` with auto-cleanup on destroy. Payload typed
+via `MicraEvents`.
 
 ## Public types
 
@@ -365,6 +378,70 @@ type EventHandler<T = unknown> = (payload: T) => void;
 ```
 
 Generic handler type for the event bus.
+
+### `MicraEvents`
+
+```ts
+interface MicraEvents {}
+```
+
+Type-safe registry for the global event bus. Empty by default —
+augment it via TypeScript declaration merging to type your
+application's events. Every declared key is enforced by
+`Micra.emit`, `Micra.on`, `this.emit`, and `this.on`. Events absent
+from `MicraEvents` fall back to `unknown` payload, so untyped code
+keeps working unchanged.
+
+```ts
+// types/micra-events.d.ts
+import 'micra.js'
+
+declare module 'micra.js' {
+  interface MicraEvents {
+    'cart:updated': { count: number }
+    'user:login':   { id: number; name: string }
+    'modal:close':  void
+  }
+}
+```
+
+```ts
+Micra.emit('cart:updated', { count: 3 })   // ✓ typed
+Micra.emit('cart:updated', { count: '3' }) // ✗ type error
+Micra.emit('cart:updated')                 // ✗ payload required
+Micra.emit('modal:close')                  // ✓ void payload — no args
+Micra.on('user:login', user => user.name)  // user: { id, name }
+```
+
+A payload type that includes `undefined` (e.g. `{ x?: T } | undefined`)
+makes the `emit` argument optional. Use `void` for events that carry
+no payload at all.
+
+### `EventPayload`
+
+```ts
+type EventPayload<K extends string> = K extends keyof MicraEvents
+  ? MicraEvents[K]
+  : unknown;
+```
+
+Resolves the handler payload type for an event name.
+
+### `EmitArgs`
+
+```ts
+type EmitArgs<K extends string> = K extends keyof MicraEvents
+  ? [MicraEvents[K]] extends [void]
+    ? [payload?: undefined]
+    : undefined extends MicraEvents[K]
+      ? [payload?: MicraEvents[K]]
+      : [payload: MicraEvents[K]]
+  : [payload?: unknown];
+```
+
+Tuple of arguments accepted by `emit` after the event name. Encodes
+the rules described under [`MicraEvents`](#micraevents): required
+payload for declared non-void events, optional otherwise.
 
 ### `FetchOptions`
 

@@ -192,8 +192,9 @@ function off(event, handler) {
   set.delete(handler);
   if (set.size === 0) _bus.delete(event);
 }
-function emit(event, payload) {
+function emit(event, ...args) {
   var _a;
+  const payload = args[0];
   (_a = _bus.get(event)) == null ? void 0 : _a.forEach((h) => {
     try {
       h(payload);

@@ -4,6 +4,43 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### TypeScript — type-safe event bus
+
+- **New augmentable `MicraEvents` interface.** Declare your app's events
+  once and `Micra.emit` / `Micra.on` / `this.emit` / `this.on` enforce
+  payload types and arity at the call site:
+
+  ```ts
+  declare module 'micra.js' {
+    interface MicraEvents {
+      'cart:updated': { count: number }
+      'modal:close':  void
+    }
+  }
+
+  Micra.emit('cart:updated', { count: 3 })   // ✓
+  Micra.emit('cart:updated', { count: '3' }) // ✗ type error
+  Micra.emit('modal:close')                  // ✓ void → no args
+  ```
+
+- Events that are NOT declared in `MicraEvents` keep the previous
+  behaviour — payload typed as `unknown`, optional argument. Untyped
+  code keeps compiling unchanged.
+- New exported types: `MicraEvents`, `EventPayload<K>`, `EmitArgs<K>`.
+- Bundle stays at **5.4 KB gzip** — types only, no runtime change.
+
+### Breaking — types only
+
+- The legacy `on<T>(event, handler)` generic now infers `T` as the
+  event *key*, not the handler payload. Code that explicitly passed a
+  payload type via the generic (`Micra.on<User>('user:updated', h)`)
+  still compiles, but `h`'s parameter falls back to `unknown` unless
+  the event is declared in `MicraEvents`. Migration: register the
+  event via `declare module 'micra.js'` and drop the explicit generic.
+  No runtime impact.
+
 ## [2.2.1] — 2026-05-28
 
 ### Performance — batched first list render

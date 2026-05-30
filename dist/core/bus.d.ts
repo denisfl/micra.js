@@ -10,23 +10,25 @@
  * Component instances subscribe via `instance.on()` which auto-registers
  * the unsub token in `instance.__micraSubs` for cleanup on destroy().
  */
-import type { EventHandler, UnsubFn } from '../types';
+import type { EmitArgs, EventPayload, UnsubFn } from '../types';
 /**
  * Subscribe to a named event. Returns an unsubscribe function.
+ * Payload is typed via the `MicraEvents` interface (augmentable).
  *
  * @example
  * const unsub = on('user:login', (user) => console.log(user))
  * unsub()  // stop listening
  */
-export declare function on<T = unknown>(event: string, handler: EventHandler<T>): UnsubFn;
+export declare function on<K extends string>(event: K, handler: (payload: EventPayload<K>) => void): UnsubFn;
 /**
  * Unsubscribe a specific handler from an event.
  */
-export declare function off(event: string, handler: EventHandler): void;
+export declare function off<K extends string>(event: K, handler: (payload: EventPayload<K>) => void): void;
 /**
  * Publish an event to all subscribers. Errors are caught per-handler.
+ * Payload is typed via the `MicraEvents` interface (augmentable).
  *
  * @example
  * emit('user:updated', { id: 1, name: 'Alice' })
  */
-export declare function emit(event: string, payload?: unknown): void;
+export declare function emit<K extends string>(event: K, ...args: EmitArgs<K>): void;

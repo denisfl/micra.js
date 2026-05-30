@@ -22,6 +22,53 @@ export type UnsubFn = () => void
 /** Event bus handler. Generic `T` types the payload. */
 export type EventHandler<T = unknown> = (payload: T) => void
 
+/**
+ * Type-safe event bus registry. Empty by default — augment it via
+ * declaration merging to type your application's events.
+ *
+ * @example
+ * declare module 'micra.js' {
+ *   interface MicraEvents {
+ *     'cart:updated': { count: number }
+ *     'user:login':   { id: number; name: string }
+ *     'modal:close':  void
+ *   }
+ * }
+ *
+ * Micra.emit('cart:updated', { count: 3 })       // ✓ typed
+ * Micra.emit('cart:updated', { count: '3' })     // ✗ type error
+ * Micra.on('user:login', user => user.id)        // user: { id, name }
+ *
+ * Events not present in the interface fall back to `unknown` payload —
+ * fully backward-compatible with untyped usage.
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface MicraEvents {}
+
+/**
+ * Resolves the payload type for an event key. For keys registered in
+ * `MicraEvents` returns the declared payload; for any other string key
+ * returns `unknown` (preserving backward compatibility).
+ */
+export type EventPayload<K extends string> = K extends keyof MicraEvents
+  ? MicraEvents[K]
+  : unknown
+
+/**
+ * Tuple of arguments passed to `emit` after the event name. When the
+ * payload type for a known event includes `undefined` (or the payload is
+ * declared as `void`), the argument is optional. For known events with a
+ * required payload, the argument is required. Unknown events accept any
+ * optional payload (backward compat).
+ */
+export type EmitArgs<K extends string> = K extends keyof MicraEvents
+  ? [MicraEvents[K]] extends [void]
+    ? [payload?: undefined]
+    : undefined extends MicraEvents[K]
+      ? [payload?: MicraEvents[K]]
+      : [payload: MicraEvents[K]]
+  : [payload?: unknown]
+
 /** Options for `this.fetch()`. For GET/HEAD extra keys become query params. */
 export interface FetchOptions {
   method?: string
@@ -71,10 +118,16 @@ export interface ComponentBuiltins<S extends StateRecord = StateRecord> {
   prop<T>(name: string, defaultVal: T): T
   /** Fetch helper: CSRF header, JSON body, query params, typed errors. */
   fetch(url: string, options?: FetchOptions): Promise<unknown>
-  /** Publish an event on the global bus. */
-  emit(event: string, payload?: unknown): void
-  /** Subscribe to the global bus. Subscription is auto-removed on destroy(). */
-  on<T = unknown>(event: string, handler: EventHandler<T>): UnsubFn
+  /**
+   * Publish an event on the global bus.
+   * Payload is typed via the `MicraEvents` interface (augmentable).
+   */
+  emit<K extends string>(event: K, ...args: EmitArgs<K>): void
+  /**
+   * Subscribe to the global bus. Subscription is auto-removed on destroy().
+   * Handler payload is typed via the `MicraEvents` interface (augmentable).
+   */
+  on<K extends string>(event: K, handler: (payload: EventPayload<K>) => void): UnsubFn
 }
 
 /**

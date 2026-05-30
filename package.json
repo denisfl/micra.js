@@ -25,7 +25,7 @@
   ],
   "scripts": {
     "build": "node build.mjs",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tests/tsconfig.json",
     "dev": "node build.mjs --watch",
     "test": "vitest run",
     "test:watch": "vitest",

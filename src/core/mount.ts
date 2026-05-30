@@ -17,6 +17,7 @@ import type {
   ComponentInstance,
   ComponentMethods,
   EventHandler,
+  EventPayload,
   InternalInstance,
   MicraElement,
 
@@ -96,11 +97,11 @@ export function mount<S extends StateRecord, M>(
   instance.fetch = micraFetch;
   instance.emit = busEmit;
 
-  instance.on = <T = unknown>(
-    event: string,
-    handler: EventHandler<T>,
+  instance.on = <K extends string>(
+    event: K,
+    handler: (payload: EventPayload<K>) => void,
   ): UnsubFn => {
-    const unsub = busOn(event, handler);
+    const unsub = busOn(event, handler as EventHandler);
     if (!instance.__micraSubs) instance.__micraSubs = [];
     instance.__micraSubs.push(unsub);
     return unsub;
