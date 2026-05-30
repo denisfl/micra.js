@@ -586,6 +586,100 @@ Full reference with state-survival patterns, `hx-vals`/`hx-include`
 bridging, and per-component loading state lives in
 `docs/recipes/htmx.md`.
 
+## Recipe 12 — Rails + Micra (importmap, CSRF, Turbo Drive)
+
+Pin Micra in `config/importmap.rb`, boot it once in the layout — that's
+the whole integration. CSRF works automatically (Micra reads
+`<meta name="csrf-token">` that Rails already ships). Turbo Drive needs
+a `turbo:load` mirror so the second navigation doesn't ghost.
+
+```ruby
+# config/importmap.rb
+pin "micra",
+    to: "https://cdn.jsdelivr.net/npm/micra.js@2.3.0/dist/micra.esm.js",
+    preload: true
+```
+
+```erb
+<%# app/views/layouts/application.html.erb — inside <head> %>
+<%= csrf_meta_tags %>
+<%= javascript_importmap_tags %>
+<script type="module">
+  import * as Micra from "micra"
+  window.Micra = Micra
+  document.addEventListener("DOMContentLoaded", () => Micra.start())
+  document.addEventListener("turbo:load",        () => Micra.start())
+</script>
+```
+
+```erb
+<%# app/views/tasks/index.html.erb %>
+<section data-component="tasks-board"
+         data-initial-tasks='<%= @tasks.as_json(only: %i[id title done]).to_json %>'>
+  <form @submit.prevent="add">
+    <input data-model="draft" placeholder="New task…" />
+    <button data-bind="disabled:!draft.trim()">Add</button>
+  </form>
+  <template data-each="tasks" data-key="id">
+    <li data-class="done:item.done">
+      <input type="checkbox" data-bind="checked:item.done" @change="toggle" />
+      <span data-text="item.title"></span>
+      <button @click="remove" data-bind="data-id:item.id">×</button>
+    </li>
+  </template>
+</section>
+```
+
+```js
+// app/javascript/application.js
+import * as Micra from "micra"
+
+Micra.define("tasks-board", {
+  state: { tasks: [], draft: "" },
+  onCreate() { this.state.tasks = JSON.parse(this.prop("initialTasks") || "[]") },
+  async add() {
+    const task = await this.fetch("/tasks", { method: "POST", body: { title: this.state.draft.trim() } })
+    this.state.tasks = [...this.state.tasks, task]
+    this.state.draft = ""
+  },
+  async toggle(e) {
+    const id = Number(e.currentTarget.closest("li").querySelector("[data-id]").dataset.id)
+    const next = !this.state.tasks.find(t => t.id === id).done
+    const task = await this.fetch(`/tasks/${id}`, { method: "PATCH", body: { done: next } })
+    this.state.tasks = this.state.tasks.map(t => t.id === id ? task : t)
+  },
+  async remove(e) {
+    const id = Number(e.currentTarget.dataset.id)
+    await this.fetch(`/tasks/${id}`, { method: "DELETE" })
+    this.state.tasks = this.state.tasks.filter(t => t.id !== id)
+  },
+})
+```
+
+Rules of thumb:
+
+- **CSRF is automatic** — keep `<%= csrf_meta_tags %>` in the layout.
+  `this.fetch()` sends `X-CSRF-Token` on every non-GET request.
+- **Add `turbo:load`** alongside `DOMContentLoaded` if you have Turbo
+  Drive enabled (default since Rails 7). Without it, only the first
+  page load wires up.
+- **JSON in `data-*` attributes does NOT auto-parse.** Non-primitive
+  props (`@tasks.as_json.to_json`) are strings client-side — call
+  `JSON.parse(this.prop('initialTasks'))` in `onCreate`. Primitives
+  (numbers, booleans) auto-cast through `this.prop()`.
+- **Turbo Frames** that swap their own `innerHTML` and contain a
+  `[data-component]` will leave the cached scan pointing at gone DOM.
+  Same footgun as htmx — keep `data-component` outside the frame, or
+  destroy+remount on `turbo:frame-render`.
+- The optional **`micra-rails`** gem adds an ERB helper
+  (`micra_component`) and a one-shot installer. As of v0.2.0 its pin
+  is one version behind (2.2.0) and the `micra_state.to_html` example
+  in its README doesn't compile — see `docs/recipes/rails.md` §2 for
+  workarounds.
+
+Full reference with Turbo Streams cleanup, no-flicker hydration pattern,
+and the Stimulus-vs-Micra split is in `docs/recipes/rails.md`.
+
 ---
 
 # Anti-pattern reference (what LLMs gravitate to — DO NOT)

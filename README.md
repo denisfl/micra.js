@@ -225,6 +225,7 @@ this.on(event, handler)
   - [Todo app](./docs/recipes/todo-app.md)
   - [Server-sent events (SSE)](./docs/recipes/sse.md)
   - [htmx bridge](./docs/recipes/htmx.md)
+  - [Rails + Micra](./docs/recipes/rails.md)
 
 ## Code generation with LLMs
 
