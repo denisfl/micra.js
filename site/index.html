@@ -272,6 +272,12 @@
               <use href="#icon-book-open"></use></svg
             >Recipes</a
           >
+          <a href="#speed" @click="close"
+            ><span class="dot"></span>Speed</a
+          >
+          <a href="#ai-sandbox" @click="close"
+            ><span class="dot"></span>AI sandboxes</a
+          >
           <a href="#getting-started" class="active" @click="close"
             ><span class="dot"></span>Getting Started</a
           >
@@ -365,6 +371,180 @@ Micra.define('counter', {
 })
 
 Micra.start()</code></pre>
+              </div>
+            </div>
+          </section>
+
+          <section id="speed" class="doc-section speed-strip">
+            <h2>Built for speed</h2>
+            <p>
+              The same hot paths that React and Vue spend a build step
+              optimising — Micra runs at <code>&lt;script&gt;</code>-tag
+              startup. Numbers measured against the latest Alpine.js
+              and petite-vue on Firefox 150 / Mac (median of 7 runs);
+              run the
+              <a href="./bench/" class="footer-link">benchmark page</a>
+              on your own machine for the version you ship with.
+            </p>
+            <div class="speed-grid">
+              <div class="speed-card">
+                <span class="speed-label">Mount 100 components</span>
+                <strong class="speed-value"
+                  >5.6 <span class="speed-unit">ms</span></strong
+                >
+                <span class="speed-mult"
+                  >× <strong>4.9</strong> vs Alpine.js</span
+                >
+                <span class="speed-foot">× 3.6 vs petite-vue</span>
+              </div>
+              <div class="speed-card speed-card-hero">
+                <span class="speed-label">Update 5 of 1000 rows</span>
+                <strong class="speed-value"
+                  >1 <span class="speed-unit">ms</span></strong
+                >
+                <span class="speed-mult"
+                  >× <strong>886</strong> vs Alpine.js</span
+                >
+                <span class="speed-foot">× 1002 vs petite-vue</span>
+              </div>
+              <div class="speed-card">
+                <span class="speed-label">10 000 state writes</span>
+                <strong class="speed-value"
+                  >1 <span class="speed-unit">ms</span></strong
+                >
+                <span class="speed-mult"
+                  >× <strong>980</strong> vs Alpine.js</span
+                >
+                <span class="speed-foot">× 983 vs petite-vue</span>
+              </div>
+            </div>
+            <p class="speed-foot-row">
+              <a
+                href="./bench/"
+                class="btn btn-primary"
+                target="_blank"
+                rel="noopener"
+              >
+                <span>Open cross-library benchmarks</span>
+                <svg class="icon" aria-hidden="true">
+                  <use href="#icon-arrow-up-right"></use>
+                </svg>
+              </a>
+              <span class="hint speed-method-note">
+                First render 1000 keyed rows: <strong>12 ms</strong>
+                (× 79 vs Alpine). Swap first ↔ last of 1000:
+                <strong>7 ms</strong> (× 131 vs Alpine). Full table in
+                the
+                <a
+                  href="https://github.com/denisfl/micra.js/blob/master/CHANGELOG.md#220--2026-05-27"
+                  target="_blank"
+                  rel="noopener"
+                  class="footer-link"
+                  >v2.2.0 changelog</a
+                >.
+              </span>
+            </p>
+          </section>
+
+          <section
+            id="ai-sandbox"
+            class="doc-section ai-strip"
+            data-component="prompt-copy"
+            data-src="https://raw.githubusercontent.com/denisfl/micra.js/master/PROMPT.md"
+          >
+            <h2>Drop into an AI sandbox in 30 seconds</h2>
+            <p>
+              Claude artifacts, ChatGPT canvas, v0, Bolt, Replit AI —
+              every one of them defaults the words "build me a UI" to
+              React. To make Micra the answer instead, paste this
+              prompt at the top of the chat. It pins the directives,
+              the anti-patterns LLMs gravitate to, and a working CDN
+              line that survives the sandboxes' Content Security
+              Policies (jsDelivr, not unpkg).
+            </p>
+            <div class="ai-grid">
+              <div class="ai-pitch">
+                <ul class="ai-checklist">
+                  <li>
+                    <strong>HTML artifact, not React.</strong> The
+                    prompt explicitly tells the LLM to create the HTML
+                    kind of artifact / canvas, overriding the default
+                    React route.
+                  </li>
+                  <li>
+                    <strong>jsDelivr, not unpkg.</strong> Claude's CSP
+                    allows
+                    <span class="inline-code">cdn.jsdelivr.net</span>
+                    and blocks <span class="inline-code">unpkg.com</span>.
+                    The prompt pins the working URL.
+                  </li>
+                  <li>
+                    <strong>Anti-patterns blocked.</strong> No
+                    <span class="inline-code">getElementById</span>+innerHTML,
+                    no <span class="inline-code">addEventListener</span>
+                    inside methods, no
+                    <span class="inline-code">@keydown.enter</span>,
+                    no nested-path writes — eight guardrails, all from
+                    real LLM failure modes.
+                  </li>
+                  <li>
+                    <strong>Seven canonical recipes inline.</strong>
+                    Counter, search-with-filter, fetch with
+                    loading/error, form + validation, modal via bus,
+                    tabs, todo — the LLM has reference answers for the
+                    common asks.
+                  </li>
+                </ul>
+              </div>
+              <div class="ai-action">
+                <button
+                  class="btn btn-primary btn-lg ai-copy-btn"
+                  @click="copy"
+                  data-bind="disabled:copying"
+                >
+                  <svg
+                    class="icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M8.25 6.75A2.25 2.25 0 0 1 10.5 4.5h3a2.25 2.25 0 0 1 2.25 2.25M8.25 6.75H6a2.25 2.25 0 0 0-2.25 2.25v9.75A2.25 2.25 0 0 0 6 21h12a2.25 2.25 0 0 0 2.25-2.25V9A2.25 2.25 0 0 0 18 6.75h-2.25M8.25 6.75h7.5"
+                    />
+                  </svg>
+                  <span data-if="!copied && !errored && !copying"
+                    >Copy LLM prompt</span
+                  >
+                  <span data-if="copying">Fetching…</span>
+                  <span data-if="copied">✓ Copied — paste into the LLM</span>
+                  <span data-if="errored">Couldn't copy</span>
+                </button>
+                <p class="ai-action-hint">
+                  Fetches the latest
+                  <a
+                    href="https://github.com/denisfl/micra.js/blob/master/PROMPT.md"
+                    target="_blank"
+                    rel="noopener"
+                    class="footer-link"
+                    >PROMPT.md</a
+                  >
+                  from
+                  <span class="inline-code">master</span> and writes
+                  it to your clipboard. ~14 KB; no install, no
+                  account.
+                </p>
+                <ul class="ai-sandboxes" aria-label="Tested sandboxes">
+                  <li>Claude artifacts</li>
+                  <li>ChatGPT canvas</li>
+                  <li>v0</li>
+                  <li>Bolt</li>
+                  <li>Replit AI</li>
+                  <li>Cursor</li>
+                </ul>
               </div>
             </div>
           </section>
@@ -1915,6 +2095,40 @@ Micra.define('filter-table', {
         },
         close() {
           this.state.open = false;
+        },
+      });
+
+      // Capture the native fetch BEFORE docs.js overrides window.fetch with
+      // its in-page demo mock — prompt-copy needs the real network fetch.
+      const _nativeFetch = window.fetch.bind(window);
+
+      Micra.define("prompt-copy", {
+        state: { copying: false, copied: false, errored: false },
+        async copy() {
+          this.state.copied = false;
+          this.state.errored = false;
+          this.state.copying = true;
+          try {
+            const src = this.prop("src");
+            const res = await _nativeFetch(src);
+            if (!res.ok) throw new Error("fetch " + res.status);
+            const text = await res.text();
+            await navigator.clipboard.writeText(text);
+            this.state.copied = true;
+            this._resetTimer = setTimeout(() => {
+              this.state.copied = false;
+            }, 2400);
+          } catch (e) {
+            this.state.errored = true;
+            this._resetTimer = setTimeout(() => {
+              this.state.errored = false;
+            }, 4000);
+          } finally {
+            this.state.copying = false;
+          }
+        },
+        onDestroy() {
+          clearTimeout(this._resetTimer);
         },
       });
     </script>

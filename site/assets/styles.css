@@ -565,6 +565,177 @@ pre code {
   }
 }
 
+/* ── Speed strip (×N vs Alpine.js / petite-vue) ──────────────────── */
+.speed-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+  margin-top: var(--sp-5);
+}
+
+.speed-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  box-shadow: var(--tile-edge);
+}
+
+.speed-card-hero {
+  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2, var(--surface)) 100%);
+  border-color: var(--border-strong);
+  box-shadow: var(--tile-edge-strong);
+}
+
+.speed-label {
+  font-size: var(--text-xs, 11px);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.speed-value {
+  font-size: calc(var(--text-h2) + 0.25rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+  text-shadow: var(--letterpress);
+}
+
+.speed-unit {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--muted);
+  margin-left: 2px;
+}
+
+.speed-mult {
+  font-size: var(--text-sm);
+  color: var(--text);
+  margin-top: 4px;
+}
+
+.speed-mult strong {
+  font-size: calc(var(--text-base) + 0.1rem);
+  font-variant-numeric: tabular-nums;
+  color: var(--accent, var(--text));
+}
+
+.speed-foot {
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.speed-foot-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  align-items: center;
+  margin-top: var(--sp-5);
+}
+
+.speed-method-note {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .speed-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── AI sandbox strip (Copy LLM prompt) ──────────────────────────── */
+.ai-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: var(--sp-5);
+  margin-top: var(--sp-5);
+  align-items: start;
+}
+
+.ai-checklist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.ai-checklist li {
+  position: relative;
+  padding-left: 28px;
+  font-size: var(--text-base);
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.ai-checklist li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 16px;
+  height: 16px;
+  background: var(--accent, var(--text));
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'><path d='m4.5 12.75 6 6 9-13.5'/></svg>");
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'><path d='m4.5 12.75 6 6 9-13.5'/></svg>");
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+}
+
+.ai-action {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: var(--sp-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  box-shadow: var(--tile-edge);
+}
+
+.ai-copy-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.ai-action-hint {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.ai-sandboxes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+
+.ai-sandboxes li {
+  font-size: var(--text-xs);
+  padding: 3px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--surface);
+}
+
+@media (max-width: 820px) {
+  .ai-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ── Install tabs ────────────────────────────────────────────────── */
 .install-tabs {
   display: grid;
