@@ -71,6 +71,48 @@ npm install micra.js
 import * as Micra from "micra.js";
 ```
 
+### TypeScript
+
+The npm package ships its own `dist/index.d.ts` — no `@types/micra.js` package
+needed. Inside every method body and lifecycle hook, both `this.state.X` and
+`this.someMethod()` are fully checked at the call site (both `state` and the
+method set are inferred from the literal you pass to `Micra.define`).
+
+```ts
+import * as Micra from "micra.js";
+
+Micra.define("counter", {
+  state: { count: 0 },
+  inc() {
+    this.state.count++;   // ✓ number
+    this.dec();           // ✓ inferred sibling method
+    // this.foo();        // ✗ Property 'foo' does not exist
+  },
+  dec() { this.state.count--; },
+});
+
+// Type-safe event bus via declaration merging
+declare module "micra.js" {
+  interface MicraEvents {
+    "cart:updated": { count: number };
+    "modal:close":  void;
+  }
+}
+
+Micra.emit("cart:updated", { count: 3 });    // ✓
+Micra.emit("cart:updated", { count: "3" });  // ✗ type error
+Micra.emit("modal:close");                   // ✓ void → no args
+```
+
+**What's checked:** imports, state shape, method names, event-bus payloads,
+lifecycle hooks, refs, `Micra.mount()` return type.
+
+**What's not:** the expression strings inside `data-text="…"` / `@click="…"`
+attributes — those are plain HTML to the IDE and validated only at mount
+time. Same trade-off as Alpine.js `x-*` and petite-vue `v-*`; the
+alternatives are JSX or a single-file-component compiler, neither of which
+Micra ships.
+
 ## Basic usage
 
 A counter mounted automatically from `data-component`:

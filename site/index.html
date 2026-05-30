@@ -380,42 +380,41 @@ Micra.start()</code></pre>
             <p>
               The same hot paths that React and Vue spend a build step
               optimising — Micra runs at <code>&lt;script&gt;</code>-tag
-              startup. Numbers measured against the latest Alpine.js
-              and petite-vue on Firefox 150 / Mac (median of 7 runs);
-              run the
-              <a href="./bench/" class="footer-link">benchmark page</a>
+              startup. Numbers measured against Alpine.js 3.14.1 and
+              petite-vue 0.4.1 on Firefox / Mac (median of 7 runs); run
+              the <a href="./bench/" class="footer-link">benchmark page</a>
               on your own machine for the version you ship with.
             </p>
             <div class="speed-grid">
-              <div class="speed-card">
-                <span class="speed-label">Mount 100 components</span>
-                <strong class="speed-value"
-                  >5.6 <span class="speed-unit">ms</span></strong
-                >
-                <span class="speed-mult"
-                  >× <strong>4.9</strong> vs Alpine.js</span
-                >
-                <span class="speed-foot">× 3.6 vs petite-vue</span>
-              </div>
               <div class="speed-card speed-card-hero">
                 <span class="speed-label">Update 5 of 1000 rows</span>
                 <strong class="speed-value"
-                  >1 <span class="speed-unit">ms</span></strong
+                  >0 <span class="speed-unit">ms</span></strong
                 >
                 <span class="speed-mult"
-                  >× <strong>886</strong> vs Alpine.js</span
+                  >vs <strong>919&nbsp;ms</strong> Alpine.js</span
                 >
-                <span class="speed-foot">× 1002 vs petite-vue</span>
+                <span class="speed-foot">vs 1005 ms petite-vue</span>
               </div>
-              <div class="speed-card">
+              <div class="speed-card speed-card-hero">
+                <span class="speed-label">Swap first ↔ last of 1000</span>
+                <strong class="speed-value"
+                  >0 <span class="speed-unit">ms</span></strong
+                >
+                <span class="speed-mult"
+                  >vs <strong>935&nbsp;ms</strong> Alpine.js</span
+                >
+                <span class="speed-foot">vs 1001 ms petite-vue</span>
+              </div>
+              <div class="speed-card speed-card-hero">
                 <span class="speed-label">10 000 state writes</span>
                 <strong class="speed-value"
                   >1 <span class="speed-unit">ms</span></strong
                 >
                 <span class="speed-mult"
-                  >× <strong>980</strong> vs Alpine.js</span
+                  >vs <strong>982&nbsp;ms</strong> Alpine.js</span
                 >
-                <span class="speed-foot">× 983 vs petite-vue</span>
+                <span class="speed-foot">vs 982 ms petite-vue</span>
               </div>
             </div>
             <p class="speed-foot-row">
@@ -431,17 +430,11 @@ Micra.start()</code></pre>
                 </svg>
               </a>
               <span class="hint speed-method-note">
-                First render 1000 keyed rows: <strong>12 ms</strong>
-                (× 79 vs Alpine). Swap first ↔ last of 1000:
-                <strong>7 ms</strong> (× 131 vs Alpine). Full table in
-                the
-                <a
-                  href="https://github.com/denisfl/micra.js/blob/master/CHANGELOG.md#220--2026-05-27"
-                  target="_blank"
-                  rel="noopener"
-                  class="footer-link"
-                  >v2.2.0 changelog</a
-                >.
+                Mount 1000 components: <strong>19&nbsp;ms</strong> vs
+                47&nbsp;ms Alpine, 25&nbsp;ms petite-vue. First render
+                1000 keyed rows: <strong>11&nbsp;ms</strong> vs
+                948&nbsp;ms Alpine. Unmount 1000:
+                <strong>2&nbsp;ms</strong>.
               </span>
             </p>
           </section>
@@ -590,6 +583,58 @@ Micra.start()</code></pre>
               <span class="inline-code">start()</span> calls, making it safe to
               use with server-rendered pages.
             </p>
+
+            <div class="ts-callout">
+              <h3 class="ts-callout-title">Typed end-to-end</h3>
+              <p>
+                The npm package ships its own
+                <span class="inline-code">.d.ts</span> — no
+                <span class="inline-code">@types/micra.js</span> needed. Both
+                state shape <em>and</em> method set are inferred from the
+                literal you pass to
+                <span class="inline-code">Micra.define</span>, so inside every
+                method body <span class="inline-code">this.state.X</span> and
+                <span class="inline-code">this.someMethod()</span> are
+                fully checked at the call site.
+              </p>
+              <pre><code>import * as Micra from 'micra.js'
+
+Micra.define('counter', {
+  state: { count: 0 },
+  inc() {
+    this.state.count++   // ✓ number
+    this.dec()           // ✓ inferred sibling method
+    // this.foo()        // ✗ Property 'foo' does not exist
+  },
+  dec() { this.state.count-- },
+})
+
+// Type-safe event bus via declaration merging
+declare module 'micra.js' {
+  interface MicraEvents {
+    'cart:updated': { count: number }
+    'modal:close':  void
+  }
+}
+
+Micra.emit('cart:updated', { count: 3 })   // ✓
+Micra.emit('cart:updated', { count: '3' }) // ✗ type error
+Micra.emit('modal:close')                  // ✓ void → no args</code></pre>
+              <p class="ts-callout-honest">
+                <strong>What's checked:</strong> imports, state shape, method
+                names, event payloads, lifecycle hooks, refs. <strong>What's
+                not:</strong> the expression strings inside
+                <span class="inline-code">data-text="…"</span> /
+                <span class="inline-code">@click="…"</span> attributes — those
+                are plain HTML to the IDE and only validated when the page
+                mounts. (Same trade-off as Alpine.js
+                <span class="inline-code">x-*</span> and petite-vue
+                <span class="inline-code">v-*</span>; the alternatives are JSX
+                or a single-file-component compiler, neither of which Micra
+                ships.)
+              </p>
+            </div>
+
             <div class="use-when">
               <div class="use-card use-card-yes">
                 <strong>Good fit for Micra</strong>

@@ -736,6 +736,38 @@ pre code {
   }
 }
 
+/* ── TypeScript callout (Getting Started) ────────────────────────── */
+.ts-callout {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: var(--sp-5);
+  margin-top: var(--sp-5);
+  box-shadow: var(--tile-edge);
+}
+
+.ts-callout-title {
+  font-size: calc(var(--text-base) + 0.15rem);
+  margin: 0 0 var(--sp-2);
+  letter-spacing: -0.01em;
+}
+
+.ts-callout > p {
+  margin: 0 0 var(--sp-3);
+}
+
+.ts-callout pre {
+  margin: var(--sp-3) 0;
+}
+
+.ts-callout-honest {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  border-top: 1px dashed var(--border);
+  padding-top: var(--sp-3);
+  margin-top: var(--sp-4) !important;
+}
+
 /* ── Install tabs ────────────────────────────────────────────────── */
 .install-tabs {
   display: grid;
