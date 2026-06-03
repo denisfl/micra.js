@@ -25,7 +25,7 @@ import * as Micra from 'micra.js'
 Or via CDN (no build step):
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/micra.js@2.3.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@2.3.1/dist/micra.min.js"></script>
 ```
 
 This exposes a global `Micra` object.

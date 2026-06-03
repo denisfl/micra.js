@@ -1,4 +1,4 @@
-/* Micra.js v2.3.0 — https://github.com/micra-js/micra — MIT */
+/* Micra.js v2.3.1 — https://github.com/micra-js/micra — MIT */
 
 // src/utils/fetch.ts
 function getCSRF() {

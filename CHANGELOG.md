@@ -4,6 +4,49 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] — 2026-05-30
+
+### Performance
+
+- **Batch scheduler now uses `queueMicrotask` instead of
+  `Promise.resolve().then(...)`.** Each render batch enqueues a single
+  microtask instead of allocating a Promise plus a reaction job, and the
+  flush callback is hoisted out of the hot path so it isn't re-created on
+  every `schedule()` call. Behaviour is identical — same microtask timing,
+  same write-collapsing. No public-API change.
+
+### Internal — dead-code removal
+
+- Removed the `src/dom/query.ts` module (`queryAll` / `queryOwn` /
+  `queryOwnAll` / `filterOwn`). It had no importers since the 2.2.0
+  single-pass scan replaced per-render `querySelectorAll` calls with one
+  `TreeWalker` traversal — esbuild already tree-shook it out of the
+  bundle, so this is a source-only cleanup.
+- Removed two dead bookkeeping writes: `node.__micraEach` and
+  `node.__micraKey` were assigned during list rendering but never read
+  (keys live in the keyed-diff `Map`; the no-key path doesn't tag rows).
+  Dropped the matching fields from `MicraElement`.
+- Dropped the unused `instance` parameter from `applyDirectives` — it was
+  never referenced in the body.
+
+### Docs
+
+- New [Rails + Micra recipe](https://github.com/denisfl/micra.js/blob/master/docs/recipes/rails.md)
+  (`docs/recipes/rails.md` + a site page): manual importmap integration,
+  the `micra-rails` gem with its caveats, a Tasks board demonstrating SSR
+  props / CSRF-attached `this.fetch` / cross-component bus, and the Turbo
+  Drive / Streams / Frames mount-and-cleanup story.
+- README gains a **TypeScript** section spelling out what's checked
+  end-to-end (state, methods, event payloads) versus what isn't (the
+  expression strings inside `data-*` attributes).
+- Landing page gains **Speed** (cross-library benchmark cards) and **AI
+  sandboxes** (copy-the-LLM-prompt) sections.
+
+### Bundle
+
+- **5.5 KB gzip** (5582 bytes) — a few bytes lighter than 2.3.0 after the
+  dead-code removal.
+
 ## [2.3.0] — 2026-05-30
 
 ### TypeScript — type-safe event bus

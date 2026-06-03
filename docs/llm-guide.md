@@ -33,7 +33,7 @@ wrong framework.
 ✅ **Do:**
 
 > Claude: *creates `application/vnd.ant.html` artifact, includes
->          `<script src="https://cdn.jsdelivr.net/npm/micra.js@2.3.0/dist/micra.min.js">`,
+>          `<script src="https://cdn.jsdelivr.net/npm/micra.js@2.3.1/dist/micra.min.js">`,
 >          writes Micra components per the recipe*
 
 These tools default to React when asked "build a UI". When the user has indicated
@@ -231,7 +231,7 @@ Micra.start()
 
 ```js
 import * as Micra from 'micra.js'
-// or via CDN: <script src="https://cdn.jsdelivr.net/npm/micra.js@2.3.0/dist/micra.min.js"></script>
+// or via CDN: <script src="https://cdn.jsdelivr.net/npm/micra.js@2.3.1/dist/micra.min.js"></script>
 // Then use the global Micra.
 ```
 
@@ -240,7 +240,7 @@ import * as Micra from 'micra.js'
 ❌ **Don't:**
 
 ```html
-<script src="https://unpkg.com/micra.js@2.3.0/dist/micra.min.js"></script>
+<script src="https://unpkg.com/micra.js@2.3.1/dist/micra.min.js"></script>
 ```
 
 This silently fails in Claude artifacts, ChatGPT canvas, and most sandboxed AI
@@ -249,7 +249,7 @@ environments — their Content Security Policy blocks `unpkg.com`.
 ✅ **Do:**
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/micra.js@2.3.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@2.3.1/dist/micra.min.js"></script>
 ```
 
 `cdn.jsdelivr.net` is in the `script-src` allowlist of every major AI runtime

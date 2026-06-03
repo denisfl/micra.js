@@ -30,7 +30,7 @@ The two paths:
 # config/importmap.rb
 pin "application"
 pin "micra",
-    to: "https://cdn.jsdelivr.net/npm/micra.js@2.3.0/dist/micra.esm.js",
+    to: "https://cdn.jsdelivr.net/npm/micra.js@2.3.1/dist/micra.esm.js",
     preload: true
 ```
 
@@ -135,16 +135,17 @@ The installer pins Micra in `config/importmap.rb` and inserts
 Which expands to `<div data-component="counter" data-count="0">…</div>` —
 exactly the markup you would write by hand.
 
-**Caveats to be aware of at v0.2.0:**
+**Caveats to be aware of:**
 
-- **Importmap pin tracks Micra.js v2.2.0**, but the current Micra release
-  is 2.3.0 (type-safe event bus, non-keyed `data-each` reuse). Override
-  the pin manually until the gem catches up:
+- **The gem pins one specific Micra.js version** (its `MICRA_JS_VERSION`),
+  which can lag the latest npm release between gem versions. If you want a
+  newer Micra.js before the gem catches up, override the pin in your own
+  `config/importmap.rb` — it wins over the gem's default:
 
   ```ruby
   # config/importmap.rb — override the gem's pin
   pin "micra",
-      to: "https://cdn.jsdelivr.net/npm/micra.js@2.3.0/dist/micra.esm.js",
+      to: "https://cdn.jsdelivr.net/npm/micra.js@2.3.1/dist/micra.esm.js",
       preload: true
   ```
 
@@ -536,7 +537,7 @@ cd tasks-demo
 # 1. Pin Micra
 cat >> config/importmap.rb <<'EOF'
 pin "micra",
-    to: "https://cdn.jsdelivr.net/npm/micra.js@2.3.0/dist/micra.esm.js",
+    to: "https://cdn.jsdelivr.net/npm/micra.js@2.3.1/dist/micra.esm.js",
     preload: true
 EOF
 
