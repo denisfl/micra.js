@@ -200,7 +200,6 @@ export interface MicraElement extends HTMLElement {
   __micraEvents?: true      // data-on listeners bound
   __micraAtBound?: true     // @event shorthand bound (per-element)
   __micraKey?: unknown      // keyed-diff key
-  __micraEach?: true        // belongs to a no-key each list
   __micraScan?: ScanIndex   // single-pass scan result (cached after 1st render)
   __micraItem?: StateRecord  // keyed row: last-rendered item ref (for skip check)
   __micraIndex?: number      // keyed row: last-rendered index (for skip check)

@@ -14,7 +14,6 @@
 
 import type {
   CachedIfBinding,
-  InternalInstance,
   ScanIndex,
   StateRecord,
 } from '../types'
@@ -147,11 +146,10 @@ function applyModel(
  * @param state    - Expression state (may include item/index for each rows)
  * @param rawState - Raw (non-proxy) state for model sync
  */
-export function applyDirectives<S extends StateRecord>(
+export function applyDirectives(
   scan: ScanIndex,
   state: StateRecord,
   rawState: StateRecord,
-  _instance: InternalInstance<S>,
 ): void {
   // data-if runs first so subsequent directives don't write into a tree that's
   // about to be detached this tick.

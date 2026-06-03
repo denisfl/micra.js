@@ -175,7 +175,7 @@ export function mount<S extends StateRecord, M>(
       const mRoot = root as MicraElement;
       const scan =
         mRoot.__micraScan ?? (mRoot.__micraScan = scanComponent(root));
-      applyDirectives(scan, exprState, rawState, instance);
+      applyDirectives(scan, exprState, rawState);
       renderList(scan.each, exprState, rawState, instance, triggerKey);
       bindDataOn(scan.on, instance);
       bindAtEvents(scan.atEvents, instance);

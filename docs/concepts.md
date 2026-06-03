@@ -40,7 +40,7 @@ this.state.page = 2
 this.state.query = 'billing'
 ```
 
-These writes trigger one render, not three. The scheduler uses `Promise.resolve().then(...)`, so updates flush after the current call stack.
+These writes trigger one render, not three. The scheduler uses `queueMicrotask(...)`, so updates flush after the current call stack.
 
 ## Directive cache
 

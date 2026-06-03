@@ -166,7 +166,6 @@ export interface MicraElement extends HTMLElement {
     __micraEvents?: true;
     __micraAtBound?: true;
     __micraKey?: unknown;
-    __micraEach?: true;
     __micraScan?: ScanIndex;
     __micraItem?: StateRecord;
     __micraIndex?: number;

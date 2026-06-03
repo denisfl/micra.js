@@ -253,13 +253,14 @@ var Micra = (() => {
   }
   function createScheduler(render) {
     let pending = false;
+    const flush = () => {
+      pending = false;
+      render();
+    };
     return function schedule() {
       if (pending) return;
       pending = true;
-      Promise.resolve().then(() => {
-        pending = false;
-        render();
-      });
+      queueMicrotask(flush);
     };
   }
 
@@ -325,7 +326,7 @@ var Micra = (() => {
     const desired = stateVal == null ? "" : String(stateVal);
     if (html.value !== desired) html.value = desired;
   }
-  function applyDirectives(scan, state, rawState, _instance) {
+  function applyDirectives(scan, state, rawState) {
     for (const b of scan.if) applyIf(b, state);
     for (const b of scan.text) applyText(b.el, b.expr, state);
     for (const b of scan.html) applyHtml(b.el, b.expr, state);
@@ -621,7 +622,7 @@ var Micra = (() => {
       itemState.index = index;
       itemState.$index = index;
       const rowScan = (_a = node.__micraScan) != null ? _a : node.__micraScan = scanComponent(node);
-      applyDirectives(rowScan, itemState, rawState, instance);
+      applyDirectives(rowScan, itemState, rawState);
       nextNodes.push(node);
     }
     for (const [key, node] of keyMap) {
@@ -706,7 +707,7 @@ var Micra = (() => {
       itemState.item = item;
       itemState.index = i;
       itemState.$index = i;
-      applyDirectives(node.__micraScan, itemState, rawState, instance);
+      applyDirectives(node.__micraScan, itemState, rawState);
       nextList[i] = node;
     }
     for (let i = nextLen; i < prevLen; i++) {
@@ -721,10 +722,9 @@ var Micra = (() => {
         itemState.item = item;
         itemState.index = i;
         itemState.$index = i;
-        node.__micraEach = true;
         node.__micraItem = item;
         node.__micraIndex = i;
-        applyDirectives(node.__micraScan, itemState, rawState, instance);
+        applyDirectives(node.__micraScan, itemState, rawState);
         nextList[i] = node;
         frag.append(node);
       }
@@ -823,7 +823,7 @@ var Micra = (() => {
       try {
         const mRoot2 = root;
         const scan = (_a2 = mRoot2.__micraScan) != null ? _a2 : mRoot2.__micraScan = scanComponent(root);
-        applyDirectives(scan, exprState, rawState, instance);
+        applyDirectives(scan, exprState, rawState);
         renderList(scan.each, exprState, rawState, instance, triggerKey);
         bindDataOn(scan.on, instance);
         bindAtEvents(scan.atEvents, instance);

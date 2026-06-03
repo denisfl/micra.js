@@ -23,6 +23,10 @@ export declare function createReactiveState<S extends StateRecord>(obj: S, sched
  * Return a debounce function that defers `render` to the next microtask.
  * Multiple calls within the same tick collapse to a single render.
  *
+ * Uses `queueMicrotask` so each batch enqueues a single microtask instead of
+ * allocating a Promise + reaction job. `flush` is hoisted out of the hot path
+ * so it isn't re-created on every schedule() call.
+ *
  * @example
  * const schedule = createScheduler(render)
  * schedule()  // defers render

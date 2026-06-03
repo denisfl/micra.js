@@ -5,9 +5,9 @@
  * traversal that classifies every directive attribute in a single visit.
  *
  * Boundaries:
- *   - REJECT (skip subtree) on nested [data-component] — same semantics as
- *     the old `filterOwn` helper, but applied during the walk so we don't
- *     even *visit* those nodes.
+ *   - REJECT (skip subtree) on nested [data-component] — a parent component
+ *     never processes directives owned by a nested child. Applied during the
+ *     walk so we don't even *visit* those nodes.
  *   - <template> contents are not visited (browser TreeWalker default).
  *     `<template data-each>` itself IS visited and classified into scan.each;
  *     its children are processed by each.ts on every render — fresh rows

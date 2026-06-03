@@ -177,7 +177,7 @@ function renderKeyed<S extends StateRecord>(
     // Use the cached scan if present (created above on first sight of this key);
     // older paths may pass a node we haven't scanned yet.
     const rowScan = node.__micraScan ?? (node.__micraScan = scanComponent(node))
-    applyDirectives(rowScan, itemState, rawState, instance)
+    applyDirectives(rowScan, itemState, rawState)
     nextNodes.push(node)
   }
 
@@ -292,7 +292,7 @@ function renderNoKey<S extends StateRecord>(
     itemState.item = item
     itemState.index = i
     itemState.$index = i
-    applyDirectives(node.__micraScan!, itemState, rawState, instance)
+    applyDirectives(node.__micraScan!, itemState, rawState)
     nextList[i] = node
   }
 
@@ -311,10 +311,9 @@ function renderNoKey<S extends StateRecord>(
       itemState.item = item
       itemState.index = i
       itemState.$index = i
-      node.__micraEach = true
       node.__micraItem = item
       node.__micraIndex = i
-      applyDirectives(node.__micraScan!, itemState, rawState, instance)
+      applyDirectives(node.__micraScan!, itemState, rawState)
       nextList[i] = node
       frag.append(node)
     }

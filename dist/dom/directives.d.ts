@@ -11,7 +11,7 @@
  *
  * Important: this module does NOT handle data-each — see dom/each.ts.
  */
-import type { InternalInstance, ScanIndex, StateRecord } from '../types';
+import type { ScanIndex, StateRecord } from '../types';
 import { warn } from '../utils/expr';
 /**
  * Apply all non-each directives to a component subtree.
@@ -23,7 +23,7 @@ import { warn } from '../utils/expr';
  * @param state    - Expression state (may include item/index for each rows)
  * @param rawState - Raw (non-proxy) state for model sync
  */
-export declare function applyDirectives<S extends StateRecord>(scan: ScanIndex, state: StateRecord, rawState: StateRecord, _instance: InternalInstance<S>): void;
+export declare function applyDirectives(scan: ScanIndex, state: StateRecord, rawState: StateRecord): void;
 /**
  * Validate directive usage and emit dev warnings.
  * Called once after the initial render of a component, with the already-built
