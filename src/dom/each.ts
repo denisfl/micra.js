@@ -156,7 +156,6 @@ function renderKeyed<S extends StateRecord>(
 
     if (!node) {
       node = createRowNode(tmpl, state, instance)
-      node.__micraKey = key
       keyMap.set(key, node)
     } else if (canSkipUnchanged && node.__micraItem === item && node.__micraIndex === index) {
       // Item reference and index are unchanged, and no other state key changed

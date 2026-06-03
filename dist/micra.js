@@ -609,7 +609,6 @@ var Micra = (() => {
       let node = keyMap.get(key);
       if (!node) {
         node = createRowNode(tmpl, state, instance);
-        node.__micraKey = key;
         keyMap.set(key, node);
       } else if (canSkipUnchanged && node.__micraItem === item && node.__micraIndex === index) {
         nextNodes.push(node);
