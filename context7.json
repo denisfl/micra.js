@@ -1,7 +1,6 @@
 {
   "url": "https://context7.com/denisfl/micra.js",
   "public_key": "pk_gC04jMdW95ia9jC6jkAKm",
-  "$schema": "https://context7.com/schema/context7.json",
   "projectTitle": "Micra.js",
   "description": "Lightweight reactive TypeScript framework for server-rendered apps (Rails, Laravel, Django) and small SaaS frontends. ~5 KB gzip. No build step. Reactive state proxy, declarative directives (data-text, data-if, data-each, @event), event bus. Alpine.js alternative with cleaner LLM ergonomics — small surface area, minimal anti-patterns.",
   "excludeFolders": [
