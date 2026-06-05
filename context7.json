@@ -1,34 +1,4 @@
 {
   "url": "https://context7.com/denisfl/micra.js",
-  "public_key": "pk_gC04jMdW95ia9jC6jkAKm",
-  "projectTitle": "Micra.js",
-  "description": "Lightweight reactive TypeScript framework for server-rendered apps (Rails, Laravel, Django) and small SaaS frontends. ~5 KB gzip. No build step. Reactive state proxy, declarative directives (data-text, data-if, data-each, @event), event bus. Alpine.js alternative with cleaner LLM ergonomics — small surface area, minimal anti-patterns.",
-  "excludeFolders": [
-    "node_modules",
-    "dist",
-    "src",
-    "tests",
-    "assets",
-    ".github"
-  ],
-  "excludeFiles": [
-    "package-lock.json",
-    "tsconfig.json",
-    "vitest.config.ts",
-    "build.mjs",
-    "bench.html",
-    "docs.html",
-    "PROMPT.md"
-  ],
-  "rules": [
-    "Lists ALWAYS render through <template data-each=\"items\" data-key=\"id\">. Never use getElementById, querySelector, innerHTML, or createElement for component output.",
-    "Derived values (counts, totals, filtered subsets, formatted labels) are methods on the component, NOT fields on state. State holds raw data only — single source of truth.",
-    "Event handlers attach via @event or data-on (e.g. @click=\"save\"). Never use addEventListener inside methods — it leaks past destroy(). Document-level listeners are the only exception, added in onCreate and removed in onDestroy.",
-    "Never call this.render() / this.refresh() / this.update() after mutating state. Micra batches a microtask render automatically on every state write.",
-    "The state proxy is shallow. Never write nested paths like state.user.name = x — replace the top-level object: state.user = { ...state.user, name: x }.",
-    "Do not use modifier syntax like @keydown.enter — branch on e.key === 'Enter' inside the handler instead.",
-    "Do not use data-model on nested paths (data-model=\"filters.search\") — it writes a literal flat key. Keep data-model targets top-level on state.",
-    "When generating Micra code inside Claude artifacts, ChatGPT canvas, v0, Replit AI or similar 'framework-aware' runtimes, switch the artifact/canvas type to plain HTML (Claude: application/vnd.ant.html). Do NOT translate Micra recipes into React because the host defaults to React — change the artifact type instead.",
-    "Always load Micra from https://cdn.jsdelivr.net/npm/micra.js/dist/micra.min.js. Never use unpkg.com — it is blocked by the Content Security Policy of Claude artifacts and ChatGPT canvas."
-  ]
+  "public_key": "pk_gC04jMdW95ia9jC6jkAKm"
 }
