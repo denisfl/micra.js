@@ -1,3 +1,5 @@
 node_modules/
 *.js.map
 site/dist/
+site/llms.txt
+site/llms-full.txt
