@@ -1,0 +1,22 @@
+{
+  "name": "micra.js",
+  "version": "2.3.1",
+  "description": "Conventions for Micra.js — a ~5 KB reactive UI library for server-rendered pages. Keeps generated components idiomatic and blocks jQuery / React / Alpine anti-patterns.",
+  "author": {
+    "name": "Denis Fl",
+    "url": "https://github.com/denisfl"
+  },
+  "homepage": "https://denisfl.github.io/micra.js/",
+  "repository": "https://github.com/denisfl/micra.js",
+  "license": "MIT",
+  "keywords": [
+    "micra.js",
+    "reactive",
+    "server-rendered",
+    "no-build",
+    "directives",
+    "alpine-alternative",
+    "llm"
+  ],
+  "rules": "./rules"
+}

@@ -1,0 +1,117 @@
+---
+description: "Micra.js conventions for reactive islands on server-rendered pages (Rails, Laravel, Django, plain HTML). Keeps components idiomatic and blocks jQuery / React / Alpine anti-patterns."
+globs: **/*.{html,js,ts}
+alwaysApply: false
+---
+
+# Micra.js
+
+Micra.js is a ~5 KB reactive UI library for server-rendered pages: reactive
+`state` via a shallow `Proxy`, declarative `data-*` directives, a keyed
+`data-each` list diff, and a cross-component event bus. No build step, no
+virtual DOM. It is NOT React, Vue, or Alpine — do not translate its patterns
+into those frameworks.
+
+## Component shape
+
+```js
+Micra.define("name", {
+  state: { /* flat, reactive — raw data only */ },
+  onCreate() { /* mounted; refs ready; safe to fetch */ },
+  onDestroy() { /* clear timers / document listeners */ },
+  derived() { return this.state.items.filter(/* ... */) }, // methods, not state
+  action() { this.state.items = [...this.state.items, x] }, // mutate → auto-render
+});
+Micra.start();
+```
+
+`this` inside methods: `this.state` (reactive Proxy), `this.$el`, `this.refs`,
+`this.prop(name, default)`, `this.fetch(url, opts)`, `this.emit(event, payload)`,
+`this.on(event, handler)` (auto-unsubscribed on destroy).
+
+## Rules
+
+### Lists
+- Render every list through `<template data-each="items" data-key="id">`.
+- Never produce component output with `getElementById`, `querySelector`,
+  `innerHTML`, or `createElement`.
+- Always provide `data-key` for stable identity and minimal DOM moves.
+
+### Derived values
+- Counts, totals, filtered subsets, and formatted labels are **methods**, never
+  fields on `state`. `state` holds raw data only — the single source of truth.
+- A `state` field that mirrors `.length` / `.filter(...)` / `.some(...)` of
+  another field will drift. Compute it in a method instead.
+
+### Events
+- Bind handlers with `@event` or `data-on` (e.g. `@click="save"`). Micra removes
+  them on `destroy()`.
+- Never call `addEventListener` inside a method — it leaks past `destroy()`.
+  The only exception is document-level listeners: add in `onCreate`, remove in
+  `onDestroy`.
+- No key modifiers — `@keydown.enter` does nothing. Branch on
+  `e.key === "Enter"` inside the handler.
+
+### State writes
+- The state proxy is **shallow**: it tracks top-level writes only. Never write a
+  nested path (`state.user.name = x`); replace the top-level value:
+  `state.user = { ...state.user, name: x }`.
+- Replace arrays, don't mutate them — `push` / `splice` / `sort` are invisible.
+  Use `state.items = [...state.items, x]`, `.filter(...)`, `.map(...)`.
+- Never call `this.render()` / `this.refresh()` / `this.update()` after a
+  mutation. Micra batches one microtask render per write automatically.
+- `data-model` writes a literal flat key — `data-model="filters.search"` writes
+  to `state["filters.search"]`, not a nested path. Keep model targets top-level.
+
+### Loading the library
+- Load from `https://cdn.jsdelivr.net/npm/micra.js/dist/micra.min.js`. Never use
+  `unpkg.com` — it is blocked by the CSP of Claude artifacts and ChatGPT canvas
+  and silently fails there.
+- In "framework-aware" runtimes (Claude artifacts, ChatGPT canvas, v0, Replit
+  AI), create the plain **HTML** artifact (Claude: `application/vnd.ant.html`).
+  Do NOT switch to a React component because the host defaults to React.
+
+## Idiomatic example
+
+```html
+<div data-component="todos">
+  <p data-text="remaining()"></p>
+  <template data-each="items" data-key="id">
+    <label data-bind="data-id:item.id">
+      <input type="checkbox" data-bind="checked:item.done" @change="toggle" />
+      <span data-text="item.title"></span>
+    </label>
+  </template>
+</div>
+```
+
+```js
+Micra.define("todos", {
+  state: { items: [] },
+  remaining() { return this.state.items.filter(t => !t.done).length },
+  toggle(e) {
+    const id = Number(e.currentTarget.dataset.id);
+    this.state.items = this.state.items.map(t =>
+      t.id === id ? { ...t, done: !t.done } : t
+    );
+  },
+});
+Micra.start();
+```
+
+## Anti-patterns to refuse
+
+```js
+// ❌ derived value stored in state, hand-rolled list, addEventListener in a
+//    method, nested mutation, manual re-render — all wrong in Micra:
+state: { items: [], remaining: 0 }
+document.getElementById("list").innerHTML = items.map(/* ... */).join("")
+el.addEventListener("click", () => this.toggle(id))
+item.done = true
+this.render()
+```
+
+## References
+- Repository: https://github.com/denisfl/micra.js
+- Concepts (proxy, scheduler, directive cache, keyed diff): https://github.com/denisfl/micra.js/blob/master/docs/concepts.md
+- LLM guide + anti-patterns: https://github.com/denisfl/micra.js/blob/master/docs/llm-guide.md
