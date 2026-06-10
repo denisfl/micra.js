@@ -1,7 +1,7 @@
 name: Publish to npm
 
 # Staged publishing:
-#   push to main     → npm publish --tag next   (install with: npm i micra.js@next)
+#   push to master   → npm publish --tag next   (install with: npm i micra.js@next)
 #   push tag v*.*.*  → npm publish              (promotes to @latest)
 #
 # Uses npm Trusted Publishing (OIDC) — no NPM_TOKEN secret needed.
@@ -32,12 +32,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
       - name: Build
         run: npm run build
 
-      # ── Staged: push to main publishes as @next ───────────────────
+      # ── Staged: push to master publishes as @next ──────────────────
       - name: Publish @next (staged)
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/master'
         run: npm publish --tag next --access public
 
       # ── Release: version tag promotes to @latest ──────────────────

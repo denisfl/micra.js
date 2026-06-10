@@ -1,6 +1,23 @@
 # Micra.js
 
+[![CI](https://github.com/denisfl/micra.js/actions/workflows/ci.yml/badge.svg)](https://github.com/denisfl/micra.js/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/micra.js)](https://www.npmjs.com/package/micra.js)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/micra.js?label=gzip)](https://bundlephobia.com/package/micra.js)
+[![types included](https://img.shields.io/badge/types-included-blue)](./dist/index.d.ts)
+[![license MIT](https://img.shields.io/npm/l/micra.js)](./LICENSE)
+
 Micra.js is a lightweight reactive TypeScript framework for small sites and SaaS apps. It gives you reactive state, DOM directives, keyed list rendering, an event bus, SSR-friendly props, and auto-mounting in about 5 KB gzip.
+
+## Project status
+
+- **Stable, SemVer-disciplined.** Breaking changes only in majors; every
+  release documented in [CHANGELOG.md](./CHANGELOG.md) with migration notes.
+- **Tested.** 255 tests across 14 suites run on every push and before every
+  npm publish; the build fails if the bundle exceeds **5.5 KB gzip**.
+- **Typed.** Ships its own `.d.ts` — state, methods, and event-bus payloads
+  are checked end-to-end (see [TypeScript](#typescript)).
+- **Security policy.** See [SECURITY.md](./SECURITY.md) — private reporting,
+  72-hour acknowledgement, supported-versions table.
 
 ## When to use Micra.js
 
