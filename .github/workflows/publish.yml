@@ -1,8 +1,13 @@
 name: Publish to npm
 
 # Staged publishing:
-#   push to master   → npm publish --tag next   (install with: npm i micra.js@next)
-#   push tag v*.*.*  → npm publish              (promotes to @latest)
+#   push to master   → npm publish --tag next, ONLY for prerelease versions
+#                      (x.y.z-next.N etc.; install with: npm i micra.js@next).
+#                      Stable versions are NOT published from master — otherwise
+#                      the master run races the tag run, lands the version as
+#                      @next first, and the tag's publish then conflicts
+#                      (EPUBLISHCONFLICT) leaving @latest stale.
+#   push tag v*.*.*  → npm publish → @latest
 #
 # Uses npm Trusted Publishing (OIDC) — no NPM_TOKEN secret needed.
 # Setup: npmjs.com → package Settings → Trusted Publishers → add this workflow.
@@ -46,10 +51,17 @@ jobs:
       # (doc/site-only pushes between releases) — npm refuses to publish
       # the same version twice, and republishing @latest as @next would
       # be pointless anyway.
-      - name: Publish @next (staged)
+      - name: Publish @next (staged, prerelease versions only)
         if: github.ref == 'refs/heads/master'
         run: |
           VERSION=$(node -p "require('./package.json').version")
+          case "$VERSION" in
+            *-*) ;; # prerelease — eligible for the @next channel
+            *)
+              echo "stable version $VERSION — published only via its v$VERSION tag"
+              exit 0
+              ;;
+          esac
           # Distinguish "version not published" (E404 → publish) from
           # transient registry/network failures (→ fail loudly, don't guess).
           set +e
