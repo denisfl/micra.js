@@ -3,9 +3,10 @@
  * evaluate.mjs — verdicts for every generation under runs/, plus the
  * idiom lint, aggregated into results.json + results.md.
  *
- *   node bench-llm/evaluate.mjs            # evaluate runs/
+ *   node bench-llm/evaluate.mjs            # evaluate runs/ → results.json/md
  *   node bench-llm/evaluate.mjs --golden   # validate assertions vs golden/
- *   node bench-llm/evaluate.mjs --only claude/bare/01-counter-t1
+ *   # single run (verdict printed; results files NOT rewritten):
+ *   node bench-llm/evaluate.mjs --only ollama--qwen2.5-coder_14b/bare/01-counter-t1
  */
 
 import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs'
@@ -43,25 +44,33 @@ async function judge(raw, task) {
   const { html: normalized, cdnUrls } = normalizeMicraLoading(html)
   const flags = lint(normalized, { cdnUrls })
 
-  let pageErrors = []
+  // Track EVERY page handed to the assert so windows are closed even when
+  // the assert throws — a leaked window's timers would otherwise fire during
+  // the NEXT generation's judge and be misattributed to it. Errors aggregate
+  // across all pages of a multi-scenario task (e.g. task 9 loads twice).
+  const pages = []
   const load = async opts => {
     const api = await loadPage(normalized, opts)
-    pageErrors = api.errors
+    pages.push(api)
     return api
   }
 
+  let assertError = null
   try {
     await task.assert(load)
-    // small drain so stray timers from this page fire (and get attributed) now
-    await new Promise(r => setTimeout(r, 80))
-    const err = pageErrors[0] ?? asyncErrors[0]
-    if (err) return { verdict: 'fail-runtime', detail: err, cdnUrls, flags }
-    return { verdict: 'pass', cdnUrls, flags }
   } catch (e) {
-    const err = pageErrors[0] ?? asyncErrors[0]
-    if (err) return { verdict: 'fail-runtime', detail: err, cdnUrls, flags }
-    return { verdict: 'fail-behavior', detail: e.message, cdnUrls, flags }
+    assertError = e
+  } finally {
+    for (const p of pages) p.close()
+    // drain: let any just-cancelled/straggler microtasks and short timers
+    // fire NOW, inside this judge, so attribution stays correct
+    await new Promise(r => setTimeout(r, 80))
   }
+
+  const err = pages.flatMap(p => p.errors)[0] ?? asyncErrors[0]
+  if (err) return { verdict: 'fail-runtime', detail: err, cdnUrls, flags }
+  if (assertError) return { verdict: 'fail-behavior', detail: assertError.message, cdnUrls, flags }
+  return { verdict: 'pass', cdnUrls, flags }
 }
 
 // ── Golden mode: validate the assertions themselves ───────────────────────────
@@ -105,7 +114,9 @@ for (const model of readdirSync(runsDir)) {
 }
 
 // ── Aggregate ─────────────────────────────────────────────────────────────────
-const by = (arr, key) => Object.groupBy(arr, key)
+// (local groupBy — Object.groupBy needs Node ≥ 21, CI tests Node 20)
+const by = (arr, key) =>
+  arr.reduce((m, x) => { const k = key(x); (m[k] ??= []).push(x); return m }, {})
 const pct = (xs) => xs.length ? Math.round(100 * xs.filter(r => r.verdict === 'pass').length / xs.length) : 0
 const idiomatic = (xs) => xs.length ? Math.round(100 * xs.filter(r => r.verdict === 'pass' && !(r.flags ?? []).length).length / xs.length) : 0
 
@@ -123,9 +134,17 @@ for (const [model, rs] of Object.entries(by(results, r => r.model))) {
 md += `\n## Failure taxonomy\n\n| verdict | count |\n|---|---|\n`
 for (const [v, rs] of Object.entries(by(results, r => r.verdict))) md += `| ${v} | ${rs.length} |\n`
 md += `\n## CDN choice (when the model loaded Micra from a URL)\n\n| host | count |\n|---|---|\n`
-const hosts = results.flatMap(r => r.cdnUrls ?? []).map(u => { try { return new URL(u, 'http://x').host || 'relative' } catch { return 'malformed' } })
+const hosts = results.flatMap(r => r.cdnUrls ?? []).map(u => {
+  if (!/^https?:\/\//i.test(u)) return 'relative/local'
+  try { return new URL(u).host } catch { return 'malformed' }
+})
 for (const [h, n] of Object.entries(by(hosts, h => h))) md += `| ${h} | ${n.length} |\n`
 
-writeFileSync(join(HERE, 'results.json'), JSON.stringify(results, null, 2))
-writeFileSync(join(HERE, 'results.md'), md)
-console.log(`\n${results.length} evaluated → results.json, results.md`)
+if (onlyArg) {
+  // single-run mode is for debugging — never clobber the aggregate files
+  console.log(`\n${results.length} evaluated (--only mode: results files NOT rewritten)`)
+} else {
+  writeFileSync(join(HERE, 'results.json'), JSON.stringify(results, null, 2))
+  writeFileSync(join(HERE, 'results.md'), md)
+  console.log(`\n${results.length} evaluated → results.json, results.md`)
+}

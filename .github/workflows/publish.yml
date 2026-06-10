@@ -50,10 +50,20 @@ jobs:
         if: github.ref == 'refs/heads/master'
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          if npm view "micra.js@$VERSION" version >/dev/null 2>&1; then
+          # Distinguish "version not published" (E404 → publish) from
+          # transient registry/network failures (→ fail loudly, don't guess).
+          set +e
+          OUT=$(npm view "micra.js@$VERSION" version 2>&1)
+          CODE=$?
+          set -e
+          if [ $CODE -eq 0 ]; then
             echo "micra.js@$VERSION already published — skipping @next publish"
-          else
+          elif echo "$OUT" | grep -q "E404"; then
             npm publish --tag next --access public
+          else
+            echo "npm view failed with an unexpected error:"
+            echo "$OUT"
+            exit 1
           fi
 
       # ── Release: version tag promotes to @latest ──────────────────

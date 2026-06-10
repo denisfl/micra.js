@@ -4,6 +4,45 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.2] — 2026-06-10
+
+### Fixed — `data-each` row root detection
+
+- **A pretty-printed template with one root element is no longer wrapped
+  in `<micra-each-item>`.** Single-root detection used
+  `frag.childNodes.length === 1`, which counts whitespace text nodes — so
+  `<template data-each>\n  <tr>…</tr>\n</template>` (three child nodes:
+  text, element, text) took the multi-root path and wrapped every row.
+  For table rows this put invalid content inside `<tbody>` and broke
+  `tbody > tr` child selectors.
+- Exact semantics of the new check (top-level child nodes only, O(1)-ish
+  per row): plain whitespace (space, `\t`, `\n`, `\f`, `\r`) beside the
+  single element is ignored; **NBSP and any other visible character keep
+  the wrapper** (they render, so they must survive); **comment nodes
+  beside the root are dropped** — they don't render and aren't worth
+  invalid wrapper content inside `<tbody>`.
+- Found by the official `isKeyed` compliance check while preparing the
+  [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark)
+  submission — Micra now passes it for run / remove / swap.
+- Affects both keyed and non-keyed paths (shared `createRowNode`).
+- Internal: `ALLOWED_GLOBALS` in the expression evaluator is now built
+  from a split string (identical semantics, smaller minified output).
+  Bundle: **5.5 KB gzip** (5632 bytes — exactly at the size guard; the
+  next feature pays for itself or raises the limit consciously).
+
+### Internal — LLM-benchmark harness hardening (no library impact)
+
+Post-review fixes to `bench-llm/` so published numbers are trustworthy:
+windows now close even when an assertion fails (stray timers no longer
+misattribute errors to the next generation); errors aggregate across all
+pages of multi-scenario tasks; quoted `>` inside template attributes no
+longer mangles pages; ESM micra imports are rewritten to UMD bindings
+instead of being dropped; the injected bundle is marked with
+`data-harness-bundle` (single source of truth for loader and lint);
+`Object.groupBy` replaced for Node 20 compatibility; `--only` no longer
+overwrites aggregate results; the `@next` publish guard distinguishes
+"version not published" from registry/network failures.
+
 ## [2.3.1] — 2026-05-30
 
 ### Performance

@@ -45,7 +45,9 @@ function defaultFetch() {
 // after the parse (DOM mutation has no table restrictions).
 // v1 limitation: nested <template> elements are not supported.
 
-const TPL_RE = /<template([^>]*)>([\s\S]*?)<\/template>/gi
+// attrs part is quote-aware: a '>' inside a quoted attribute value
+// (data-if="items.length > 0") must not terminate the tag match
+const TPL_RE = /<template((?:"[^"]*"|'[^']*'|[^>"'])*)>([\s\S]*?)<\/template>/gi
 
 function protectTemplates(html) {
   const store = []
@@ -56,9 +58,12 @@ function protectTemplates(html) {
   return { out, store }
 }
 
+/** Rebuild real <template> elements at the comment markers. Returns the
+ *  number restored — a mismatch with store.length means the page was
+ *  mangled and must surface as a harness error, not a model failure. */
 function restoreTemplates(window, store) {
   const doc = window.document
-  if (!store.length || !doc.documentElement) return
+  if (!store.length || !doc.documentElement) return 0
   const walker = doc.createTreeWalker(doc.documentElement, 128 /* SHOW_COMMENT */)
   const found = []
   let node
@@ -79,6 +84,7 @@ function restoreTemplates(window, store) {
     t.innerHTML = inner
     comment.parentNode.replaceChild(t, comment)
   }
+  return found.length
 }
 
 // ── one-time probe: does happy-dom's checkbox click() fire input/change? ─────
@@ -101,7 +107,9 @@ function runScripts(window, errors) {
     try {
       // `with(window)` makes browser globals (NodeFilter, Event, …) resolve on
       // the happy-dom window, while names it lacks fall through to Node globals.
-      const isBundle = i === 0 && /Micra\.js v|var Micra=/.test(code.slice(0, 200))
+      // The injected bundle is identified by the marker attribute extract.mjs
+      // sets at injection time — no content sniffing.
+      const isBundle = script.hasAttribute('data-harness-bundle')
       const body = isBundle
         ? `with(window){\n${code}\n;window.Micra = Micra;\n}` // export the UMD's top-level var
         : `with(window){\n${code}\n}`
@@ -128,7 +136,12 @@ export async function loadPage(html, { fetchImpl } = {}) {
   const { out, store } = protectTemplates(html)
   window.document.write(out)
   window.document.close()
-  restoreTemplates(window, store)
+  const restored = restoreTemplates(window, store)
+  if (restored !== store.length) {
+    errors.push(
+      `harness: template protect/restore mismatch (${restored}/${store.length}) — page likely mangled by TPL_RE`,
+    )
+  }
 
   runScripts(window, errors)
 

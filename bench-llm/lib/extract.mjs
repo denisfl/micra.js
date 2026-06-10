@@ -36,7 +36,22 @@ export function extractHtml(raw) {
 }
 
 const MICRA_SCRIPT = /<script[^>]*\bsrc=["']([^"']*micra[^"']*)["'][^>]*>\s*<\/script>/gi
-const MICRA_IMPORT = /import\s+(?:\*\s+as\s+\w+|\w+|\{[^}]*\})\s+from\s+["']([^"']*micra[^"']*)["'];?/gi
+const MICRA_IMPORT = /import\s+(\*\s+as\s+(\w+)|\{([^}]*)\}|(\w+))\s+from\s+["']([^"']*micra[^"']*)["'];?/gi
+
+/** Rewrite an ESM micra import into a binding against the UMD global, so
+ *  identifiers the model destructured stay bound after the import is gone. */
+function importToBinding(ns, named, dflt) {
+  if (ns) return `const ${ns} = window.Micra;`
+  if (dflt) return `const ${dflt} = window.Micra;`
+  // `{ define, start as boot }` → `{ define, start: boot }`
+  const props = named
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
+    .map(s => s.replace(/\s+as\s+/, ': '))
+    .join(', ')
+  return `const { ${props} } = window.Micra;`
+}
 
 /**
  * Strip the model's micra loading mechanism, inject the local bundle,
@@ -48,12 +63,14 @@ export function normalizeMicraLoading(html) {
     cdnUrls.push(url)
     return ''
   })
-  out = out.replace(MICRA_IMPORT, (_, url) => {
+  out = out.replace(MICRA_IMPORT, (_m, _clause, ns, named, dflt, url) => {
     cdnUrls.push(url)
-    return '/* micra import stripped — UMD global injected by harness */'
+    return importToBinding(ns, named, dflt)
   })
 
-  const inject = `<script>${BUNDLE}</script>`
+  // data-harness-bundle marks the injected script for loadPage (which must
+  // export the UMD's top-level var) and lint (which must NOT lint it).
+  const inject = `<script data-harness-bundle>${BUNDLE}</script>`
   if (/<head[^>]*>/i.test(out)) {
     out = out.replace(/<head[^>]*>/i, h => `${h}\n${inject}`)
   } else if (/<html[^>]*>/i.test(out)) {

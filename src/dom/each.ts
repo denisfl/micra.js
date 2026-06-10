@@ -106,8 +106,25 @@ function createRowNode<S extends StateRecord>(
 ): MicraElement {
   const frag = tmpl.content.cloneNode(true) as DocumentFragment
   let node: MicraElement
-  if (frag.childNodes.length === 1) {
-    node = frag.firstElementChild as MicraElement
+  // Single-root detection must ignore whitespace-only text nodes — a
+  // pretty-printed `<template>\n  <tr>…</tr>\n</template>` is still one root.
+  // Wrapping a lone <tr> in <micra-each-item> would put invalid content
+  // inside <tbody> and break `tbody > tr` selectors. Only TOP-LEVEL child
+  // nodes are scanned (O(1-ish), not O(subtree)); NBSP counts as meaningful
+  // (it renders), so it keeps the wrapper. Comments beside the root are
+  // dropped — they don't render and aren't worth a wrapper in <tbody>.
+  const first = frag.firstElementChild as MicraElement | null
+  // meaningful = any char with code > 32 (NBSP included; \t \n \f \r and
+  // space excluded) in a top-level text node
+  const single =
+    !!first &&
+    !first.nextElementSibling &&
+    !Array.prototype.some.call(
+      frag.childNodes,
+      (c: Node) => c.nodeType === 3 && /[^\x00- ]/.test(c.textContent!),
+    )
+  if (single) {
+    node = first!
   } else {
     node = document.createElement('micra-each-item') as MicraElement
     node.style.display = 'contents'

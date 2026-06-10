@@ -62,10 +62,11 @@ const RULES = [
   },
 ]
 
-/** The injected micra bundle itself contains innerHTML etc. — exclude it. */
+/** The injected micra bundle itself contains innerHTML etc. — exclude it.
+ *  It is identified by the data-harness-bundle marker extract.mjs sets at
+ *  injection time, so banner/minifier changes can't break the strip. */
 function stripMicraBundle(src) {
-  return src.replace(/<script>\/\* Micra\.js[\s\S]*?<\/script>/, '')
-            .replace(/<script>"use strict";var Micra[\s\S]*?<\/script>/, '')
+  return src.replace(/<script data-harness-bundle>[\s\S]*?<\/script>/, '')
 }
 
 export function lint(source, meta = {}) {

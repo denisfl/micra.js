@@ -1,4 +1,4 @@
-/* Micra.js v2.3.1 — https://github.com/micra-js/micra — MIT */
+/* Micra.js v2.3.2 — https://github.com/micra-js/micra — MIT */
 "use strict";
 var Micra = (() => {
   var __defProp = Object.defineProperty;
@@ -119,23 +119,9 @@ var Micra = (() => {
   var exprCache = /* @__PURE__ */ new Map();
   var warnedRuntime = /* @__PURE__ */ new Set();
   var SIMPLE_PATH = /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/;
-  var ALLOWED_GLOBALS = /* @__PURE__ */ new Set([
-    "Math",
-    "JSON",
-    "Date",
-    "String",
-    "Number",
-    "Boolean",
-    "Array",
-    "Object",
-    "parseInt",
-    "parseFloat",
-    "isNaN",
-    "isFinite",
-    "NaN",
-    "Infinity",
-    "undefined"
-  ]);
+  var ALLOWED_GLOBALS = new Set(
+    "Math,JSON,Date,String,Number,Boolean,Array,Object,parseInt,parseFloat,isNaN,isFinite,NaN,Infinity,undefined".split(",")
+  );
   var PARAM_S = "$s";
   var PARAM_SAFE = "$safe";
   var SAFE_OUTER = new Proxy(/* @__PURE__ */ Object.create(null), {
@@ -574,8 +560,13 @@ var Micra = (() => {
   function createRowNode(tmpl, state, instance) {
     const frag = tmpl.content.cloneNode(true);
     let node;
-    if (frag.childNodes.length === 1) {
-      node = frag.firstElementChild;
+    const first = frag.firstElementChild;
+    const single = !!first && !first.nextElementSibling && !Array.prototype.some.call(
+      frag.childNodes,
+      (c) => c.nodeType === 3 && /[^\x00- ]/.test(c.textContent)
+    );
+    if (single) {
+      node = first;
     } else {
       node = document.createElement("micra-each-item");
       node.style.display = "contents";

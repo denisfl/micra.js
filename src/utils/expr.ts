@@ -52,10 +52,9 @@ const SIMPLE_PATH = /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/
  * Globals reachable from directive expressions. Anything else (window, fetch,
  * constructor, eval, ...) is shadowed by SAFE_OUTER and resolves to undefined.
  */
-const ALLOWED_GLOBALS = new Set<string>([
-  'Math', 'JSON', 'Date', 'String', 'Number', 'Boolean', 'Array', 'Object',
-  'parseInt', 'parseFloat', 'isNaN', 'isFinite', 'NaN', 'Infinity', 'undefined',
-])
+const ALLOWED_GLOBALS = new Set<string>(
+  'Math,JSON,Date,String,Number,Boolean,Array,Object,parseInt,parseFloat,isNaN,isFinite,NaN,Infinity,undefined'.split(','),
+)
 
 /**
  * Outer `with()` scope. Its `has` trap claims every non-whitelisted identifier

@@ -422,3 +422,87 @@ describe('5.2 Non-keyed — correctness', () => {
     expect(icons.length).toBe(1)
   })
 })
+
+// ── 5.3 Row root detection (whitespace around a single root) ─────────────────
+// Regression: a pretty-printed template (`<template>\n  <tr>…</tr>\n</template>`)
+// has whitespace text nodes around its one element. That must still count as a
+// single root — wrapping a lone <tr> in <micra-each-item> puts invalid content
+// inside <tbody> and breaks `tbody > tr` selectors (found via the krausest
+// js-framework-benchmark isKeyed check).
+
+describe('5.3 Row root detection', () => {
+  // Templates are built programmatically: happy-dom's HTML parser foster-
+  // parents <template> out of table markup, so innerHTML on a <table> string
+  // would not survive. Programmatic DOM construction bypasses the parser.
+  function makeTableRoot(keyed: boolean): { root: HTMLDivElement; tbody: HTMLElement; state: StateRecord } {
+    const root = document.createElement('div')
+    const table = document.createElement('table')
+    const tbody = document.createElement('tbody')
+    const tmpl = document.createElement('template')
+    tmpl.setAttribute('data-each', 'items')
+    if (keyed) tmpl.setAttribute('data-key', 'id')
+    tmpl.innerHTML = '\n      <tr><td data-text="item.name"></td></tr>\n    '
+    tbody.appendChild(tmpl)
+    table.appendChild(tbody)
+    root.appendChild(table)
+    const state: StateRecord = { items: [{ id: 1, name: 'A' }, { id: 2, name: 'B' }] }
+    return { root, tbody, state }
+  }
+
+  it('keyed: whitespace-padded single <tr> root is NOT wrapped', () => {
+    const { root, tbody, state } = makeTableRoot(true)
+    render(root, state)
+    expect(root.querySelector('micra-each-item')).toBeNull()
+    const rows = [...root.querySelectorAll('tr')]
+    expect(rows.length).toBe(2)
+    expect(rows[0]!.parentElement).toBe(tbody)
+    expect(rows.map(r => r.textContent)).toEqual(['A', 'B'])
+  })
+
+  it('non-keyed: whitespace-padded single <tr> root is NOT wrapped', () => {
+    const { root, tbody, state } = makeTableRoot(false)
+    render(root, state)
+    expect(root.querySelector('micra-each-item')).toBeNull()
+    const rows = [...root.querySelectorAll('tr')]
+    expect(rows.length).toBe(2)
+    expect(rows[0]!.parentElement).toBe(tbody)
+  })
+
+  it('NBSP beside the element is meaningful — wrapper preserved', () => {
+    const root = document.createElement('div')
+    const tmpl = document.createElement('template')
+    tmpl.setAttribute('data-each', 'items')
+    tmpl.innerHTML = ' <b data-text="item.name"></b>'
+    root.appendChild(tmpl)
+    render(root, { items: [{ name: 'A' }] })
+    // a visible non-breaking space must survive → wrapper required
+    const wrapper = root.querySelector('micra-each-item')
+    expect(wrapper).not.toBeNull()
+    expect(wrapper!.textContent).toContain(' ')
+  })
+
+  it('comment beside the element does NOT force a wrapper (documented: dropped)', () => {
+    const root = document.createElement('div')
+    const tmpl = document.createElement('template')
+    tmpl.setAttribute('data-each', 'items')
+    tmpl.innerHTML = '<li data-text="item.name"></li><!-- marker -->'
+    root.appendChild(tmpl)
+    render(root, { items: [{ name: 'A' }] })
+    expect(root.querySelector('micra-each-item')).toBeNull()
+    expect(root.querySelector('li')!.textContent).toBe('A')
+  })
+
+  it('meaningful text beside an element still counts as multi-root', () => {
+    const root = document.createElement('div')
+    const tmpl = document.createElement('template')
+    tmpl.setAttribute('data-each', 'items')
+    tmpl.innerHTML = '\n  prefix <b data-text="item.name"></b>\n'
+    root.appendChild(tmpl)
+    render(root, { items: [{ name: 'A' }] })
+    // the visible "prefix" text must survive — wrapper required
+    const wrapper = root.querySelector('micra-each-item')
+    expect(wrapper).not.toBeNull()
+    expect(wrapper!.textContent).toContain('prefix')
+    expect(wrapper!.textContent).toContain('A')
+  })
+})
