@@ -3,3 +3,8 @@ node_modules/
 site/dist/
 site/llms.txt
 site/llms-full.txt
+
+# LLM benchmark raw generations are local-only (see bench-llm/README.md);
+# only the aggregated results.md is committed.
+bench-llm/runs/
+bench-llm/results.json

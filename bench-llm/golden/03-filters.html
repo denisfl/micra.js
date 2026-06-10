@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head><script src="https://cdn.jsdelivr.net/npm/micra.js@2.3.1/dist/micra.min.js"></script></head>
+<body>
+<div data-component="tasks">
+  <nav>
+    <button @click="setFilter" data-bind="data-f:'all'">All</button>
+    <button @click="setFilter" data-bind="data-f:'active'">Active</button>
+    <button @click="setFilter" data-bind="data-f:'done'">Done</button>
+  </nav>
+  <ul>
+    <template data-each="shown()" data-key="id">
+      <li data-text="item.title"></li>
+    </template>
+  </ul>
+</div>
+<script>
+Micra.define('tasks', {
+  state: {
+    filter: 'all',
+    items: [
+      { id: 1, title: 'Write report', done: true },
+      { id: 2, title: 'Send invoice', done: true },
+      { id: 3, title: 'Call client', done: false },
+      { id: 4, title: 'Book flights', done: false },
+    ],
+  },
+  shown() {
+    const f = this.state.filter
+    if (f === 'active') return this.state.items.filter(t => !t.done)
+    if (f === 'done') return this.state.items.filter(t => t.done)
+    return this.state.items
+  },
+  setFilter(e) { this.state.filter = e.currentTarget.dataset.f },
+})
+Micra.start()
+</script>
+</body>
+</html>

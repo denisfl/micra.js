@@ -33,3 +33,8 @@ jobs:
 
       - name: Build (includes 5.5 KB gzip bundle-size guard)
         run: npm run build
+
+      # Keyless self-check of the LLM benchmark harness: assertions must
+      # pass against the hand-written golden solutions.
+      - name: LLM bench harness (golden validation)
+        run: node bench-llm/evaluate.mjs --golden

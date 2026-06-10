@@ -42,9 +42,19 @@ jobs:
         run: npm run build
 
       # ── Staged: push to master publishes as @next ──────────────────
+      # Skip when the version in package.json is already on the registry
+      # (doc/site-only pushes between releases) — npm refuses to publish
+      # the same version twice, and republishing @latest as @next would
+      # be pointless anyway.
       - name: Publish @next (staged)
         if: github.ref == 'refs/heads/master'
-        run: npm publish --tag next --access public
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "micra.js@$VERSION" version >/dev/null 2>&1; then
+            echo "micra.js@$VERSION already published — skipping @next publish"
+          else
+            npm publish --tag next --access public
+          fi
 
       # ── Release: version tag promotes to @latest ──────────────────
       - name: Publish @latest (release)

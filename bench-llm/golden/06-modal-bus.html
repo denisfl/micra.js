@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head><script src="https://cdn.jsdelivr.net/npm/micra.js@2.3.1/dist/micra.min.js"></script></head>
+<body>
+<div data-component="danger-zone">
+  <button @click="open">Delete account</button>
+</div>
+
+<div data-component="confirm-modal">
+  <div data-if="show">
+    <p>Are you sure?</p>
+    <button @click="confirm">Confirm</button>
+    <button @click="close">Cancel</button>
+  </div>
+</div>
+<script>
+Micra.define('danger-zone', {
+  open() { this.emit('modal:open') },
+})
+Micra.define('confirm-modal', {
+  state: { show: false },
+  onCreate() { this.on('modal:open', () => { this.state.show = true }) },
+  confirm() { this.emit('modal:confirmed'); this.state.show = false },
+  close() { this.state.show = false },
+})
+Micra.start()
+</script>
+</body>
+</html>

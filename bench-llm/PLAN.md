@@ -69,8 +69,12 @@ N = 5 per task × condition × model
 
 ## 3. Honesty guards (non-negotiable for credibility)
 
-- **All 450 raw generations are committed** to the repo (`bench-llm/runs/`),
-  with the exact prompts, model IDs, and dates. Anyone can re-judge.
+- **Reproducible by anyone, for free.** Raw generations stay local
+  (data ≠ code; they are not committed anywhere), so the trust model is
+  re-running, not auditing: generation is free via local ollama models,
+  evaluation is keyless and deterministic, and every published number
+  states the exact model id, condition, and trial count needed to repeat
+  it. The fixed task prompts and assertions live in this repo's history.
 - Report **variance across the 5 trials**, not just the mean.
 - Disclose plainly: the context files were written by Micra's author; the
   claim is "prepared context helps", not "Micra beats X".

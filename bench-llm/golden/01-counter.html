@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head><script src="https://cdn.jsdelivr.net/npm/micra.js@2.3.1/dist/micra.min.js"></script></head>
+<body>
+<div data-component="counter">
+  <strong data-text="count"></strong>
+  <button @click="inc">+</button>
+  <button @click="dec">−</button>
+  <button @click="reset">Reset</button>
+</div>
+<script>
+Micra.define('counter', {
+  state: { count: 0 },
+  inc() { this.state.count++ },
+  dec() { this.state.count-- },
+  reset() { this.state.count = 0 },
+})
+Micra.start()
+</script>
+</body>
+</html>

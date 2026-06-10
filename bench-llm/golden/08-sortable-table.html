@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+<head><script src="https://cdn.jsdelivr.net/npm/micra.js@2.3.1/dist/micra.min.js"></script></head>
+<body>
+<div data-component="people">
+  <table>
+    <thead>
+      <tr><th>Name</th><th @click="sortByAge">Age</th></tr>
+    </thead>
+    <tbody>
+      <template data-each="rows()" data-key="id">
+        <tr><td data-text="item.name"></td><td data-text="item.age"></td></tr>
+      </template>
+    </tbody>
+  </table>
+</div>
+<script>
+Micra.define('people', {
+  state: {
+    dir: '',
+    people: [
+      { id: 1, name: 'Alice', age: 30 },
+      { id: 2, name: 'Bob', age: 25 },
+      { id: 3, name: 'Carol', age: 35 },
+    ],
+  },
+  rows() {
+    if (!this.state.dir) return this.state.people
+    const sign = this.state.dir === 'asc' ? 1 : -1
+    return [...this.state.people].sort((a, b) => sign * (a.age - b.age))
+  },
+  sortByAge() { this.state.dir = this.state.dir === 'asc' ? 'desc' : 'asc' },
+})
+Micra.start()
+</script>
+</body>
+</html>

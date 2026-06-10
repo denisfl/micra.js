@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+<head><script src="https://cdn.jsdelivr.net/npm/micra.js@2.3.1/dist/micra.min.js"></script></head>
+<body>
+<div data-component="tabs">
+  <nav>
+    <button @click="select" data-bind="data-tab:'overview'">Overview</button>
+    <button @click="select" data-bind="data-tab:'billing'">Billing</button>
+    <button @click="select" data-bind="data-tab:'settings'">Settings</button>
+  </nav>
+  <section data-if="tab === 'overview'">Welcome to the overview.</section>
+  <section data-if="tab === 'billing'">Your next invoice is due soon.</section>
+  <section data-if="tab === 'settings'">Manage your preferences here.</section>
+</div>
+<script>
+Micra.define('tabs', {
+  state: { tab: 'overview' },
+  select(e) { this.state.tab = e.currentTarget.dataset.tab },
+})
+Micra.start()
+</script>
+</body>
+</html>
