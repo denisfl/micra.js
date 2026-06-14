@@ -1,9 +1,10 @@
 /**
  * tests/directives.test.ts — DOM directive tests (section 3)
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { applyDirectives as _applyDirectives, validateDirectives as _validateDirectives } from '../src/dom/directives'
 import { scanComponent } from '../src/dom/scan'
+import { config, _config } from '../src/core/config'
 import type { InternalInstance, StateRecord } from '../src/types'
 
 // Shims: applyDirectives + validateDirectives now consume a ScanIndex.
@@ -110,6 +111,38 @@ describe('3.2 data-html', () => {
     el.setAttribute('data-html', 'content')
     apply(el, { content: null })
     expect(el.innerHTML).toBe('')
+  })
+})
+
+// ── 3.2.bis data-html sanitizer hook (Micra.config) ──────────────────────────
+
+describe('3.2.bis data-html sanitizer', () => {
+  afterEach(() => { _config.sanitize = undefined })
+
+  it('no sanitizer → raw HTML written (default)', () => {
+    _config.sanitize = undefined
+    const el = document.createElement('div')
+    el.setAttribute('data-html', 'content')
+    apply(el, { content: '<img src=x onerror=hack()>' })
+    expect(el.innerHTML).toContain('onerror')
+  })
+
+  it('registered sanitizer runs on the raw value before writing', () => {
+    const seen: string[] = []
+    _config.sanitize = (h) => { seen.push(h); return h.replace(/ on\w+=\w+/g, '') }
+    const el = document.createElement('div')
+    el.setAttribute('data-html', 'content')
+    apply(el, { content: '<img src=x onerror=hack>' })
+    expect(seen).toEqual(['<img src=x onerror=hack>'])  // received raw
+    expect(el.innerHTML).not.toContain('onerror')        // wrote cleaned
+  })
+
+  it('config({ sanitize }) sets the hook', () => {
+    config({ sanitize: () => 'SAFE' })
+    const el = document.createElement('div')
+    el.setAttribute('data-html', 'content')
+    apply(el, { content: '<b>anything</b>' })
+    expect(el.innerHTML).toBe('SAFE')
   })
 })
 

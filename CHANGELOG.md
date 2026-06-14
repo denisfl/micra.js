@@ -4,6 +4,69 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] — 2026-06-14
+
+Ergonomics & safety release — three things the audience kept reaching for.
+
+### Added — key & system modifiers on events
+
+- `@event` / `data-on` now accept key and system-key guards in addition to
+  `.prevent` / `.stop` / `.self`:
+
+  ```html
+  <input @keydown.enter="submit" @keydown.escape="cancel" />
+  <button @click.ctrl="openInNewTab">…</button>
+  <textarea @keydown.ctrl.enter="send"></textarea>
+  ```
+
+  Key guards: `.enter` `.escape` `.tab` `.space` `.up` `.down` `.left`
+  `.right` `.delete`. System guards: `.ctrl` `.shift` `.alt` `.meta`. An
+  unrecognized modifier matches `event.key` case-insensitively. The handler
+  runs only when the guard matches. (Previously you had to branch on
+  `e.key` by hand — the docs even told you to.)
+
+### Added — dot-paths for nested state
+
+- **`this.set('user.name', 'Ada')`** — a path setter that reconstructs each
+  nested level immutably and reassigns the top-level key, so the shallow
+  proxy fires a render. No more hand-spreading nested objects.
+- **`data-model="filters.search"`** — `data-model` now reads and writes
+  dot-paths (same mechanism). Flat keys behave exactly as before.
+- The shallow-proxy model is unchanged; this is ergonomic sugar over it, not
+  deep reactivity. Bracket/computed paths (`filters[0]`) are still literal
+  keys — use dot notation.
+- `set` joins the reserved instance names (`prop`, `fetch`, `emit`, `on`,
+  `render`, `destroy`) — a component method named `set` is shadowed by the
+  builtin.
+
+### Added — `data-html` sanitizer hook
+
+- **`Micra.config({ sanitize })`** registers a function run on every
+  `data-html` value before it's written. Micra does not bundle a sanitizer
+  (size); opt into one in a line:
+
+  ```js
+  import DOMPurify from 'dompurify'
+  Micra.config({ sanitize: DOMPurify.sanitize })
+  ```
+
+  Without it, `data-html` writes raw HTML as before (still XSS-prone — use
+  `data-text` for untrusted input if you don't register a sanitizer).
+- New exports: `config`, `MicraConfig`.
+
+### Changed
+
+- Bundle: **~6.6 → ~6.9 KB gzip** (size guard unchanged at 7 KB). Event
+  modifiers, the path setter/`data-model`, and the sanitizer hook share the
+  budget; the `.prevent`/`.stop`/`.self` logic was de-duplicated into one
+  `applyModifiers` helper in the process.
+
+### Migration
+
+- No breaking changes. Existing `@keydown="onKey"` + `e.key` branching keeps
+  working; the new modifiers are optional sugar. Existing flat `data-model`
+  keys are unaffected. Only watch the new reserved name `set`.
+
 ## [2.4.0] — 2026-06-14
 
 ### Added — CSP-safe expression evaluator (works under strict CSP)

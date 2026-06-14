@@ -18,6 +18,7 @@ import type {
   StateRecord,
 } from '../types'
 import { evalExpr, warn } from '../utils/expr'
+import { _config } from '../core/config'
 
 // ── Directive appliers ────────────────────────────────────────────────────────
 // Each function is PURE relative to state — reads state, writes DOM.
@@ -30,12 +31,14 @@ function applyText(el: Element, expr: string, state: StateRecord): void {
 /**
  * data-html — writes the expression value as innerHTML.
  *
- * ⚠️ XSS WARNING: the value is rendered as raw HTML. Never bind untrusted
- * input here — use `data-text` (textContent) instead. See docs/directives.md
- * for the full security model.
+ * ⚠️ XSS WARNING: the value is rendered as raw HTML. For untrusted input,
+ * either use `data-text` (textContent) instead, or register a sanitizer once
+ * with `Micra.config({ sanitize: DOMPurify.sanitize })` — it runs on every
+ * value here. See docs/directives.md for the full security model.
  */
 function applyHtml(el: Element, expr: string, state: StateRecord): void {
-  const html = String(evalExpr(expr, state) ?? '')
+  const raw = String(evalExpr(expr, state) ?? '')
+  const html = _config.sanitize ? _config.sanitize(raw) : raw
   if (el.innerHTML !== html) el.innerHTML = html
 }
 

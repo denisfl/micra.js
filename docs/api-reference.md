@@ -233,6 +233,27 @@ Micra.debug();
 
 Use this during development to inspect which components are mounted and what state they hold.
 
+### `Micra.config()`
+
+```ts
+function config(opts: MicraConfig): void;
+```
+
+Set global options. Merges into the existing config — call as many times as
+needed.
+
+- **opts.sanitize** `(html: string) => string` — runs on every `data-html`
+  value before it is written to the DOM. Micra does not bundle a sanitizer;
+  opt into one in a single line.
+
+Example:
+
+```ts
+import DOMPurify from "dompurify";
+Micra.config({ sanitize: DOMPurify.sanitize });
+// now every data-html value is sanitized
+```
+
 ## Component instance
 
 `this` inside component methods is a `ComponentInstance<S>`.
@@ -280,6 +301,21 @@ render(): void
 ```
 
 Forces an immediate synchronous render.
+
+### `set()`
+
+```ts
+set(path: string, value: unknown): void
+```
+
+Set a value by dot-path, reconstructing nested objects immutably and
+reassigning the top-level key so the shallow proxy fires a render. Flat
+paths are a normal top-level write.
+
+```ts
+this.set("user.name", "Ada"); // ≡ this.state.user = { ...this.state.user, name: "Ada" }
+this.set("count", 0); // ≡ this.state.count = 0
+```
 
 ### `destroy()`
 
@@ -460,6 +496,17 @@ Notes:
 
 - on `GET` and `HEAD`, extra keys become query parameters
 - on other methods, `body` is JSON-serialized
+
+### `MicraConfig`
+
+```ts
+interface MicraConfig {
+  sanitize?: (html: string) => string;
+}
+```
+
+Options for [`Micra.config()`](#micraconfig). `sanitize` runs on every
+`data-html` value before it is written.
 
 ### `ComponentDefinition`
 

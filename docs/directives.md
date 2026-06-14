@@ -57,8 +57,15 @@ Output: `<strong>Hi</strong>` rendered as HTML.
 
 > ⚠️ **XSS warning.** `data-html` writes the expression value directly as HTML.
 > If the value comes from user input or any untrusted source, it can inject
-> `<script>` / `<img onerror=...>` / etc. Sanitize on the server before
-> rendering, or use `data-text` (which sets `textContent`) instead.
+> `<script>` / `<img onerror=...>` / etc. Mitigate in one of three ways:
+> sanitize on the server, use `data-text` (which sets `textContent`) instead,
+> or register a client-side sanitizer once — it runs on every `data-html`
+> value:
+>
+> ```js
+> import DOMPurify from 'dompurify'
+> Micra.config({ sanitize: DOMPurify.sanitize })
+> ```
 
 ## `data-if`
 
@@ -264,7 +271,9 @@ resolves to `undefined` instead of reaching the `Function` constructor.
 
 Two caveats apply regardless:
 
-1. **`data-html`** writes raw HTML — see the warning above.
+1. **`data-html`** writes raw HTML — see the warning above. Register
+   `Micra.config({ sanitize })` to clean every value, or keep untrusted input
+   out of it.
 2. **Templates must be trusted.** The evaluator blocks accidental footguns and
    global access, but method calls run real JS — a method you exposed can do
    anything. If an attacker can inject the directive *string itself* (not just

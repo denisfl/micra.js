@@ -36,6 +36,7 @@ export type {
   ComponentInstance,
   ComponentDefinition,
 } from './types'
+export type { MicraConfig } from './core/config'
 
 // ── Errors ────────────────────────────────────────────────────────────────────
 export { FetchError } from './utils/fetch'
@@ -45,3 +46,4 @@ export { define, defineComponent, instances, registry, debug } from './core/regi
 export { mount } from './core/mount'
 export { start } from './core/start'
 export { on, off, emit } from './core/bus'
+export { config } from './core/config'

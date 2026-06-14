@@ -1,6 +1,6 @@
 {
   "name": "micra.js",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "Conventions for Micra.js — a ~7 KB reactive UI library for server-rendered pages. Keeps generated components idiomatic and blocks jQuery / React / Alpine anti-patterns.",
   "author": {
     "name": "Denis Fl",

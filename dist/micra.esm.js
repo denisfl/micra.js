@@ -1,4 +1,4 @@
-/* Micra.js v2.4.0 — https://github.com/micra-js/micra — MIT */
+/* Micra.js v2.5.0 — https://github.com/micra-js/micra — MIT */
 
 // src/utils/fetch.ts
 function getCSRF() {
@@ -463,6 +463,12 @@ function createScheduler(render) {
   };
 }
 
+// src/core/config.ts
+var _config = {};
+function config(opts) {
+  Object.assign(_config, opts);
+}
+
 // src/dom/directives.ts
 function applyText(el, expr, state) {
   var _a;
@@ -471,7 +477,8 @@ function applyText(el, expr, state) {
 }
 function applyHtml(el, expr, state) {
   var _a;
-  const html = String((_a = evalExpr(expr, state)) != null ? _a : "");
+  const raw = String((_a = evalExpr(expr, state)) != null ? _a : "");
+  const html = _config.sanitize ? _config.sanitize(raw) : raw;
   if (el.innerHTML !== html) el.innerHTML = html;
 }
 function applyIf(binding, state) {
@@ -1129,6 +1136,7 @@ function start(root = document) {
 }
 export {
   FetchError,
+  config,
   debug,
   define,
   defineComponent,
