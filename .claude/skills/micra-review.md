@@ -28,7 +28,7 @@ Run: `gzip -c dist/micra.min.js | wc -c` to verify gzip size.
 ## Reactive state rules
 
 - [ ] Any mutation of array/object in place? (`push`, `splice`, direct nested assignment) → flag as bug.
-- [ ] State key used with `data-model` is top-level? `data-model="filters.search"` will silently not work.
+- [ ] `data-model` dot-paths (`filters.search`) read/write the nested object; bracket paths (`filters[0]`) do not — flag those.
 - [ ] `state` initializer uses only serializable values? No DOM nodes, no functions in state.
 
 ---

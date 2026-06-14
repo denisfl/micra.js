@@ -125,7 +125,8 @@ function applyModel(
   rawState: StateRecord,
 ): void {
   const html = el as HTMLInputElement
-  const stateVal = rawState[key]
+  // evalExpr resolves both flat keys ("search") and dot-paths ("filters.query")
+  const stateVal = evalExpr(key, rawState)
   const desired = stateVal == null ? '' : String(stateVal)
   // Only write when out of sync. This is a no-op during live typing (the input
   // event already drove state to match el.value) but still propagates

@@ -21,6 +21,7 @@ import type {
   StateRecord,
 } from '../types'
 import { evalExpr, warn } from '../utils/expr'
+import { setPath } from '../core/reactive'
 
 /** @internal Attach a DOM listener and track it on the instance for destroy(). */
 function track<S extends StateRecord>(
@@ -31,6 +32,42 @@ function track<S extends StateRecord>(
 ): void {
   el.addEventListener(type, fn)
   ;(instance.__micraListeners ??= []).push({ el, type, fn })
+}
+
+// ── Event modifiers ─────────────────────────────────────────────────────────
+// `.prevent` / `.stop` / `.self` are actions/guards. Everything else is a key
+// or system-key guard: the handler runs only if the event matches.
+const SYS_MOD: Record<string, 'ctrlKey' | 'shiftKey' | 'altKey' | 'metaKey'> = {
+  ctrl: 'ctrlKey', shift: 'shiftKey', alt: 'altKey', meta: 'metaKey', cmd: 'metaKey',
+}
+const KEY_MOD: Record<string, string> = {
+  enter: 'Enter', esc: 'Escape', escape: 'Escape', tab: 'Tab', space: ' ',
+  up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', delete: 'Delete',
+}
+
+/**
+ * Apply event modifiers. Runs `.prevent`/`.stop` side effects; returns false
+ * (= block the handler) when `.self` or a key/system guard doesn't match.
+ *
+ *   @keydown.enter   → only when e.key === 'Enter'
+ *   @click.ctrl      → only when e.ctrlKey
+ *   @keydown.ctrl.s  → Ctrl+S
+ *   @click.self      → only when e.target is the element itself
+ * An unrecognized modifier is matched case-insensitively against `e.key`.
+ */
+function applyModifiers(e: Event, el: Element, mods: string[]): boolean {
+  for (const m of mods) {
+    if (m === 'prevent') e.preventDefault()
+    else if (m === 'stop') e.stopPropagation()
+    else if (m === 'self') { if (e.target !== el) return false }
+    else if (SYS_MOD[m]) { if (!(e as KeyboardEvent)[SYS_MOD[m]]) return false }
+    else {
+      const key = (e as KeyboardEvent).key
+      if (key == null) return false
+      if (!(KEY_MOD[m] ? key === KEY_MOD[m] : key.toLowerCase() === m)) return false
+    }
+  }
+  return true
 }
 
 /**
@@ -97,10 +134,7 @@ export function bindDataOn<S extends StateRecord>(
       const handler = method.trim()
 
       track(instance, el, evName!, (e: Event) => {
-        if (mods.includes('prevent')) e.preventDefault()
-        if (mods.includes('stop')) e.stopPropagation()
-        if (mods.includes('self') && e.target !== el) return
-        runHandler(instance, el, handler, e)
+        if (applyModifiers(e, el, mods)) runHandler(instance, el, handler, e)
       })
     }
   }
@@ -134,10 +168,7 @@ export function bindAtEvents<S extends StateRecord>(
       const handler = attr.value.trim()
 
       track(instance, el, evSpec!, (e: Event) => {
-        if (rest.includes('prevent')) e.preventDefault()
-        if (rest.includes('stop')) e.stopPropagation()
-        if (rest.includes('self') && e.target !== el) return
-        runHandler(instance, el, handler, e)
+        if (applyModifiers(e, el, rest)) runHandler(instance, el, handler, e)
       })
       bound = true
     }
@@ -151,15 +182,19 @@ export function bindAtEvents<S extends StateRecord>(
  * Two-way binding: `data-model="key"` wires <input>/<select>/<textarea>
  * to `state[key]`. Binding is attached once per element.
  *
+ * Dot-paths are supported: `data-model="filters.search"` writes through
+ * `instance.set('filters.search', …)` (reconstructs the nested object), and
+ * the value is read back via the same path.
+ *
  * Numeric inputs (`type="number"` / `type="range"`) write numbers, not strings.
  * Checkbox inputs write booleans. Everything else writes strings.
  *
  * @param bindings - Pre-computed model bindings from scan.ts
- *                   (each carries { el, expr } where expr is the state key)
+ *                   (each carries { el, expr } where expr is the state key/path)
  *
  * @example
- * <input data-model="search">   // updates state.search on every keystroke
- * <select data-model="sortBy">  // updates state.sortBy on change
+ * <input data-model="search">          // updates state.search on every keystroke
+ * <input data-model="filters.query">   // updates state.filters.query (nested)
  */
 export function bindModels<S extends StateRecord>(
   bindings: CachedBinding[],
@@ -185,7 +220,7 @@ export function bindModels<S extends StateRecord>(
       } else {
         val = inputEl.value
       }
-      ;(instance.state as StateRecord)[key] = val
+      setPath(instance.state as StateRecord, key, val) // path-aware: flat & nested
     }
 
     const evType = tag === 'SELECT' || inputType === 'radio' ? 'change' : 'input'

@@ -31,9 +31,9 @@ Micra.js is a lightweight reactive UI framework (~7 KB gzip). It is NOT React, N
 2. **Derived values must be methods on the component, NOT state fields.** `state` is the single source of truth — raw data only. Counts, totals, filtered subsets, formatted labels — all are methods called from `data-text`/`data-if`/etc.
 3. **Event handlers must use `@event` or `data-on`.** Never `addEventListener` inside a render-like helper — those listeners leak past `destroy()`.
 4. **After mutating state, do NOT call a re-render manually.** Micra batches a microtask render on every state write. Side effects (`localStorage`, `fetch`, `analytics`) are OK. `this.renderList()`/`this.refresh()`/`this.update()` are NOT.
-5. **State is shallow.** `this.state.user.name = 'x'` is invisible to Micra. Replace the top-level key: `this.state.user = { ...this.state.user, name: 'x' }`.
-6. **No key modifiers** (`@keydown.enter` does NOT work). Use `@keydown="onKey"` and branch on `e.key === 'Enter'` inside the method.
-7. **`data-model` writes flat keys only.** `data-model="filters.search"` writes to `state["filters.search"]` literally — not nested. Keep the bound key top-level.
+5. **State is shallow.** `this.state.user.name = 'x'` is invisible to Micra. Either replace the top-level key (`this.state.user = { ...this.state.user, name: 'x' }`) or use the path setter `this.set('user.name', 'x')`.
+6. **Key modifiers are supported.** `@keydown.enter`, `@keydown.escape`, `@keydown.ctrl`, `@click.ctrl` etc. gate the handler on the key/modifier. (Combine: `@keydown.ctrl.enter`.)
+7. **`data-model` supports dot-paths.** `data-model="filters.search"` reads and writes `state.filters.search` (reconstructs the nested object). Flat keys work as before.
 8. **One single HTML file with CDN preferred** unless told otherwise:
    ```html
    <script src="https://cdn.jsdelivr.net/npm/micra.js@2.4.0/dist/micra.min.js"></script>
@@ -104,7 +104,7 @@ Micra.start();
 | `@event` | `@click="save"`, `@submit.prevent="submit"` | event binding |
 | `data-on` | `data-on="click:save, blur:close"` | same as `@event` |
 
-Modifiers (events only): `.prevent`, `.stop`, `.self`. **No key modifiers** — branch on `e.key` inside the method.
+Modifiers (events only): `.prevent`, `.stop`, `.self`, plus key/system guards `.enter` `.escape` `.tab` `.space` `.up` `.down` `.left` `.right` `.delete` `.ctrl` `.shift` `.alt` `.meta` (an unrecognized one matches `e.key` case-insensitively). Combine freely: `@keydown.ctrl.enter="submit"`.
 
 `data-bind` special left-hand-sides:
 - `class:` → **replaces** full `className` (don't combine with `data-class` on same element — Micra warns)

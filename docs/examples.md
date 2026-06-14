@@ -375,7 +375,7 @@ Micra.define('autocomplete', {
 </div>
 ```
 
-Micra has no built-in key modifier (`@keydown.enter`); branch on the event yourself.
+This example branches on `e.key` inside `onKey`, but since 2.5 you can also use the `@keydown.enter` / `@keydown.escape` modifiers directly.
 
 ```ts
 Micra.define('inline-edit', {

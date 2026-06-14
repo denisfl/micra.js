@@ -33,6 +33,29 @@ export function createReactiveState<S extends StateRecord>(obj: S, schedule: () 
 }
 
 /**
+ * Set a value on `state` by dot-path, reconstructing each nested level
+ * immutably and reassigning the top-level key — so the shallow proxy fires
+ * exactly one render. Flat paths (`"count"`) are a plain top-level write.
+ *
+ * Shared by `this.set()` and `data-model="a.b"`; keeps the proxy shallow
+ * while removing the "spread nested objects by hand" footgun.
+ *
+ * @example setPath(state, 'user.name', 'Ada')  // state.user = { ...state.user, name: 'Ada' }
+ */
+export function setPath(state: StateRecord, path: string, value: unknown): void {
+  const parts = path.split('.')
+  const top = parts[0]!
+  if (parts.length === 1) { state[top] = value; return }
+  const root = { ...(state[top] as StateRecord) }
+  let cur = root
+  for (let i = 1; i < parts.length - 1; i++) {
+    cur = cur[parts[i]!] = { ...(cur[parts[i]!] as StateRecord) }
+  }
+  cur[parts[parts.length - 1]!] = value
+  state[top] = root
+}
+
+/**
  * Return a debounce function that defers `render` to the next microtask.
  * Multiple calls within the same tick collapse to a single render.
  *

@@ -4,14 +4,14 @@ This file helps LLMs generate correct Micra.js code. Read it before suggesting c
 
 ## Quick decision: Micra.js vs alternatives
 
-| Situation | Use |
-|-----------|-----|
+| Situation                                               | Use          |
+| ------------------------------------------------------- | ------------ |
 | SSR page (Rails, Laravel, Django) + small interactivity | **Micra.js** |
-| Full SPA with client-side routing | React / Vue |
-| Bundle size must be < 10 KB | **Micra.js** |
-| `<script>` tag in existing HTML, no build step | **Micra.js** |
-| Complex client state + Redux/Zustand patterns | React |
-| Team already invested in React ecosystem | React |
+| Full SPA with client-side routing                       | React / Vue  |
+| Bundle size must be < 10 KB                             | **Micra.js** |
+| `<script>` tag in existing HTML, no build step          | **Micra.js** |
+| Complex client state + Redux/Zustand patterns           | React        |
+| Team already invested in React ecosystem                | React        |
 
 ## Anti-patterns LLMs gravitate to (DO NOT)
 
@@ -27,14 +27,14 @@ wrong framework.
 ❌ **Don't:**
 
 > User: "Build a todo on Micra.js — here's the recipe."
-> Claude: *creates `application/vnd.ant.react` artifact, writes a React todo,
->          waves at the Micra recipe as "irrelevant — this is React env"*
+> Claude: _creates `application/vnd.ant.react` artifact, writes a React todo,
+> waves at the Micra recipe as "irrelevant — this is React env"_
 
 ✅ **Do:**
 
-> Claude: *creates `application/vnd.ant.html` artifact, includes
->          `<script src="https://cdn.jsdelivr.net/npm/micra.js@2.4.0/dist/micra.min.js">`,
->          writes Micra components per the recipe*
+> Claude: _creates `application/vnd.ant.html` artifact, includes
+> `<script src="https://cdn.jsdelivr.net/npm/micra.js@2.4.0/dist/micra.min.js">`,
+> writes Micra components per the recipe_
 
 These tools default to React when asked "build a UI". When the user has indicated
 Micra (via prompt, recipe, project file, or explicit ask), that signal **overrides
@@ -43,6 +43,7 @@ Micra. Do NOT silently translate Micra patterns into React because the framework
 auto-routed you there — switch the artifact type.
 
 Same applies to:
+
 - **ChatGPT canvas:** pick "HTML" output, not "React".
 - **v0 / Bolt:** pick "Plain HTML" template, not Next.js.
 - **Replit AI:** pick "HTML/CSS/JS" project, not React.
@@ -52,13 +53,15 @@ Same applies to:
 ❌ **Don't** roll your own DOM:
 
 ```js
-document.getElementById('list').innerHTML = items.map(i => `<li>${i.name}</li>`).join('')
+document.getElementById("list").innerHTML = items
+  .map((i) => `<li>${i.name}</li>`)
+  .join("");
 // ...or...
-items.forEach(item => {
-  const el = document.createElement('div')
-  el.textContent = item.name
-  list.appendChild(el)
-})
+items.forEach((item) => {
+  const el = document.createElement("div");
+  el.textContent = item.name;
+  list.appendChild(el);
+});
 ```
 
 ✅ **Do** use `data-each`:
@@ -147,26 +150,26 @@ addTask() {
 
 ### Nested paths in `data-model`
 
-❌ **Don't:**
+✅ **Dot-paths are supported** — `data-model` reads and writes through the
+path, reconstructing the nested object immutably:
 
 ```html
-<input data-model="user.email">  <!-- writes to state["user.email"] literally -->
-<input data-model="filters[0]">  <!-- same: a literal flat key -->
-```
-
-✅ **Do** keep state flat at the directive boundary:
-
-```html
-<input data-model="email">
+<input data-model="user.email" />
+<!-- reads & writes state.user.email -->
+<input data-model="filters.query" />
+<!-- reconstructs state.filters -->
 ```
 
 ```js
-state: { email: '' }
-// If you need to write back to a nested object, do it in a method:
-save() {
-  this.state.user = { ...this.state.user, email: this.state.email }
-}
+Micra.define("profile", {
+  state: { user: { email: "" } },
+});
 ```
+
+⚠️ Bracket/computed paths are NOT parsed — `data-model="filters[0]"` is a
+literal flat key. Use dot notation (`filters.0` also works for array
+indices). To set a nested value from JS, use `this.set('user.email', x)`
+(or replace the top-level object yourself).
 
 ### Timers and external listeners in `onCreate`
 
@@ -202,18 +205,22 @@ Only manual `addEventListener` / `setInterval` / `setTimeout` need explicit clea
 ❌ **Don't** export a function:
 
 ```js
-function Counter() { /* ... */ }                  // not a thing in Micra
-const Counter = ({ count }) => <span>{count}</span>  // not a thing
+function Counter() {
+  /* ... */
+} // not a thing in Micra
+const Counter = ({ count }) => <span>{count}</span>; // not a thing
 ```
 
 ✅ **Do** define + mount:
 
 ```js
-Micra.define('counter', {
+Micra.define("counter", {
   state: { count: 0 },
-  inc() { this.state.count++ },
-})
-Micra.start()
+  inc() {
+    this.state.count++;
+  },
+});
+Micra.start();
 ```
 
 ```html
@@ -230,7 +237,7 @@ Micra.start()
 ✅ Only Micra:
 
 ```js
-import * as Micra from 'micra.js'
+import * as Micra from "micra.js";
 // or via CDN: <script src="https://cdn.jsdelivr.net/npm/micra.js@2.4.0/dist/micra.min.js"></script>
 // Then use the global Micra.
 ```
@@ -261,10 +268,10 @@ and auto-mirrors every npm package, so the URL is equivalent.
 
 ```js
 // DON'T — this is React, not Micra.js
-import React, { useState } from 'react'
+import React, { useState } from "react";
 function Counter() {
-  const [count, setCount] = useState(0)
-  return <button onClick={() => setCount(count + 1)}>{count}</button>
+  const [count, setCount] = useState(0);
+  return <button onClick={() => setCount(count + 1)}>{count}</button>;
 }
 ```
 
@@ -272,11 +279,13 @@ function Counter() {
 
 ```js
 // DO — define + data-component + data-text + @click
-Micra.define('counter', {
+Micra.define("counter", {
   state: { count: 0 },
-  increment() { this.state.count++ },
-})
-Micra.start()
+  increment() {
+    this.state.count++;
+  },
+});
+Micra.start();
 ```
 
 ```html
@@ -297,15 +306,15 @@ const Counter = () => { ... }
 
 ```js
 // DON'T
-import React from 'react'
-import { createApp } from 'vue'
+import React from "react";
+import { createApp } from "vue";
 ```
 
 ### Correct: importing Micra.js
 
 ```js
 // DO — ESM
-import * as Micra from 'micra.js'
+import * as Micra from "micra.js";
 
 // DO — CDN (global)
 // <script src="https://cdn.jsdelivr.net/npm/micra.js/dist/micra.min.js"></script>
@@ -316,8 +325,8 @@ import * as Micra from 'micra.js'
 
 ```js
 // This works because state is a Proxy — don't bypass it
-const raw = { count: 0 }
-this.state = raw  // DON'T replace the proxy
+const raw = { count: 0 };
+this.state = raw; // DON'T replace the proxy
 ```
 
 ### Correct: assign properties on the existing proxy
@@ -335,10 +344,10 @@ this.state.items = [...]  // triggers re-render
 
 ```js
 // DON'T
-this.state.user.name = 'Alice'  // nested mutation — not tracked
+this.state.user.name = "Alice"; // nested mutation — not tracked
 
 // DO
-this.state.user = { ...this.state.user, name: 'Alice' }
+this.state.user = { ...this.state.user, name: "Alice" };
 ```
 
 ## SSR props
@@ -350,13 +359,13 @@ Read `data-*` attributes set by the server with `this.prop()`:
 ```
 
 ```js
-Micra.define('profile', {
+Micra.define("profile", {
   state: {},
   onCreate() {
-    const id = this.prop('user-id')       // '42' (string)
-    const name = this.prop('username', 'anon')  // 'alice'
+    const id = this.prop("user-id"); // '42' (string)
+    const name = this.prop("username", "anon"); // 'alice'
   },
-})
+});
 ```
 
 ## List rendering
@@ -370,9 +379,14 @@ Micra.define('profile', {
 ```
 
 ```js
-Micra.define('list', {
-  state: { items: [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }] },
-})
+Micra.define("list", {
+  state: {
+    items: [
+      { id: 1, name: "Alice" },
+      { id: 2, name: "Bob" },
+    ],
+  },
+});
 ```
 
 - `data-each` iterates over `state[expression]`
@@ -383,15 +397,15 @@ Micra.define('list', {
 
 ```js
 // Component A emits
-Micra.emit('cart:updated', { count: 3 })
+Micra.emit("cart:updated", { count: 3 });
 
 // Component B listens
-Micra.on('cart:updated', ({ count }) => {
-  this.state.cartCount = count
-})
+Micra.on("cart:updated", ({ count }) => {
+  this.state.cartCount = count;
+});
 
 // Manual unsubscribe (rare — prefer this.on() inside components)
-Micra.off('cart:updated', handler)
+Micra.off("cart:updated", handler);
 ```
 
 Component-scoped versions auto-unsubscribe on destroy:
@@ -404,10 +418,16 @@ onCreate() {
 }
 ```
 
+## Supported since 2.5
+
+- **Key modifiers** — `@keydown.enter`, `.escape`, `.tab`, `.space`, arrows, `.delete`, and system keys `.ctrl` / `.shift` / `.alt` / `.meta` gate the handler. Combine: `@keydown.ctrl.enter`. (Plus `.prevent` / `.stop` / `.self`.)
+- **Dot-paths in `data-model`** — `data-model="filters.search"` reads and writes `state.filters.search`. Same for the path setter `this.set('filters.search', x)`.
+- **Call expressions in `@event`** — `@click="select(item.id)"`, `@input="set($event.target.value)"`.
+
 ## Things Micra does NOT support
 
-- **Key modifiers** like `@keydown.enter` — only `.prevent`, `.stop`, `.self` are recognized. For key handling, branch on `e.key` inside the method.
-- **Nested keys in `data-model`** — `data-model="filters.search"` writes to a flat state key literally named `"filters.search"`, not to `filters.search`. Use a top-level state key.
+- **Computed/bracket paths** — `data-model="filters[0]"` is a literal key; use dot notation.
+- **Assignments / `new` / arrow functions in directive expressions** — move that logic into a method.
 
 ## `data-if` vs `data-show`
 
@@ -439,12 +459,12 @@ When the user says "show/hide", default to `data-show`. When the user says
 ```
 
 ```js
-Micra.define('editor', {
+Micra.define("editor", {
   state: {},
   onCreate() {
-    const ctx = this.refs.canvas.getContext('2d')
+    const ctx = this.refs.canvas.getContext("2d");
   },
-})
+});
 ```
 
 ## Fetch helper
@@ -461,10 +481,12 @@ async loadData() {
 ## Direct mount (no data-component)
 
 ```js
-const instance = Micra.mount('#my-element', {
+const instance = Micra.mount("#my-element", {
   state: { open: false },
-  toggle() { this.state.open = !this.state.open },
-})
+  toggle() {
+    this.state.open = !this.state.open;
+  },
+});
 ```
 
 Returns the instance or `null` if the selector matches nothing.

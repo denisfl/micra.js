@@ -470,6 +470,21 @@ function createReactiveState(obj, schedule, onKey) {
     }
   });
 }
+function setPath(state, path, value) {
+  const parts = path.split(".");
+  const top = parts[0];
+  if (parts.length === 1) {
+    state[top] = value;
+    return;
+  }
+  const root = { ...state[top] };
+  let cur = root;
+  for (let i = 1; i < parts.length - 1; i++) {
+    cur = cur[parts[i]] = { ...cur[parts[i]] };
+  }
+  cur[parts[parts.length - 1]] = value;
+  state[top] = root;
+}
 function createScheduler(render) {
   let pending = false;
   const flush = () => {
@@ -541,7 +556,7 @@ function applyClass(el, pairs, state) {
 }
 function applyModel(el, key, rawState) {
   const html = el;
-  const stateVal = rawState[key];
+  const stateVal = evalExpr(key, rawState);
   const desired = stateVal == null ? "" : String(stateVal);
   if (html.value !== desired) html.value = desired;
 }
@@ -580,6 +595,41 @@ function track(instance, el, type, fn) {
   el.addEventListener(type, fn);
   ((_a = instance.__micraListeners) != null ? _a : instance.__micraListeners = []).push({ el, type, fn });
 }
+var SYS_MOD = {
+  ctrl: "ctrlKey",
+  shift: "shiftKey",
+  alt: "altKey",
+  meta: "metaKey",
+  cmd: "metaKey"
+};
+var KEY_MOD = {
+  enter: "Enter",
+  esc: "Escape",
+  escape: "Escape",
+  tab: "Tab",
+  space: " ",
+  up: "ArrowUp",
+  down: "ArrowDown",
+  left: "ArrowLeft",
+  right: "ArrowRight",
+  delete: "Delete"
+};
+function applyModifiers(e, el, mods) {
+  for (const m of mods) {
+    if (m === "prevent") e.preventDefault();
+    else if (m === "stop") e.stopPropagation();
+    else if (m === "self") {
+      if (e.target !== el) return false;
+    } else if (SYS_MOD[m]) {
+      if (!e[SYS_MOD[m]]) return false;
+    } else {
+      const key = e.key;
+      if (key == null) return false;
+      if (!(KEY_MOD[m] ? key === KEY_MOD[m] : key.toLowerCase() === m)) return false;
+    }
+  }
+  return true;
+}
 function runHandler(instance, el, value, e) {
   var _a;
   if (value.includes("(")) {
@@ -610,10 +660,7 @@ function bindDataOn(els, instance) {
       const [evName, ...mods] = evSpec.split(".");
       const handler = method.trim();
       track(instance, el, evName, (e) => {
-        if (mods.includes("prevent")) e.preventDefault();
-        if (mods.includes("stop")) e.stopPropagation();
-        if (mods.includes("self") && e.target !== el) return;
-        runHandler(instance, el, handler, e);
+        if (applyModifiers(e, el, mods)) runHandler(instance, el, handler, e);
       });
     }
   }
@@ -628,10 +675,7 @@ function bindAtEvents(els, instance) {
       const [evSpec, ...rest] = attr.name.slice(1).split(".");
       const handler = attr.value.trim();
       track(instance, el, evSpec, (e) => {
-        if (rest.includes("prevent")) e.preventDefault();
-        if (rest.includes("stop")) e.stopPropagation();
-        if (rest.includes("self") && e.target !== el) return;
-        runHandler(instance, el, handler, e);
+        if (applyModifiers(e, el, rest)) runHandler(instance, el, handler, e);
       });
       bound = true;
     }
@@ -656,8 +700,7 @@ function bindModels(bindings, instance) {
       } else {
         val = inputEl.value;
       }
-      ;
-      instance.state[key] = val;
+      setPath(instance.state, key, val);
     };
     const evType = tag === "SELECT" || inputType === "radio" ? "change" : "input";
     track(instance, el, evType, update);
@@ -1007,6 +1050,7 @@ function mount(selector, definition) {
     if (val !== "" && !isNaN(Number(val))) return Number(val);
     return val;
   };
+  instance.set = (path, value) => setPath(instance.state, path, value);
   instance.fetch = micraFetch;
   instance.emit = emit;
   instance.on = (event, handler) => {

@@ -103,7 +103,7 @@ this.on(event, handler)    // shortcut to Micra.on() — auto-cleaned on destroy
 ## Hard constraints (never violate)
 
 1. **Shallow proxy only.** `this.state.items.push(x)` does NOT re-render. Use `this.state.items = [...this.state.items, x]`.
-2. **Top-level state keys only for `data-model`.** `data-model="filters.search"` will not work.
+2. **`data-model` supports dot-paths.** `data-model="filters.search"` reads/writes `state.filters.search` (reconstructs the nested object); `this.set('filters.search', x)` does the same from JS. Bracket paths (`filters[0]`) are not parsed.
 3. **No virtual DOM.** Re-render applies directives in place on the real DOM.
 4. **`onCreate` runs in a microtask** after the first render — refs are available, safe for async.
 5. **`this.on()` subscriptions are auto-cleaned on `destroy()`**. Manual `this.off()` is not needed.

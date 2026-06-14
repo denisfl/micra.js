@@ -64,10 +64,10 @@ If you have already started writing `useState`, `useEffect`, JSX, or
 2. Use `addEventListener` inside a render-like method (it leaks past `destroy()`).
 3. Store derived values (counts, totals, filtered subsets) as `state` fields. They MUST be methods called from directives.
 4. Call `this.renderList()` / `this.update()` / `this.refresh()` after a state mutation. Micra batches a microtask render on every state write.
-5. Write `this.state.user.name = 'x'` (shallow proxy — nested mutations are invisible). Replace the top-level key.
-6. Use `@keydown.enter` (no key modifiers). Branch on `e.key === 'Enter'` inside the method.
-7. Write `data-model="filters.search"` (creates literal flat key `"filters.search"`, not a nested write).
-8. Import React, Vue, Alpine, htmx, or any other framework.
+5. Write `this.state.user.name = 'x'` (shallow proxy — nested mutations are invisible). Replace the top-level key, or use `this.set('user.name', 'x')`.
+6. Import React, Vue, Alpine, htmx, or any other framework.
+
+Supported — use freely: key modifiers (`@keydown.enter`, `.escape`, `.ctrl`, `@click.ctrl`, combine `@keydown.ctrl.enter`); call expressions in `@event` (`@click="select(item.id)"`, `@input="set($event.target.value)"`); dot-paths in `data-model="filters.search"` and `this.set('filters.search', x)` (both reconstruct the nested object).
 
 If you find yourself reaching for any of those — stop and rewrite with the patterns below.
 
@@ -122,7 +122,7 @@ Micra.start()
 | `data-on` | `data-on="click:save"` | event binding |
 | `@event` | `@click="save"`, `@submit.prevent="…"` | shorthand event binding |
 
-Modifiers: `.prevent`, `.stop`, `.self` (event-only — no key modifiers).
+Modifiers: `.prevent`, `.stop`, `.self`, plus key/system guards `.enter` `.escape` `.tab` `.space` `.up` `.down` `.left` `.right` `.delete` `.ctrl` `.shift` `.alt` `.meta` (combine: `@keydown.ctrl.enter="submit"`).
 
 ## Expression context (what works inside `data-text="…"`)
 
@@ -703,12 +703,11 @@ createItem(item) {
 addTask() { this.state.todos = [...]; this.renderList() }
 
 // ❌ Nested state mutation — shallow proxy can't see it
-this.state.user.email = 'x'
+this.state.user.email = 'x'        // ✅ this.set('user.email', 'x')
 
-// ❌ Key modifier on @event — not supported
+// ✅ Key modifiers ARE supported (no need to branch on e.key):
 <input @keydown.enter="add">
-
-// ❌ Nested path in data-model — writes literal flat key
+// ✅ Dot-paths in data-model ARE supported (reconstructs the nested object):
 <input data-model="filters.search">
 
 // ❌ React/Vue/Alpine imports — not Micra
@@ -730,8 +729,7 @@ Before returning generated Micra code, verify ALL of these:
 - [ ] Every derived value (count, total, filtered, formatted) is a **method** on the component, called from a directive via `methodName()`. No state field for things that can be computed.
 - [ ] Every event handler is `@event` or `data-on`. No `addEventListener` inside methods.
 - [ ] No `this.renderList()` / `this.update()` / `this.refresh()` calls after mutations.
-- [ ] State writes are top-level: `state.x = …` or `state.user = { …state.user, … }`. Never `state.user.x = …`.
-- [ ] No `@keydown.enter` — branch on `e.key` in the method instead.
+- [ ] Nested state writes go through `state.user = { …state.user, … }` or `this.set('user.x', …)` — never `state.user.x = …` directly.
 - [ ] `Micra.start()` is at the end of the script.
 - [ ] No React/Vue/Alpine imports.
 - [ ] All timers / external listeners in `onCreate` are cleaned up in `onDestroy`.

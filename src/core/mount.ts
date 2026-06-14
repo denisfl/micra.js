@@ -27,7 +27,7 @@ import type {
 import { warn } from "../utils/expr";
 import { micraFetch } from "../utils/fetch";
 import { on as busOn, emit as busEmit } from "../core/bus";
-import { createReactiveState, createScheduler } from "../core/reactive";
+import { createReactiveState, createScheduler, setPath } from "../core/reactive";
 import { applyDirectives, validateDirectives } from "../dom/directives";
 import { renderList } from "../dom/each";
 import { bindDataOn, bindAtEvents, bindModels } from "../dom/events";
@@ -92,6 +92,13 @@ export function mount<S extends StateRecord, M>(
     if (val !== "" && !isNaN(Number(val))) return Number(val) as unknown as T;
     return val as unknown as T;
   } as ComponentInstance<S>["prop"];
+
+  // ── set() ─────────────────────────────────────────────────────────────────
+  // Path-aware setter (see reactive.setPath). `this.set('user.name', x)`
+  // reconstructs nested levels immutably and reassigns the top-level key, so
+  // the shallow proxy fires a render without hand-spreading nested objects.
+  instance.set = (path: string, value: unknown): void =>
+    setPath(instance.state as StateRecord, path, value);
 
   // ── fetch(), emit(), on() ─────────────────────────────────────────────────
   instance.fetch = micraFetch;

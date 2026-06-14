@@ -262,8 +262,8 @@ Run through this list. If you cannot tick every box, rewrite:
 - [ ] No state field is a `.length` / `.filter(...).length` / `.some(...)` / `.map(...)` of another state field. All such values are methods.
 - [ ] No `addEventListener` inside a method (document-level listeners in `onCreate`/`onDestroy` are fine).
 - [ ] No `this.renderList()` / `this.update()` / `this.refresh()` calls after state mutations.
-- [ ] No nested-path writes (`state.user.name = x`). Replace top-level instead.
-- [ ] No `@keydown.enter` — branch on `e.key` in the method.
+- [ ] No direct nested-path writes (`state.user.name = x`). Replace top-level, or use `this.set('user.name', x)` / `data-model="user.name"`.
+- [ ] Key modifiers (`@keydown.enter` / `.escape` / `.ctrl` …) are supported — use them instead of branching on `e.key`.
 - [ ] All timers / external listeners in `onCreate` have a matching cleanup in `onDestroy`.
 - [ ] `Micra.start()` is at the end of the script.
 - [ ] CDN URL uses `cdn.jsdelivr.net/npm/...`, NOT `unpkg.com/...`.

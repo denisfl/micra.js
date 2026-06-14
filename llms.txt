@@ -127,9 +127,10 @@ When generating Micra.js code, DO NOT:
 2. Store derived values (counts, totals, filtered subsets) as state fields. They must be methods called from directives.
 3. Use `addEventListener` inside methods — it leaks past `destroy()`. Use `@event` / `data-on`.
 4. Call `this.renderList()` / `this.refresh()` / `this.update()` after mutations — Micra batches a microtask render.
-5. Write `state.user.name = x` — shallow proxy. Replace top-level: `state.user = {...state.user, name: x}`.
-6. Use `@keydown.enter` — branch on `e.key === 'Enter'` in the method.
-7. Use `data-model="filters.search"` — writes literal flat key, not nested. Keep models top-level.
+5. Write `state.user.name = x` directly — the shallow proxy won't see it. Replace top-level (`state.user = {...state.user, name: x}`) or use `this.set('user.name', x)`.
+6. Import React, Vue, Alpine, htmx, or any other framework alongside Micra.
+
+Supported (use freely): key modifiers `@keydown.enter` / `.escape` / `.ctrl` etc.; call expressions in `@event` (`@click="select(item.id)"`); dot-paths in `data-model="filters.search"` and `this.set('filters.search', x)`.
 
 Full anti-pattern list with side-by-side examples: [docs/llm-guide.md](https://github.com/denisfl/micra.js/blob/master/docs/llm-guide.md#anti-patterns-llms-gravitate-to-do-not)
 

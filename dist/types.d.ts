@@ -85,6 +85,12 @@ export interface ComponentBuiltins<S extends StateRecord = StateRecord> {
     refs: Record<string, HTMLElement>;
     /** Force a synchronous re-render. Normally not needed — state mutations batch automatically. */
     render(): void;
+    /**
+     * Set a value by dot-path, reconstructing nested objects immutably and
+     * reassigning the top-level key so the shallow proxy fires a render.
+     * @example this.set('user.name', 'Ada')  // ≡ state.user = { ...state.user, name: 'Ada' }
+     */
+    set(path: string, value: unknown): void;
     /** Unmount: clean up event bus subscriptions and call onDestroy. */
     destroy(): void;
     /**

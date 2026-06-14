@@ -131,17 +131,16 @@ Two-way binds an input, select, textarea, checkbox, or radio to a top-level stat
 
 Typing into the input updates `this.state.search`. Re-renders update the field value.
 
-Use top-level keys only:
-
-```html
-<input data-model="search" />
-```
-
-Not:
+Dot-paths are supported — the value is read and written through the path,
+reconstructing the nested object immutably:
 
 ```html
 <input data-model="filters.search" />
 ```
+
+This reads and writes `this.state.filters.search` (equivalent to
+`this.set('filters.search', …)`). Bracket/computed paths
+(`filters[0]`) are not parsed — use dot notation.
 
 ## `data-each`
 
@@ -217,6 +216,10 @@ Supported modifiers:
 - `.prevent` — calls `event.preventDefault()`
 - `.stop` — calls `event.stopPropagation()`
 - `.self` — only runs when `event.target === element`
+- **Key guards** — `.enter`, `.escape`, `.tab`, `.space`, `.up`, `.down`, `.left`, `.right`, `.delete`. The handler runs only when `event.key` matches. An unlisted name matches `event.key` case-insensitively (e.g. `.a`).
+- **System keys** — `.ctrl`, `.shift`, `.alt`, `.meta`. The handler runs only when that modifier is held.
+
+Combine them: `@keydown.ctrl.enter="submit"` (Ctrl+Enter), `@keydown.escape.prevent="close"`.
 
 You can bind multiple events:
 

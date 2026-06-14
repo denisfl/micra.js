@@ -43,14 +43,18 @@ export declare function bindAtEvents<S extends StateRecord>(els: Element[], inst
  * Two-way binding: `data-model="key"` wires <input>/<select>/<textarea>
  * to `state[key]`. Binding is attached once per element.
  *
+ * Dot-paths are supported: `data-model="filters.search"` writes through
+ * `instance.set('filters.search', …)` (reconstructs the nested object), and
+ * the value is read back via the same path.
+ *
  * Numeric inputs (`type="number"` / `type="range"`) write numbers, not strings.
  * Checkbox inputs write booleans. Everything else writes strings.
  *
  * @param bindings - Pre-computed model bindings from scan.ts
- *                   (each carries { el, expr } where expr is the state key)
+ *                   (each carries { el, expr } where expr is the state key/path)
  *
  * @example
- * <input data-model="search">   // updates state.search on every keystroke
- * <select data-model="sortBy">  // updates state.sortBy on change
+ * <input data-model="search">          // updates state.search on every keystroke
+ * <input data-model="filters.query">   // updates state.filters.query (nested)
  */
 export declare function bindModels<S extends StateRecord>(bindings: CachedBinding[], instance: InternalInstance<S>): void;
