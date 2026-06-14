@@ -1,4 +1,4 @@
-/* Micra.js v2.3.2 — https://github.com/micra-js/micra — MIT */
+/* Micra.js v2.4.0 — https://github.com/micra-js/micra — MIT */
 
 // src/utils/fetch.ts
 function getCSRF() {
@@ -81,42 +81,196 @@ function debug() {
 }
 
 // src/utils/expr.ts
-var exprCache = /* @__PURE__ */ new Map();
-var warnedRuntime = /* @__PURE__ */ new Set();
-var SIMPLE_PATH = /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/;
 var ALLOWED_GLOBALS = new Set(
   "Math,JSON,Date,String,Number,Boolean,Array,Object,parseInt,parseFloat,isNaN,isFinite,NaN,Infinity,undefined".split(",")
 );
-var PARAM_S = "$s";
-var PARAM_SAFE = "$safe";
-var SAFE_OUTER = new Proxy(/* @__PURE__ */ Object.create(null), {
-  has(_target, key) {
-    if (typeof key !== "string") return false;
-    if (key === PARAM_S || key === PARAM_SAFE) return false;
-    return !ALLOWED_GLOBALS.has(key);
-  },
-  get() {
-    return void 0;
-  }
-});
-var safeWrapCache = /* @__PURE__ */ new WeakMap();
+var BLOCKED_PROPS = /* @__PURE__ */ new Set(["__proto__", "constructor", "prototype"]);
 var OBJ_PROTO_KEYS = new Set(Object.getOwnPropertyNames(Object.prototype));
-function safeStateWrap(state) {
-  const cached = safeWrapCache.get(state);
-  if (cached) return cached;
-  const wrapped = new Proxy(state, {
-    has(target, key) {
-      return safeStateHas(target, key);
-    },
-    get(target, key) {
-      return Reflect.get(target, key);
+var PUNCT = [
+  "===",
+  "!==",
+  "==",
+  "!=",
+  "<=",
+  ">=",
+  "&&",
+  "||",
+  "(",
+  ")",
+  ".",
+  ",",
+  "?",
+  ":",
+  "!",
+  "<",
+  ">",
+  "+",
+  "-",
+  "*",
+  "/",
+  "%"
+];
+function tokenize(src) {
+  var _a;
+  const toks = [];
+  let i = 0;
+  const n = src.length;
+  while (i < n) {
+    const c = src[i];
+    if (c === " " || c === "	" || c === "\n" || c === "\r" || c === "\f") {
+      i++;
+      continue;
     }
-  });
-  safeWrapCache.set(state, wrapped);
-  return wrapped;
+    if (c === '"' || c === "'") {
+      let s = "";
+      i++;
+      while (i < n && src[i] !== c) {
+        if (src[i] === "\\") {
+          s += (_a = src[i + 1]) != null ? _a : "";
+          i += 2;
+        } else {
+          s += src[i];
+          i++;
+        }
+      }
+      if (src[i] !== c) throw 0;
+      i++;
+      toks.push({ t: "str", v: s });
+      continue;
+    }
+    if (c >= "0" && c <= "9") {
+      let s = "";
+      while (i < n && (src[i] >= "0" && src[i] <= "9" || src[i] === ".")) {
+        s += src[i];
+        i++;
+      }
+      toks.push({ t: "num", v: s });
+      continue;
+    }
+    if (/[A-Za-z_$]/.test(c)) {
+      let s = "";
+      while (i < n && /[A-Za-z0-9_$]/.test(src[i])) {
+        s += src[i];
+        i++;
+      }
+      toks.push({ t: "id", v: s });
+      continue;
+    }
+    const m = PUNCT.find((p) => src.startsWith(p, i));
+    if (!m) throw 0;
+    toks.push({ t: "p", v: m });
+    i += m.length;
+  }
+  return toks;
+}
+var BIN_PREC = {
+  "||": 1,
+  "&&": 2,
+  "==": 3,
+  "!=": 3,
+  "===": 3,
+  "!==": 3,
+  "<": 4,
+  "<=": 4,
+  ">": 4,
+  ">=": 4,
+  "+": 5,
+  "-": 5,
+  "*": 6,
+  "/": 6,
+  "%": 6
+};
+function parse(toks) {
+  let pos = 0;
+  const peek = () => toks[pos];
+  const next = () => toks[pos++];
+  const eat = (v) => {
+    var _a;
+    if (((_a = peek()) == null ? void 0 : _a.v) !== v) throw 0;
+    pos++;
+  };
+  function parseExpr() {
+    var _a;
+    const c = parseBin(1);
+    if (((_a = peek()) == null ? void 0 : _a.v) === "?") {
+      next();
+      const a = parseExpr();
+      eat(":");
+      const b = parseExpr();
+      return { k: "tern", c, a, b };
+    }
+    return c;
+  }
+  function parseBin(minPrec) {
+    let left = parseUnary();
+    for (; ; ) {
+      const t = peek();
+      const prec = t && t.t === "p" ? BIN_PREC[t.v] : void 0;
+      if (prec === void 0 || prec < minPrec) break;
+      next();
+      const right = parseBin(prec + 1);
+      left = { k: "bin", op: t.v, l: left, r: right };
+    }
+    return left;
+  }
+  function parseUnary() {
+    const t = peek();
+    if (t && t.t === "p" && (t.v === "!" || t.v === "-")) {
+      next();
+      return { k: "un", op: t.v, x: parseUnary() };
+    }
+    return parsePostfix();
+  }
+  function parsePostfix() {
+    var _a, _b;
+    let node = parsePrimary();
+    for (; ; ) {
+      const t = peek();
+      if ((t == null ? void 0 : t.v) === ".") {
+        next();
+        const id = next();
+        if (!id || id.t !== "id") throw 0;
+        node = { k: "mem", o: node, p: id.v };
+      } else if ((t == null ? void 0 : t.v) === "(") {
+        next();
+        const args = [];
+        if (((_a = peek()) == null ? void 0 : _a.v) !== ")") {
+          args.push(parseExpr());
+          while (((_b = peek()) == null ? void 0 : _b.v) === ",") {
+            next();
+            args.push(parseExpr());
+          }
+        }
+        eat(")");
+        node = { k: "call", c: node, a: args };
+      } else break;
+    }
+    return node;
+  }
+  function parsePrimary() {
+    const t = next();
+    if (!t) throw 0;
+    if (t.t === "num") return { k: "lit", v: Number(t.v) };
+    if (t.t === "str") return { k: "lit", v: t.v };
+    if (t.v === "(") {
+      const e = parseExpr();
+      eat(")");
+      return e;
+    }
+    if (t.t === "id") {
+      if (t.v === "true") return { k: "lit", v: true };
+      if (t.v === "false") return { k: "lit", v: false };
+      if (t.v === "null") return { k: "lit", v: null };
+      if (t.v === "undefined") return { k: "lit", v: void 0 };
+      return { k: "id", n: t.v };
+    }
+    throw 0;
+  }
+  const ast = parseExpr();
+  if (pos !== toks.length) throw 0;
+  return ast;
 }
 function safeStateHas(state, key) {
-  if (typeof key !== "string") return false;
   if (!Reflect.has(state, key)) return false;
   if (!OBJ_PROTO_KEYS.has(key)) return true;
   let obj = state;
@@ -126,6 +280,87 @@ function safeStateHas(state, key) {
   }
   return false;
 }
+function resolveIdent(name, scope) {
+  if (safeStateHas(scope, name)) return scope[name];
+  if (ALLOWED_GLOBALS.has(name)) return globalThis[name];
+  return void 0;
+}
+function evalNode(node, scope) {
+  switch (node.k) {
+    case "lit":
+      return node.v;
+    case "id":
+      return resolveIdent(node.n, scope);
+    case "mem": {
+      const o = evalNode(node.o, scope);
+      if (o == null || BLOCKED_PROPS.has(node.p)) return void 0;
+      return o[node.p];
+    }
+    case "un": {
+      const x = evalNode(node.x, scope);
+      return node.op === "!" ? !x : -x;
+    }
+    case "tern":
+      return evalNode(node.c, scope) ? evalNode(node.a, scope) : evalNode(node.b, scope);
+    case "bin": {
+      const op = node.op;
+      if (op === "&&") {
+        const l2 = evalNode(node.l, scope);
+        return l2 ? evalNode(node.r, scope) : l2;
+      }
+      if (op === "||") {
+        const l2 = evalNode(node.l, scope);
+        return l2 ? l2 : evalNode(node.r, scope);
+      }
+      const l = evalNode(node.l, scope);
+      const r = evalNode(node.r, scope);
+      switch (op) {
+        case "+":
+          return l + r;
+        case "-":
+          return l - r;
+        case "*":
+          return l * r;
+        case "/":
+          return l / r;
+        case "%":
+          return l % r;
+        case "<":
+          return l < r;
+        case "<=":
+          return l <= r;
+        case ">":
+          return l > r;
+        case ">=":
+          return l >= r;
+        case "==":
+          return l == r;
+        case "!=":
+          return l != r;
+        case "===":
+          return l === r;
+        case "!==":
+          return l !== r;
+      }
+      return void 0;
+    }
+    case "call": {
+      let fn;
+      let self;
+      if (node.c.k === "mem") {
+        self = evalNode(node.c.o, scope);
+        fn = self == null || BLOCKED_PROPS.has(node.c.p) ? void 0 : self[node.c.p];
+      } else {
+        fn = evalNode(node.c, scope);
+      }
+      if (typeof fn !== "function") throw new TypeError("not a function");
+      return fn.apply(self, node.a.map((x) => evalNode(x, scope)));
+    }
+  }
+}
+var exprCache = /* @__PURE__ */ new Map();
+var warnedRuntime = /* @__PURE__ */ new Set();
+var SIMPLE_PATH = /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/;
 function evalExpr(expr, state) {
   let cached = exprCache.get(expr);
   if (!cached) {
@@ -133,26 +368,24 @@ function evalExpr(expr, state) {
       cached = { kind: "path", parts: expr.split(".") };
     } else {
       try {
-        cached = {
-          kind: "fn",
-          fn: new Function("$s", "$safe", `with($safe){with($s){return (${expr})}}`)
-        };
+        cached = { kind: "ast", ast: parse(tokenize(expr)) };
       } catch {
         warn(`invalid expression "${expr}"`);
-        cached = { kind: "fn", fn: () => void 0 };
+        cached = { kind: "err" };
       }
     }
     exprCache.set(expr, cached);
   }
   if (cached.kind === "path") {
-    if (!safeStateHas(state, cached.parts[0])) return void 0;
-    return cached.parts.reduce(
-      (obj, key) => obj != null ? obj[key] : void 0,
-      state
-    );
+    const parts = cached.parts;
+    if (!safeStateHas(state, parts[0])) return void 0;
+    let obj = state;
+    for (const key of parts) obj = obj != null ? obj[key] : void 0;
+    return obj;
   }
+  if (cached.kind === "err") return void 0;
   try {
-    return cached.fn(safeStateWrap(state), SAFE_OUTER);
+    return evalNode(cached.ast, state);
   } catch (e) {
     if (!warnedRuntime.has(expr)) {
       warnedRuntime.add(expr);
@@ -312,6 +545,23 @@ function track(instance, el, type, fn) {
   el.addEventListener(type, fn);
   ((_a = instance.__micraListeners) != null ? _a : instance.__micraListeners = []).push({ el, type, fn });
 }
+function runHandler(instance, el, value, e) {
+  var _a;
+  if (value.includes("(")) {
+    let base;
+    for (let n = el; n && !base; n = n.parentElement) {
+      base = n._itemState;
+    }
+    const scope = Object.create((_a = base != null ? base : instance.__micraExpr) != null ? _a : null);
+    scope["$event"] = e;
+    scope["event"] = e;
+    evalExpr(value, scope);
+    return;
+  }
+  const fn = instance[value];
+  if (typeof fn === "function") fn.call(instance, e);
+  else warn(`method "${value}" not found`);
+}
 function bindDataOn(els, instance) {
   var _a;
   for (const el of els) {
@@ -323,13 +573,12 @@ function bindDataOn(els, instance) {
       const [evSpec, method] = part.trim().split(":");
       if (!evSpec || !method) continue;
       const [evName, ...mods] = evSpec.split(".");
+      const handler = method.trim();
       track(instance, el, evName, (e) => {
         if (mods.includes("prevent")) e.preventDefault();
         if (mods.includes("stop")) e.stopPropagation();
         if (mods.includes("self") && e.target !== el) return;
-        const fn = instance[method.trim()];
-        if (typeof fn === "function") fn.call(instance, e);
-        else warn(`method "${method.trim()}" not found`);
+        runHandler(instance, el, handler, e);
       });
     }
   }
@@ -342,14 +591,12 @@ function bindAtEvents(els, instance) {
     for (const attr of Array.from(el.attributes)) {
       if (!attr.name.startsWith("@")) continue;
       const [evSpec, ...rest] = attr.name.slice(1).split(".");
-      const method = attr.value.trim();
+      const handler = attr.value.trim();
       track(instance, el, evSpec, (e) => {
         if (rest.includes("prevent")) e.preventDefault();
         if (rest.includes("stop")) e.stopPropagation();
         if (rest.includes("self") && e.target !== el) return;
-        const fn = instance[method];
-        if (typeof fn === "function") fn.call(instance, e);
-        else warn(`method "${method}" not found`);
+        runHandler(instance, el, handler, e);
       });
       bound = true;
     }
@@ -759,6 +1006,7 @@ function mount(selector, definition) {
       return Object.prototype.hasOwnProperty.call(instance, key) && typeof instance[key] === "function";
     }
   });
+  instance.__micraExpr = exprState;
   let warnedReentry = false;
   instance.render = function() {
     var _a2;

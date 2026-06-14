@@ -6,7 +6,7 @@ Load this when reviewing a PR or change to the Micra source code.
 
 ## Bundle size
 
-- [ ] Check `dist/micra.js` size after build. Target: < 5 KB gzipped.
+- [ ] Check `dist/micra.js` size after build. Target: < 7 KB gzipped.
 - [ ] Any new import? Does it tree-shake? Is there a lighter alternative?
 - [ ] New string literals or large lookup tables added to the hot path?
 - [ ] New `Function()` calls? They must be cached — never per-render.
@@ -62,8 +62,8 @@ Run: `gzip -c dist/micra.min.js | wc -c` to verify gzip size.
 
 ## Expression evaluator
 
-- [ ] Any new expression compilation? → uses `exprCache` check first?
-- [ ] Any `new Function()` outside of `evalExpr`? → explain why.
+- [ ] New expression parsing? → uses the `exprCache` (AST cache) check first?
+- [ ] Any `new Function()` / `eval` anywhere? → reject; it breaks the strict-CSP guarantee (the build's CSP guard fails).
 - [ ] New expression pattern that bypasses the fast path? → consider adding to `SIMPLE_PATH` regex if common.
 
 ---

@@ -30,7 +30,7 @@ The two paths:
 # config/importmap.rb
 pin "application"
 pin "micra",
-    to: "https://cdn.jsdelivr.net/npm/micra.js@2.3.2/dist/micra.esm.js",
+    to: "https://cdn.jsdelivr.net/npm/micra.js@2.4.0/dist/micra.esm.js",
     preload: true
 ```
 
@@ -145,7 +145,7 @@ exactly the markup you would write by hand.
   ```ruby
   # config/importmap.rb — override the gem's pin
   pin "micra",
-      to: "https://cdn.jsdelivr.net/npm/micra.js@2.3.2/dist/micra.esm.js",
+      to: "https://cdn.jsdelivr.net/npm/micra.js@2.4.0/dist/micra.esm.js",
       preload: true
   ```
 
@@ -537,7 +537,7 @@ cd tasks-demo
 # 1. Pin Micra
 cat >> config/importmap.rb <<'EOF'
 pin "micra",
-    to: "https://cdn.jsdelivr.net/npm/micra.js@2.3.2/dist/micra.esm.js",
+    to: "https://cdn.jsdelivr.net/npm/micra.js@2.4.0/dist/micra.esm.js",
     preload: true
 EOF
 

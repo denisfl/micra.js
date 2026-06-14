@@ -33,7 +33,7 @@ wrong framework.
 ✅ **Do:**
 
 > Claude: *creates `application/vnd.ant.html` artifact, includes
->          `<script src="https://cdn.jsdelivr.net/npm/micra.js@2.3.2/dist/micra.min.js">`,
+>          `<script src="https://cdn.jsdelivr.net/npm/micra.js@2.4.0/dist/micra.min.js">`,
 >          writes Micra components per the recipe*
 
 These tools default to React when asked "build a UI". When the user has indicated
@@ -231,7 +231,7 @@ Micra.start()
 
 ```js
 import * as Micra from 'micra.js'
-// or via CDN: <script src="https://cdn.jsdelivr.net/npm/micra.js@2.3.2/dist/micra.min.js"></script>
+// or via CDN: <script src="https://cdn.jsdelivr.net/npm/micra.js@2.4.0/dist/micra.min.js"></script>
 // Then use the global Micra.
 ```
 
@@ -240,7 +240,7 @@ import * as Micra from 'micra.js'
 ❌ **Don't:**
 
 ```html
-<script src="https://unpkg.com/micra.js@2.3.2/dist/micra.min.js"></script>
+<script src="https://unpkg.com/micra.js@2.4.0/dist/micra.min.js"></script>
 ```
 
 This silently fails in Claude artifacts, ChatGPT canvas, and most sandboxed AI
@@ -249,7 +249,7 @@ environments — their Content Security Policy blocks `unpkg.com`.
 ✅ **Do:**
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/micra.js@2.3.2/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@2.4.0/dist/micra.min.js"></script>
 ```
 
 `cdn.jsdelivr.net` is in the `script-src` allowlist of every major AI runtime
@@ -471,9 +471,9 @@ Returns the instance or `null` if the selector matches nothing.
 
 ## Security model
 
-Directive expressions execute as JavaScript via `new Function`. Identifiers resolve to: state keys → instance methods → a small whitelist of globals (`Math`, `JSON`, `Date`, `String`, `Number`, `Boolean`, `Array`, `Object`, `parseInt`, `parseFloat`, `isNaN`, `isFinite`, `NaN`, `Infinity`, `undefined`).
+Directive expressions are parsed and interpreted by a built-in evaluator — **no `new Function`, no `eval`**, so Micra works under a strict Content-Security-Policy (`default-src 'self'`). Identifiers resolve to: state keys → instance methods → a small whitelist of globals (`Math`, `JSON`, `Date`, `String`, `Number`, `Boolean`, `Array`, `Object`, `parseInt`, `parseFloat`, `isNaN`, `isFinite`, `NaN`, `Infinity`, `undefined`).
 
-Everything else — `window`, `document`, `fetch`, `eval`, `setTimeout`, `constructor`, `__proto__`, ... — is shadowed and returns `undefined`. So `data-text="constructor.constructor('alert(1)')()"` is blocked.
+Everything else — `window`, `document`, `fetch`, `eval`, `setTimeout`, `constructor`, `__proto__`, ... — is unreachable and returns `undefined` (by construction, not shadowing). Member access also blocks `__proto__` / `constructor` / `prototype`, so `data-text="constructor.constructor('alert(1)')()"` is blocked.
 
 Two things this does NOT do:
 

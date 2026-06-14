@@ -10,7 +10,7 @@ Micra is a **lightweight reactive UI framework for small sites and simple SaaS**
 
 Target: pages where React/Vue is overkill — marketing sites, admin panels, Hotwire/HTMX complement, server-rendered HTML with interactive islands.
 
-**Size target:** < 5 KB minified + gzipped. Every addition is weighed against this.
+**Size target:** < 7 KB minified + gzipped. Every addition is weighed against this.
 
 ---
 
@@ -116,7 +116,7 @@ this.on(event, handler)    // shortcut to Micra.on() — auto-cleaned on destroy
 
 | | Micra | Alpine | petite-vue |
 |---|---|---|---|
-| Bundle | < 5 KB gz | ~15 KB gz | ~6 KB gz |
+| Bundle | < 7 KB gz | ~15 KB gz | ~6 KB gz |
 | Directives in | `data-*` attrs | `x-*` attrs | `v-*` attrs |
 | Event syntax | `@click="method"` | `@click="handler()"` | `@click="handler()"` |
 | Reactivity | shallow Proxy, top-level only | deep Proxy | deep Proxy |

@@ -25,7 +25,7 @@ a task that was asked in Micra terms, stop and re-create the artifact as HTML.
 
 ## Hard rules (DO NOT violate)
 
-Micra.js is a lightweight reactive UI framework (~5 KB gzip). It is NOT React, NOT Vue, NOT Alpine, NOT jQuery. When generating code:
+Micra.js is a lightweight reactive UI framework (~7 KB gzip). It is NOT React, NOT Vue, NOT Alpine, NOT jQuery. When generating code:
 
 1. **Lists must use `<template data-each>` with `data-key`.** Never `getElementById`+`innerHTML`. Never `forEach`-then-`appendChild`. Never construct list HTML as a string.
 2. **Derived values must be methods on the component, NOT state fields.** `state` is the single source of truth — raw data only. Counts, totals, filtered subsets, formatted labels — all are methods called from `data-text`/`data-if`/etc.
@@ -36,7 +36,7 @@ Micra.js is a lightweight reactive UI framework (~5 KB gzip). It is NOT React, N
 7. **`data-model` writes flat keys only.** `data-model="filters.search"` writes to `state["filters.search"]` literally — not nested. Keep the bound key top-level.
 8. **One single HTML file with CDN preferred** unless told otherwise:
    ```html
-   <script src="https://cdn.jsdelivr.net/npm/micra.js@2.3.2/dist/micra.min.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/micra.js@2.4.0/dist/micra.min.js"></script>
    ```
    Use jsDelivr, NOT unpkg. Claude artifacts and many other sandboxed AI environments
    have a Content Security Policy that blocks `unpkg.com` but allows `cdn.jsdelivr.net`.
@@ -388,4 +388,4 @@ Micra.debug()      // prints all live components, their state and $el to console
 - [ ] No `this.renderList()` or `this.update()` after mutations.
 - [ ] State is flat — `state.user.name = …` is rewritten as `state.user = { …, name: … }`.
 - [ ] `Micra.start()` is at the end of the script.
-- [ ] `<script src="https://cdn.jsdelivr.net/npm/micra.js@2.3.2/dist/micra.min.js"></script>` is in `<head>` or before the component script. NOT `unpkg.com` (blocked by Claude/AI sandbox CSPs).
+- [ ] `<script src="https://cdn.jsdelivr.net/npm/micra.js@2.4.0/dist/micra.min.js"></script>` is in `<head>` or before the component script. NOT `unpkg.com` (blocked by Claude/AI sandbox CSPs).

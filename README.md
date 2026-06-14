@@ -6,14 +6,17 @@
 [![types included](https://img.shields.io/badge/types-included-blue)](./dist/index.d.ts)
 [![license MIT](https://img.shields.io/npm/l/micra.js)](./LICENSE)
 
-Micra.js is a lightweight reactive TypeScript framework for small sites and SaaS apps. It gives you reactive state, DOM directives, keyed list rendering, an event bus, SSR-friendly props, and auto-mounting in about 5 KB gzip.
+Micra.js is a lightweight reactive TypeScript framework for small sites and SaaS apps. It gives you reactive state, DOM directives, keyed list rendering, an event bus, SSR-friendly props, and auto-mounting in about 7 KB gzip.
 
 ## Project status
 
 - **Stable, SemVer-disciplined.** Breaking changes only in majors; every
   release documented in [CHANGELOG.md](./CHANGELOG.md) with migration notes.
-- **Tested.** 255 tests across 14 suites run on every push and before every
-  npm publish; the build fails if the bundle exceeds **5.5 KB gzip**.
+- **Tested.** 267 tests across 15 suites run on every push and before every
+  npm publish; the build fails if the bundle exceeds **7 KB gzip** or if
+  `eval` / `new Function` ever reappears (CSP guard).
+- **CSP-safe.** Runs under a strict `default-src 'self'` Content-Security-Policy —
+  directive expressions are parsed and interpreted, never `eval`'d.
 - **Typed.** Ships its own `.d.ts` — state, methods, and event-bus payloads
   are checked end-to-end (see [TypeScript](#typescript)).
 - **Security policy.** See [SECURITY.md](./SECURITY.md) — private reporting,
@@ -25,7 +28,7 @@ Built for **server-rendered apps** (Rails, Laravel, Django, Phoenix, ASP.NET) an
 
 Reach for Micra.js instead of React/Vue when:
 
-- ~5 KB gzip matters (full bundle, not "core")
+- ~7 KB gzip matters (full bundle, not "core")
 - you want to drop a `<script>` tag on an existing page and go — no toolchain
 - you have HTML rendered by your server template engine that needs reactive directives
 - you don't need client-side routing or a full SPA

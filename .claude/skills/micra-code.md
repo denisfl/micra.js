@@ -79,10 +79,10 @@ This is why `data-text="formatPrice(qty * 9.99)"` works — `formatPrice` resolv
 
 Two paths:
 
-1. **Fast path**: `/^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/` — simple dot-paths like `count`, `user.name`. Resolved via `split('.').reduce(...)` — no `Function()`.
-2. **Compiled path**: `new Function('$s', 'with($s){return (expr)}')` — compiled once, cached in a module-level `Map<string, fn>` keyed by expression string. Cache is global for the page.
+1. **Fast path**: `/^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/` — simple dot-paths like `count`, `user.name`. Resolved via `split('.').reduce(...)`.
+2. **Parsed path**: tokenizer → Pratt parser → AST, walked by a built-in interpreter. The AST is cached in a module-level `Map<string, …>` keyed by expression string. Cache is global for the page.
 
-Never call `Function()` at runtime without checking the cache first.
+Both paths are **`eval`-free** — there is no `new Function` / `eval` anywhere (CSP-safe under `default-src 'self'`). Never reintroduce either; the build's CSP guard rejects it.
 
 ---
 

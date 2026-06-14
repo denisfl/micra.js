@@ -243,15 +243,27 @@ The same modifiers are supported:
 
 ## Security model
 
-Directive expressions (`data-text`, `data-if`, etc.) are evaluated as JavaScript via `new Function`. Identifiers resolve in this order:
+Directive expressions (`data-text`, `data-if`, etc.) are **parsed and
+interpreted by a built-in evaluator — there is no `new Function` or `eval`**,
+so Micra runs under a strict Content-Security-Policy (`default-src 'self'`, no
+`unsafe-eval`). Identifiers resolve in this order:
 
 1. Component state keys
 2. Component methods on the instance
 3. A small set of whitelisted globals: `Math`, `JSON`, `Date`, `String`, `Number`, `Boolean`, `Array`, `Object`, `parseInt`, `parseFloat`, `isNaN`, `isFinite`, `NaN`, `Infinity`, `undefined`
 
-Everything else — `window`, `document`, `fetch`, `eval`, `setTimeout`, `constructor`, etc. — is shadowed and resolves to `undefined`. This blocks the common `constructor.constructor("...")()` chain and accidental access to browser globals.
+Everything else — `window`, `document`, `fetch`, `eval`, `setTimeout`,
+`constructor`, etc. — is unreachable and resolves to `undefined`. This is
+enforced *by construction* (no scope contains those names), not by shadowing.
+Member access additionally refuses the prototype-escape property names
+`__proto__`, `constructor`, and `prototype`, so `item.constructor.constructor("...")()`
+resolves to `undefined` instead of reaching the `Function` constructor.
 
-Two caveats apply regardless of the shadowing:
+Two caveats apply regardless:
 
 1. **`data-html`** writes raw HTML — see the warning above.
-2. **Templates must be trusted.** The shadowing prevents accidental footguns, but it is not a full sandbox. If an attacker can inject the directive *string itself* (not just its value), they can write a method-call chain that escapes through any method you exposed on the component. Treat directive markup the same way you treat the rest of your server-rendered HTML.
+2. **Templates must be trusted.** The evaluator blocks accidental footguns and
+   global access, but method calls run real JS — a method you exposed can do
+   anything. If an attacker can inject the directive *string itself* (not just
+   its value), they can call those methods. Treat directive markup the same way
+   you treat the rest of your server-rendered HTML.

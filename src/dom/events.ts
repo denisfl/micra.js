@@ -20,7 +20,7 @@ import type {
   MicraElement,
   StateRecord,
 } from '../types'
-import { warn } from '../utils/expr'
+import { evalExpr, warn } from '../utils/expr'
 
 /** @internal Attach a DOM listener and track it on the instance for destroy(). */
 function track<S extends StateRecord>(
@@ -31,6 +31,38 @@ function track<S extends StateRecord>(
 ): void {
   el.addEventListener(type, fn)
   ;(instance.__micraListeners ??= []).push({ el, type, fn })
+}
+
+/**
+ * Run an event handler. Two shapes, both used by `data-on` and `@event`:
+ *   - bare method name   `save`            → instance.save(e)
+ *   - call expression    `select(item.id)` → evaluated against an event scope
+ *     (row `item` if inside `data-each`, `$event`/`event`, component methods).
+ *     Call expressions are the recommended form for `@event`; in `data-on` the
+ *     handler separator is `,` so multi-argument calls there are not supported.
+ */
+function runHandler<S extends StateRecord>(
+  instance: InternalInstance<S>,
+  el: Element,
+  value: string,
+  e: Event,
+): void {
+  if (value.includes('(')) {
+    // Build the scope: nearest ancestor-or-self row itemState (it already
+    // prototype-chains to the component's expr scope), else the expr scope.
+    let base: StateRecord | undefined
+    for (let n: Element | null = el; n && !base; n = n.parentElement) {
+      base = (n as MicraElement)._itemState
+    }
+    const scope = Object.create(base ?? instance.__micraExpr ?? null) as StateRecord
+    scope['$event'] = e
+    scope['event'] = e
+    evalExpr(value, scope) // performs the call; return value ignored
+    return
+  }
+  const fn = instance[value]
+  if (typeof fn === 'function') (fn as (e: Event) => void).call(instance, e)
+  else warn(`method "${value}" not found`)
 }
 
 // ── data-on ───────────────────────────────────────────────────────────────────
@@ -62,15 +94,13 @@ export function bindDataOn<S extends StateRecord>(
       if (!evSpec || !method) continue
 
       const [evName, ...mods] = evSpec.split('.')
+      const handler = method.trim()
 
       track(instance, el, evName!, (e: Event) => {
         if (mods.includes('prevent')) e.preventDefault()
         if (mods.includes('stop')) e.stopPropagation()
         if (mods.includes('self') && e.target !== el) return
-
-        const fn = instance[method.trim()]
-        if (typeof fn === 'function') (fn as (e: Event) => void).call(instance, e)
-        else warn(`method "${method.trim()}" not found`)
+        runHandler(instance, el, handler, e)
       })
     }
   }
@@ -101,16 +131,13 @@ export function bindAtEvents<S extends StateRecord>(
     for (const attr of Array.from(el.attributes)) {
       if (!attr.name.startsWith('@')) continue
       const [evSpec, ...rest] = attr.name.slice(1).split('.')
-      const method = attr.value.trim()
+      const handler = attr.value.trim()
 
       track(instance, el, evSpec!, (e: Event) => {
         if (rest.includes('prevent')) e.preventDefault()
         if (rest.includes('stop')) e.stopPropagation()
         if (rest.includes('self') && e.target !== el) return
-
-        const fn = instance[method]
-        if (typeof fn === 'function') (fn as (e: Event) => void).call(instance, e)
-        else warn(`method "${method}" not found`)
+        runHandler(instance, el, handler, e)
       })
       bound = true
     }

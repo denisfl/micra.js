@@ -4,6 +4,63 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] — 2026-06-14
+
+### Added — CSP-safe expression evaluator (works under strict CSP)
+
+- **Directive expressions are now parsed and interpreted by a built-in
+  evaluator — no `new Function`, no `eval`.** Micra runs under a strict
+  Content-Security-Policy (`default-src 'self'`, no `unsafe-eval`): the
+  exact policy used by security-sensitive server-rendered apps (banking,
+  gov, healthcare). Previously any expression beyond a bare property path
+  (`count > 0`, ternaries, comparisons, method calls) compiled via
+  `new Function` and was blocked under such a CSP.
+- The build now fails if `eval` / `new Function` ever reappears in the
+  bundle (`🔒 CSP guard`).
+- **Stronger security model, by construction.** Globals like `window`,
+  `fetch`, `constructor` are unreachable because no scope contains them —
+  not because they're shadowed. Member access additionally blocks
+  `__proto__` / `constructor` / `prototype`, closing the
+  `item.constructor.constructor("…")()` escape the old `with()`-based
+  evaluator left open.
+
+### Added — call expressions in `@event`
+
+- `@event` handlers accept call expressions with arguments, evaluated
+  against an event scope (the row `item` inside `data-each`, `$event` /
+  `event`, and component methods):
+
+  ```html
+  <button @click="select(item.id)">pick</button>
+  <input @input="set($event.target.value)">
+  ```
+
+  Bare method names (`@click="save"`) work as before. `data-on` keeps
+  bare method names only (its handler separator is `,`).
+
+### Changed
+
+- **Bundle: ~5.5 KB → ~6.6 KB gzip** (size guard raised to 7 KB). The
+  eval-based path was *removed*, not kept as a fallback, so this is the
+  whole cost of the parser/interpreter. Micra is no longer the very
+  smallest in its class (petite-vue ~6 KB) — the trade is CSP-safety,
+  a stronger security model, and call-args in events.
+
+### Fixed
+
+- `data-each` row root detection counted whitespace text nodes around a
+  single element, wrapping pretty-printed `<tr>` rows in
+  `<micra-each-item>` (invalid inside `<tbody>`). Carried over from 2.3.2;
+  now also covered by the new evaluator's tests.
+
+### Migration
+
+- No API changes. Existing expressions evaluate identically (full parity
+  suite). If you relied on an expression feature outside the documented
+  grammar (assignments, `new`, computed `[]` indexing, arrow functions —
+  none of which were ever recommended in directives), it no longer works;
+  move that logic into a component method.
+
 ## [2.3.2] — 2026-06-10
 
 ### Fixed — `data-each` row root detection

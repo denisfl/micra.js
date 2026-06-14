@@ -248,5 +248,6 @@ export interface InternalInstance<S extends StateRecord = StateRecord> extends C
     __micraSubs?: UnsubFn[];
     __micraListeners?: TrackedListener[];
     __micraDestroyed?: true;
+    __micraExpr?: StateRecord;
     [key: string]: unknown;
 }

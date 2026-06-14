@@ -109,8 +109,25 @@ if (watch) {
 
   console.log('\n✅ Build complete\n')
 
+  // ── CSP guard ───────────────────────────────────────────────────────────────
+  // Micra must run under a strict CSP (`default-src 'self'`, no `unsafe-eval`).
+  // The expression evaluator parses+interprets — it must never reintroduce
+  // `new Function` / `eval`. Fail the build if the bundle ships either.
+  for (const file of ['dist/micra.min.js', 'dist/micra.esm.js', 'dist/micra.cjs.js']) {
+    const src = readFileSync(file, 'utf8')
+    const hit = /\beval\s*\(|new\s+Function\s*\(/.exec(src)
+    if (hit) {
+      console.error(`❌ CSP guard: "${hit[0]}" found in ${file} — breaks strict CSP`)
+      process.exit(1)
+    }
+  }
+  console.log('🔒 CSP guard: no eval / new Function in the bundle ✓')
+
   // ── Bundle size guard ──────────────────────────────────────────────────────
-  const MAX_GZIP_BYTES = 5.5 * 1024  // 5.5 KB — raised from 5 KB for v2.3 perf optimisations
+  // 7 KB — raised from 5.5 KB in v2.4 for the CSP-safe expression evaluator
+  // (own parser/interpreter, no `new Function`). The eval-based path was
+  // removed, not kept as a fallback, so this is the whole cost.
+  const MAX_GZIP_BYTES = 7 * 1024
   const minified  = readFileSync('dist/micra.min.js')
   const gzipSize  = gzipSync(minified).length
   const kbStr     = (gzipSize / 1024).toFixed(1)

@@ -294,5 +294,6 @@ export interface InternalInstance<S extends StateRecord = StateRecord>
   __micraSubs?: UnsubFn[]
   __micraListeners?: TrackedListener[]
   __micraDestroyed?: true
+  __micraExpr?: StateRecord  // expression scope (state + bound methods) for @event call args
   [key: string]: unknown
 }

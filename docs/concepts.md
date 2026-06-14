@@ -68,10 +68,12 @@ Most directives accept JavaScript expressions:
 
 Micra evaluates expressions against a state object using two paths:
 
-1. **Fast path for simple property access**: expressions like `count`, `user.name`, and `item.email` are resolved directly without `Function()`.
-2. **Compiled path for full expressions**: other expressions are compiled once with `Function('with(...)')` and cached by expression string.
+1. **Fast path for simple property access**: expressions like `count`, `user.name`, and `item.email` are resolved directly by walking the path.
+2. **Parsed path for full expressions**: other expressions (`count > 0`, ternaries, comparisons, method calls) are tokenized and parsed into a small AST once, then walked by a built-in interpreter.
 
-The cache is global for the page, so reused expressions stay fast.
+Both paths parse and interpret — there is **no `new Function` or `eval`**, so Micra runs under a strict Content-Security-Policy (`default-src 'self'`, no `unsafe-eval`). The AST is cached per expression string (global for the page), so reused expressions stay fast.
+
+`@event` handlers may also be call expressions with arguments — `@click="select(item.id)"`, `@input="set($event.target.value)"` — evaluated against the same scope plus the row `item` and `$event`.
 
 ## `exprState`
 

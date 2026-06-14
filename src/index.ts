@@ -17,7 +17,7 @@
  *   - SSR-friendly: Micra.start() is safe to call multiple times
  *   - Directive cache: O(1) re-renders after first mount
  *
- * Size target: < 5.5 KB minified+gzipped
+ * Size target: < 7 KB minified+gzipped
  *
  * @module Micra
  */

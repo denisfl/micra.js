@@ -1,6 +1,6 @@
 # Migrating from Alpine.js to Micra.js
 
-> Alpine.js taught us declarative reactivity belongs in HTML. Micra.js takes the same idea and ships in ~5 kB gzip — about 3× smaller, with standard `data-*` syntax and a built-in event bus.
+> Alpine.js taught us declarative reactivity belongs in HTML. Micra.js takes the same idea and ships in ~7 kB gzip — about 3× smaller, with standard `data-*` syntax and a built-in event bus.
 
 This guide ports a typical Alpine app to Micra. Most files change by less than 20 lines.
 
@@ -265,7 +265,7 @@ When the component unmounts, any in-flight `this.fetch()` is aborted automatical
 
 ## What you gain
 
-- **3× smaller bundle** (~5 kB vs ~14 kB gzip)
+- **3× smaller bundle** (~7 kB vs ~14 kB gzip)
 - **AST-validated expressions** — no `window` access from markup, no surprise side effects
 - **Built-in `this.fetch()`** with auto-abort on destroy
 - **`this.prop()` for SSR data** — no manual JSON.parse

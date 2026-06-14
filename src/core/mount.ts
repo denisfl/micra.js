@@ -153,6 +153,10 @@ export function mount<S extends StateRecord, M>(
       );
     },
   });
+  // Exposed for events.ts so `@click="select(item.id)"` can evaluate the call
+  // against component state + methods. Row elements eval against their own
+  // `_itemState` (which prototype-chains to this); non-row elements use this.
+  instance.__micraExpr = exprState;
 
   let warnedReentry = false;
   instance.render = function () {
