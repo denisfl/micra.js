@@ -246,6 +246,7 @@ this.on(event, handler)
   - [Server-sent events (SSE)](./docs/recipes/sse.md)
   - [htmx bridge](./docs/recipes/htmx.md)
   - [Rails + Micra](./docs/recipes/rails.md)
+  - [Data resource helper](./docs/recipes/data-resource.md)
 
 ## Code generation with LLMs
 
@@ -255,8 +256,9 @@ Micra has a small surface area, but LLMs default to jQuery / vanilla-JS or React
 2. **Derived values** (counts, totals, filtered subsets) are **methods**, not state fields. State holds raw data only.
 3. **Event handlers** use `@event` / `data-on`. Never `addEventListener` inside methods — it leaks past `destroy()`. Document-level listeners go in `onCreate` and are removed in `onDestroy`.
 4. **No manual re-render.** Micra batches a microtask render on every state write — no `this.refresh()` / `this.update()` / `this.renderList()`.
-5. **State proxy is shallow.** Replace top-level: `state.user = { ...state.user, name: x }`, not `state.user.name = x`.
-6. **No modifier syntax** like `@keydown.enter` — branch on `e.key === 'Enter'` inside the handler.
-7. **Use jsDelivr, not unpkg** — `cdn.jsdelivr.net` is in the CSP allowlist of Claude artifacts / ChatGPT canvas; `unpkg.com` is blocked there.
+5. **State proxy is shallow.** Replace top-level (`state.user = { ...state.user, name: x }`), or use the path sugar: `this.set('user.name', x)` and `data-model="user.name"` — both reconstruct + reassign the top-level key for you. Never `state.user.name = x`.
+6. **Use event modifiers.** `@keydown.enter`, `@keydown.escape`, `@keydown.tab`, `@click.ctrl`, plus `.prevent` / `.stop` / `.self` — don't branch on `e.key` by hand.
+7. **No literals in directive expressions.** The CSP-safe evaluator doesn't parse object/array literals — `data-each="items || []"` and `@click="f({a:1})"` fail. `data-each` already renders nothing for `null`; pass object args from a method.
+8. **Use jsDelivr, not unpkg** — `cdn.jsdelivr.net` is in the CSP allowlist of Claude artifacts / ChatGPT canvas; `unpkg.com` is blocked there.
 
 Full anti-pattern reference with side-by-side examples: [`docs/llm-guide.md`](./docs/llm-guide.md) and [`llms-full.txt`](./llms-full.txt).

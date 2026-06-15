@@ -57,6 +57,28 @@ this.state.filters = {
 
 Think of state as a flat set of reactive entry points.
 
+## Path-write sugar: `this.set()` and dot-path `data-model`
+
+Hand-spreading nested objects on every form field gets noisy. For that, use the
+path sugar — it does the spread-and-reassign-the-top-level-key for you, so the
+shallow proxy still fires a render:
+
+```ts
+this.set('filters.query', 'billing')
+// ≡ this.state.filters = { ...this.state.filters, query: 'billing' }
+```
+
+```html
+<input data-model="filters.query" />   <!-- two-way bind to a nested path -->
+<input data-model="user.address.city" />
+```
+
+This is **sugar over the shallow proxy, not deep reactivity** — `this.set()` and
+path `data-model` reconstruct the intermediate objects and reassign the
+top-level key (`filters`, `user`). A bare `this.state.filters.query = x` still
+won't render. Reading nested paths in expressions (`data-text="user.address.city"`)
+works directly.
+
 ## TypeScript inference with `defineComponent`
 
 `defineComponent()` returns the definition unchanged, but helps TypeScript infer the state shape.

@@ -1,5 +1,18 @@
 # Concepts
 
+## Philosophy
+
+Micra is intentionally small: a shallow reactive proxy, a fixed set of `data-*`
+directives, a tiny CSP-safe expression surface, and a keyed list diff — about
+7 KB gzip, no build step. That ceiling is a feature. Deep nested reactivity,
+a client router, and heavyweight data/UI helpers are deliberately **out** of the
+core — the path-write sugar (`this.set`), the [component catalog](../site/components/),
+and copy-paste [recipes](./recipes/) cover the real cases without growing the engine.
+
+It's the layer you reach for to make server-rendered HTML reactive — instead of
+sprinkling jQuery, instead of Alpine, and instead of standing up a React SPA for
+an admin panel. Not a total framework replacement; the right tool for that niche.
+
 ## Reactive state
 
 Micra wraps your `state` object in a shallow `Proxy`.
@@ -22,6 +35,17 @@ Replace the top-level property instead:
 
 ```ts
 this.state.user = { ...this.state.user, name: 'Ana' }
+```
+
+Or use the path sugar — it reconstructs the nested object and reassigns the
+top-level key for you (still shallow, just less typing):
+
+```ts
+this.set('user.name', 'Ana')          // ≡ the spread above
+```
+
+```html
+<input data-model="user.name" />      <!-- two-way bind to a nested path -->
 ```
 
 Arrays follow the same rule. Replace them instead of mutating in place:
@@ -72,6 +96,8 @@ Micra evaluates expressions against a state object using two paths:
 2. **Parsed path for full expressions**: other expressions (`count > 0`, ternaries, comparisons, method calls) are tokenized and parsed into a small AST once, then walked by a built-in interpreter.
 
 Both paths parse and interpret — there is **no `new Function` or `eval`**, so Micra runs under a strict Content-Security-Policy (`default-src 'self'`, no `unsafe-eval`). The AST is cached per expression string (global for the page), so reused expressions stay fast.
+
+The grammar is deliberately small: property access, calls, comparisons, ternaries, the usual operators — but **no object or array literals**. `data-each="items || []"` and `@click="f({ a: 1 })"` won't parse. `data-each` already renders nothing for a `null`/non-array value, and object arguments belong in a method. Keeping the surface small is intentional — logic lives in methods, not in markup.
 
 `@event` handlers may also be call expressions with arguments — `@click="select(item.id)"`, `@input="set($event.target.value)"` — evaluated against the same scope plus the row `item` and `$event`.
 
