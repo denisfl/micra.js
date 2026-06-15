@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="../assets/styles.css" />
     <title>Breadcrumb — Micra.js Components</title>
+    <style>
+      /* ordered-list semantics for the breadcrumb, laid out like the flex original */
+      .breadcrumb > ol { display: flex; align-items: center; gap: 0.25rem; list-style: none; margin: 0; padding: 0; }
+      .breadcrumb > ol > li { display: flex; align-items: center; gap: 0.25rem; }
+    </style>
   </head>
   <body>
     <svg
@@ -131,36 +136,40 @@
             >
               <div data-component="breadcrumb-demo">
                 <nav class="breadcrumb" aria-label="Breadcrumb">
-                  <template data-each="visible()" data-key="key">
-                    <span data-if="item.ellipsis">
-                      <button
-                        class="crumb-ellipsis"
-                        @click="expand"
-                        aria-label="Show hidden segments"
-                      >
-                        …
-                      </button>
-                      <span class="crumb-sep" aria-hidden="true">
-                        <svg class="icon" aria-hidden="true">
-                          <use href="#icon-chevron-right"></use>
-                        </svg>
-                      </span>
-                    </span>
-                    <span data-if="!item.ellipsis &amp;&amp; !item.current">
-                      <a data-bind="href:item.href" data-text="item.label"></a>
-                      <span class="crumb-sep" aria-hidden="true">
-                        <svg class="icon" aria-hidden="true">
-                          <use href="#icon-chevron-right"></use>
-                        </svg>
-                      </span>
-                    </span>
-                    <span
-                      class="crumb-current"
-                      data-if="item.current"
-                      aria-current="page"
-                      data-text="item.label"
-                    ></span>
-                  </template>
+                  <ol>
+                    <template data-each="visible()" data-key="key">
+                      <li>
+                        <span data-if="item.ellipsis">
+                          <button
+                            class="crumb-ellipsis"
+                            @click="expand"
+                            aria-label="Show hidden segments"
+                          >
+                            …
+                          </button>
+                          <span class="crumb-sep" aria-hidden="true">
+                            <svg class="icon" aria-hidden="true">
+                              <use href="#icon-chevron-right"></use>
+                            </svg>
+                          </span>
+                        </span>
+                        <span data-if="!item.ellipsis &amp;&amp; !item.current">
+                          <a data-bind="href:item.href" data-text="item.label"></a>
+                          <span class="crumb-sep" aria-hidden="true">
+                            <svg class="icon" aria-hidden="true">
+                              <use href="#icon-chevron-right"></use>
+                            </svg>
+                          </span>
+                        </span>
+                        <span
+                          class="crumb-current"
+                          data-if="item.current"
+                          aria-current="page"
+                          data-text="item.label"
+                        ></span>
+                      </li>
+                    </template>
+                  </ol>
                 </nav>
                 <div
                   class="demo-row"
@@ -180,20 +189,22 @@
           <section class="component-section">
             <h3>Markup</h3>
             <pre><code>&lt;nav class="breadcrumb" data-component="breadcrumb-demo" aria-label="Breadcrumb"&gt;
-  &lt;template data-each="visible()" data-key="key"&gt;
-    &lt;span data-if="item.ellipsis"&gt;
-      &lt;button class="crumb-ellipsis" @click="expand"&gt;…&lt;/button&gt;
-      &lt;span class="crumb-sep" aria-hidden="true"&gt;›&lt;/span&gt;
-    &lt;/span&gt;
-    &lt;span data-if="!item.ellipsis &amp;&amp; !item.current"&gt;
-      &lt;a data-bind="href:item.href" data-text="item.label"&gt;&lt;/a&gt;
-      &lt;span class="crumb-sep" aria-hidden="true"&gt;›&lt;/span&gt;
-    &lt;/span&gt;
-    &lt;span class="crumb-current"
-          data-if="item.current"
-          aria-current="page"
-          data-text="item.label"&gt;&lt;/span&gt;
-  &lt;/template&gt;
+  &lt;ol&gt;
+    &lt;template data-each="visible()" data-key="key"&gt;
+      &lt;li&gt;
+        &lt;span data-if="item.ellipsis"&gt;
+          &lt;button class="crumb-ellipsis" @click="expand"&gt;…&lt;/button&gt;
+          &lt;span class="crumb-sep" aria-hidden="true"&gt;›&lt;/span&gt;
+        &lt;/span&gt;
+        &lt;span data-if="!item.ellipsis &amp;&amp; !item.current"&gt;
+          &lt;a data-bind="href:item.href" data-text="item.label"&gt;&lt;/a&gt;
+          &lt;span class="crumb-sep" aria-hidden="true"&gt;›&lt;/span&gt;
+        &lt;/span&gt;
+        &lt;span class="crumb-current" data-if="item.current"
+              aria-current="page" data-text="item.label"&gt;&lt;/span&gt;
+      &lt;/li&gt;
+    &lt;/template&gt;
+  &lt;/ol&gt;
 &lt;/nav&gt;</code></pre>
           </section>
 

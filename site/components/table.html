@@ -140,8 +140,11 @@
                     <tr>
                       <th
                         class="sortable"
+                        tabindex="0"
                         @click="sortBy"
-                        data-bind="data-key:'name'"
+                        @keydown.enter.prevent="sortBy"
+                        @keydown.space.prevent="sortBy"
+                        data-bind="data-key:'name', aria-sort:ariaSort('name')"
                       >
                         Name<span
                           class="sort-indicator"
@@ -150,8 +153,11 @@
                       </th>
                       <th
                         class="sortable"
+                        tabindex="0"
                         @click="sortBy"
-                        data-bind="data-key:'role'"
+                        @keydown.enter.prevent="sortBy"
+                        @keydown.space.prevent="sortBy"
+                        data-bind="data-key:'role', aria-sort:ariaSort('role')"
                       >
                         Role<span
                           class="sort-indicator"
@@ -160,8 +166,11 @@
                       </th>
                       <th
                         class="sortable"
+                        tabindex="0"
                         @click="sortBy"
-                        data-bind="data-key:'signups'"
+                        @keydown.enter.prevent="sortBy"
+                        @keydown.space.prevent="sortBy"
+                        data-bind="data-key:'signups', aria-sort:ariaSort('signups')"
                       >
                         Signups<span
                           class="sort-indicator"
@@ -170,8 +179,11 @@
                       </th>
                       <th
                         class="sortable"
+                        tabindex="0"
                         @click="sortBy"
-                        data-bind="data-key:'joined'"
+                        @keydown.enter.prevent="sortBy"
+                        @keydown.space.prevent="sortBy"
+                        data-bind="data-key:'joined', aria-sort:ariaSort('joined')"
                       >
                         Joined<span
                           class="sort-indicator"
@@ -224,7 +236,9 @@
   &lt;table class="data-table"&gt;
     &lt;thead&gt;
       &lt;tr&gt;
-        &lt;th class="sortable" @click="sortBy" data-bind="data-key:'name'"&gt;
+        &lt;th class="sortable" tabindex="0"
+            @click="sortBy" @keydown.enter.prevent="sortBy" @keydown.space.prevent="sortBy"
+            data-bind="data-key:'name', aria-sort:ariaSort('name')"&gt;
           Name&lt;span data-text="indicator('name')"&gt;&lt;/span&gt;
         &lt;/th&gt;
         &lt;!-- … other headers --&gt;
@@ -505,6 +519,11 @@
         indicator(key) {
           if (this.state.sortKey !== key) return "";
           return this.state.sortDir === "asc" ? " ▲" : " ▼";
+        },
+        // string value for aria-sort on the column header
+        ariaSort(key) {
+          if (this.state.sortKey !== key) return "none";
+          return this.state.sortDir === "asc" ? "ascending" : "descending";
         },
         sortBy(e) {
           const key = e.currentTarget.dataset.key;

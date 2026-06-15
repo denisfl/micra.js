@@ -133,7 +133,7 @@
                     class="slider-input"
                     type="range"
                     data-model="value"
-                    data-bind="min:min, max:max, step:step, style:'--fill:' + percent() + '%'"
+                    data-bind="aria-label:label, min:min, max:max, step:step, style:'--fill:' + percent() + '%'"
                   />
                   <span class="slider-value" data-text="value"></span>
                 </div>
@@ -159,7 +159,7 @@
                     class="slider-input"
                     type="range"
                     data-model="value"
-                    data-bind="min:min, max:max, step:step, style:'--fill:' + percent() + '%'"
+                    data-bind="aria-label:label, min:min, max:max, step:step, style:'--fill:' + percent() + '%'"
                   />
                   <span class="slider-value" data-text="value + suffix"></span>
                 </div>
@@ -185,7 +185,7 @@
     &lt;input class="slider-input"
       type="range"
       data-model="value"
-      data-bind="min:min, max:max, step:step,
+      data-bind="aria-label:label, min:min, max:max, step:step,
                  style:'--fill:' + percent() + '%'" /&gt;
     &lt;span class="slider-value" data-text="value"&gt;&lt;/span&gt;
   &lt;/div&gt;

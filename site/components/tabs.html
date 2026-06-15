@@ -114,9 +114,11 @@
                   <button
                     class="tab-trigger"
                     role="tab"
+                    id="tab-overview"
+                    aria-controls="panel-overview"
                     @click="select"
                     @keydown="onKey"
-                    data-bind="data-id:'overview', tabindex:active === 'overview' ? 0 : -1, aria-selected:active === 'overview'"
+                    data-bind="data-id:'overview', tabindex:active === 'overview' ? 0 : -1, aria-selected:active === 'overview' ? 'true' : 'false'"
                     data-class="active:active === 'overview'"
                   >
                     Overview
@@ -124,9 +126,11 @@
                   <button
                     class="tab-trigger"
                     role="tab"
+                    id="tab-billing"
+                    aria-controls="panel-billing"
                     @click="select"
                     @keydown="onKey"
-                    data-bind="data-id:'billing', tabindex:active === 'billing' ? 0 : -1, aria-selected:active === 'billing'"
+                    data-bind="data-id:'billing', tabindex:active === 'billing' ? 0 : -1, aria-selected:active === 'billing' ? 'true' : 'false'"
                     data-class="active:active === 'billing'"
                   >
                     Billing
@@ -134,9 +138,11 @@
                   <button
                     class="tab-trigger"
                     role="tab"
+                    id="tab-security"
+                    aria-controls="panel-security"
                     @click="select"
                     @keydown="onKey"
-                    data-bind="data-id:'security', tabindex:active === 'security' ? 0 : -1, aria-selected:active === 'security'"
+                    data-bind="data-id:'security', tabindex:active === 'security' ? 0 : -1, aria-selected:active === 'security' ? 'true' : 'false'"
                     data-class="active:active === 'security'"
                   >
                     Security
@@ -146,6 +152,9 @@
                 <div
                   class="tab-panel"
                   role="tabpanel"
+                  id="panel-overview"
+                  aria-labelledby="tab-overview"
+                  tabindex="0"
                   data-if="active === 'overview'"
                 >
                   Plan summary, recent activity, and usage trends.
@@ -153,6 +162,9 @@
                 <div
                   class="tab-panel"
                   role="tabpanel"
+                  id="panel-billing"
+                  aria-labelledby="tab-billing"
+                  tabindex="0"
                   data-if="active === 'billing'"
                 >
                   Invoices, payment method, billing email — and a button that
@@ -161,6 +173,9 @@
                 <div
                   class="tab-panel"
                   role="tabpanel"
+                  id="panel-security"
+                  aria-labelledby="tab-security"
+                  tabindex="0"
                   data-if="active === 'security'"
                 >
                   Active sessions, API keys, two-factor authentication.
@@ -173,23 +188,17 @@
             <h3>Markup</h3>
             <pre><code>&lt;div data-component="tabs-demo"&gt;
   &lt;div class="tabs-bar" role="tablist"&gt;
-    &lt;button class="tab-trigger" role="tab"
+    &lt;button class="tab-trigger" role="tab" id="tab-overview" aria-controls="panel-overview"
       @click="select" @keydown="onKey"
-      data-bind="data-id:'overview', tabindex:active === 'overview' ? 0 : -1"
+      data-bind="data-id:'overview', tabindex:active === 'overview' ? 0 : -1,
+                 aria-selected:active === 'overview' ? 'true' : 'false'"
       data-class="active:active === 'overview'"&gt;Overview&lt;/button&gt;
-    &lt;button class="tab-trigger" role="tab"
-      @click="select" @keydown="onKey"
-      data-bind="data-id:'billing', tabindex:active === 'billing' ? 0 : -1"
-      data-class="active:active === 'billing'"&gt;Billing&lt;/button&gt;
-    &lt;button class="tab-trigger" role="tab"
-      @click="select" @keydown="onKey"
-      data-bind="data-id:'security', tabindex:active === 'security' ? 0 : -1"
-      data-class="active:active === 'security'"&gt;Security&lt;/button&gt;
+    &lt;!-- …billing, security — same shape, matching ids… --&gt;
   &lt;/div&gt;
 
-  &lt;div class="tab-panel" role="tabpanel" data-if="active === 'overview'"&gt;…&lt;/div&gt;
-  &lt;div class="tab-panel" role="tabpanel" data-if="active === 'billing'"&gt;…&lt;/div&gt;
-  &lt;div class="tab-panel" role="tabpanel" data-if="active === 'security'"&gt;…&lt;/div&gt;
+  &lt;div class="tab-panel" role="tabpanel" id="panel-overview"
+       aria-labelledby="tab-overview" tabindex="0" data-if="active === 'overview'"&gt;…&lt;/div&gt;
+  &lt;!-- …one panel per tab… --&gt;
 &lt;/div&gt;</code></pre>
           </section>
 
@@ -244,6 +253,17 @@
                 <span class="inline-code">tabindex:active === id ? 0 : -1</span>
                 puts only the active tab in the tab order, matching ARIA
                 authoring practices.
+              </li>
+              <li>
+                <strong>Tab ↔ panel wiring.</strong> Each tab carries
+                <span class="inline-code">aria-controls</span> pointing at its
+                panel's <span class="inline-code">id</span>, and each panel
+                <span class="inline-code">aria-labelledby</span> its tab — so a
+                screen reader announces "tab 2 of 3, controls Billing panel".
+                <span class="inline-code"
+                  >aria-selected:active === id ? 'true' : 'false'</span
+                >
+                emits the literal string ARIA expects, not a bare boolean.
               </li>
               <li>
                 <strong>Keyboard.</strong> ←/→ moves between tabs (wraps), Home

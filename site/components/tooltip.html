@@ -139,13 +139,16 @@
                   @mouseleave="hide"
                   @focus="show"
                   @blur="hide"
+                  @keydown.escape="hide"
+                  data-bind="aria-describedby:tipId"
                 >
                   Hover (top)
                 </button>
                 <span
                   class="tooltip-bubble"
+                  role="tooltip"
                   data-if="visible"
-                  data-bind="data-placement:placement"
+                  data-bind="data-placement:placement, id:tipId"
                   data-text="label"
                 ></span>
               </div>
@@ -162,13 +165,16 @@
                   @mouseleave="hide"
                   @focus="show"
                   @blur="hide"
+                  @keydown.escape="hide"
+                  data-bind="aria-describedby:tipId"
                 >
                   Hover (bottom)
                 </button>
                 <span
                   class="tooltip-bubble"
+                  role="tooltip"
                   data-if="visible"
-                  data-bind="data-placement:placement"
+                  data-bind="data-placement:placement, id:tipId"
                   data-text="label"
                 ></span>
               </div>
@@ -186,6 +192,8 @@
                   @mouseleave="hide"
                   @focus="show"
                   @blur="hide"
+                  @keydown.escape="hide"
+                  data-bind="aria-describedby:tipId"
                 >
                   <svg class="icon" aria-hidden="true">
                     <use href="#icon-information-circle"></use>
@@ -193,8 +201,9 @@
                 </button>
                 <span
                   class="tooltip-bubble"
+                  role="tooltip"
                   data-if="visible"
-                  data-bind="data-placement:placement"
+                  data-bind="data-placement:placement, id:tipId"
                   data-text="label"
                 ></span>
               </div>
@@ -209,12 +218,14 @@
      data-placement="top"&gt;
   &lt;button
     @mouseenter="show" @mouseleave="hide"
-    @focus="show"      @blur="hide"&gt;
+    @focus="show"      @blur="hide"
+    @keydown.escape="hide"
+    data-bind="aria-describedby:tipId"&gt;
     Hover me
   &lt;/button&gt;
-  &lt;span class="tooltip-bubble"
+  &lt;span class="tooltip-bubble" role="tooltip"
         data-if="visible"
-        data-bind="data-placement:placement"
+        data-bind="data-placement:placement, id:tipId"
         data-text="label"&gt;&lt;/span&gt;
 &lt;/div&gt;</code></pre>
           </section>
@@ -222,11 +233,13 @@
           <section class="component-section">
             <h3>Definition</h3>
             <pre><code>Micra.define('tooltip-demo', {
-  state: { visible: false, label: '', placement: 'top' },
+  state: { visible: false, label: '', placement: 'top', tipId: '' },
 
   onCreate() {
     this.state.label     = this.prop('label', '')
     this.state.placement = this.prop('placement', 'top')
+    // unique id so aria-describedby links each trigger to its own bubble
+    this.state.tipId = 'tt-' + Math.random().toString(36).slice(2, 8)
   },
 
   onDestroy() {
@@ -329,10 +342,12 @@
       });
 
       Micra.define("tooltip-demo", {
-        state: { visible: false, label: "", placement: "top" },
+        state: { visible: false, label: "", placement: "top", tipId: "" },
         onCreate() {
           this.state.label = this.prop("label", "");
           this.state.placement = this.prop("placement", "top");
+          // unique id so each trigger's aria-describedby points at its own bubble
+          this.state.tipId = "tt-" + Math.random().toString(36).slice(2, 8);
         },
         onDestroy() {
           clearTimeout(this._timer);

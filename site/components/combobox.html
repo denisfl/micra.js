@@ -126,23 +126,29 @@
               <div class="combobox" data-component="combobox-demo">
                 <input
                   class="combobox-input"
+                  role="combobox"
+                  aria-label="Search countries"
+                  aria-autocomplete="list"
+                  aria-controls="cb-listbox"
                   data-model="query"
+                  data-bind="aria-expanded:open ? 'true' : 'false', aria-activedescendant:activeId()"
                   @focus="openList"
                   @keydown="onKey"
                   placeholder="Search countries…"
-                  aria-autocomplete="list"
                 />
                 <svg class="icon combobox-chev" aria-hidden="true">
                   <use href="#icon-chevron-down"></use>
                 </svg>
 
-                <div class="combobox-list" data-if="open">
+                <div class="combobox-list" id="cb-listbox" role="listbox" data-if="open">
                   <template data-each="filtered()" data-key="value">
                     <button
                       class="menu-item"
+                      role="option"
+                      tabindex="-1"
                       @mouseenter="setHighlight"
                       @click="pickItem"
-                      data-bind="data-value:item.value, data-i:$index"
+                      data-bind="data-value:item.value, data-i:$index, id:'cb-opt-' + $index, aria-selected:$index === highlight ? 'true' : 'false'"
                       data-class="highlight:$index === highlight"
                     >
                       <span data-text="item.label"></span>
@@ -166,19 +172,18 @@
           <section class="component-section">
             <h3>Markup</h3>
             <pre><code>&lt;div class="combobox" data-component="combobox-demo"&gt;
-  &lt;input class="combobox-input"
+  &lt;input class="combobox-input" role="combobox"
+    aria-label="Search countries" aria-autocomplete="list" aria-controls="cb-listbox"
     data-model="query"
-    @focus="openList"
-    @keydown="onKey"
-    placeholder="Search…"
-    aria-autocomplete="list" /&gt;
+    data-bind="aria-expanded:open ? 'true' : 'false', aria-activedescendant:activeId()"
+    @focus="openList" @keydown="onKey" /&gt;
 
-  &lt;div class="combobox-list" data-if="open"&gt;
+  &lt;div class="combobox-list" id="cb-listbox" role="listbox" data-if="open"&gt;
     &lt;template data-each="filtered()" data-key="value"&gt;
-      &lt;button class="menu-item"
-        @mouseenter="setHighlight"
-        @click="pickItem"
-        data-bind="data-value:item.value, data-i:$index"
+      &lt;button class="menu-item" role="option" tabindex="-1"
+        @mouseenter="setHighlight" @click="pickItem"
+        data-bind="data-value:item.value, data-i:$index, id:'cb-opt-' + $index,
+                   aria-selected:$index === highlight ? 'true' : 'false'"
         data-class="highlight:$index === highlight"&gt;
         &lt;span data-text="item.label"&gt;&lt;/span&gt;
       &lt;/button&gt;
@@ -213,6 +218,13 @@
     const q = this.state.query.trim().toLowerCase()
     if (!q) return this.state.options
     return this.state.options.filter(o =&gt; o.label.toLowerCase().includes(q))
+  },
+
+  // id of the highlighted option → drives aria-activedescendant on the input
+  activeId() {
+    const list = this.filtered()
+    return this.state.open &amp;&amp; this.state.highlight &lt; list.length
+      ? 'cb-opt-' + this.state.highlight : null
   },
 
   onCreate() {
@@ -282,6 +294,19 @@
                 moves it back, Enter picks, Escape closes. Mouse hover also
                 updates the highlight via
                 <span class="inline-code">@mouseenter</span>.
+              </li>
+              <li>
+                <strong>ARIA combobox pattern.</strong> The input is
+                <span class="inline-code">role="combobox"</span> with
+                <span class="inline-code">aria-expanded</span> and
+                <span class="inline-code">aria-controls</span> pointing at the
+                <span class="inline-code">role="listbox"</span>. Focus never
+                leaves the input — instead
+                <span class="inline-code">aria-activedescendant</span> (driven by
+                <span class="inline-code">activeId()</span>) names the highlighted
+                <span class="inline-code">role="option"</span>, which carries
+                <span class="inline-code">aria-selected</span> and
+                <span class="inline-code">tabindex="-1"</span>.
               </li>
               <li>
                 <strong>Picked value</strong> is announced via
@@ -368,6 +393,13 @@
           return this.state.options.filter((o) =>
             o.label.toLowerCase().includes(q),
           );
+        },
+        // id of the currently highlighted option, for aria-activedescendant
+        activeId() {
+          const list = this.filtered();
+          return this.state.open && this.state.highlight < list.length
+            ? "cb-opt-" + this.state.highlight
+            : null;
         },
         onCreate() {
           this._outside = (e) => {

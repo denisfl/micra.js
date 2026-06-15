@@ -117,9 +117,8 @@
                       <button
                         class="tag-remove"
                         type="button"
-                        aria-label="Remove tag"
                         @click="remove"
-                        data-bind="data-id:item.id"
+                        data-bind="data-id:item.id, aria-label:'Remove ' + item.text"
                       >
                         <svg class="icon icon-sm" aria-hidden="true">
                           <use href="#icon-x-mark"></use>
@@ -131,6 +130,7 @@
                     class="tag-input-inner"
                     data-ref="input"
                     data-model="draft"
+                    aria-label="Add a tag"
                     @keydown="onKey"
                     @paste="onPaste"
                     @blur="commitDraft"
@@ -140,6 +140,7 @@
                 <p
                   class="hint"
                   style="margin-top: var(--sp-3)"
+                  aria-live="polite"
                   data-text="tags.length + ' tag(s): ' + serialize()"
                 ></p>
               </div>
@@ -153,13 +154,14 @@
     &lt;template data-each="tags" data-key="id"&gt;
       &lt;span class="tag"&gt;
         &lt;span data-text="item.text"&gt;&lt;/span&gt;
-        &lt;button class="tag-remove" type="button"
-                @click="remove" data-bind="data-id:item.id"&gt;×&lt;/button&gt;
+        &lt;button class="tag-remove" type="button" @click="remove"
+                data-bind="data-id:item.id, aria-label:'Remove ' + item.text"&gt;×&lt;/button&gt;
       &lt;/span&gt;
     &lt;/template&gt;
     &lt;input class="tag-input-inner"
       data-ref="input"
       data-model="draft"
+      aria-label="Add a tag"
       @keydown="onKey"
       @paste="onPaste"
       @blur="commitDraft"

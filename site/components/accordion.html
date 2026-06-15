@@ -129,7 +129,7 @@
                     <button
                       class="accordion-trigger"
                       @click="toggle"
-                      data-bind="data-id:item.id, aria-expanded:isOpen(item.id)"
+                      data-bind="data-id:item.id, id:'acc-h-' + item.id, aria-controls:'acc-p-' + item.id, aria-expanded:isOpen(item.id) ? 'true' : 'false'"
                     >
                       <span data-text="item.title"></span>
                       <svg
@@ -142,8 +142,10 @@
                     </button>
                     <div
                       class="accordion-body"
+                      role="region"
                       data-if="isOpen(item.id)"
                       data-text="item.body"
+                      data-bind="id:'acc-p-' + item.id, aria-labelledby:'acc-h-' + item.id"
                     ></div>
                   </div>
                 </template>
@@ -158,13 +160,14 @@
     &lt;div class="accordion-item"&gt;
       &lt;button class="accordion-trigger"
         @click="toggle"
-        data-bind="data-id:item.id, aria-expanded:isOpen(item.id)"&gt;
+        data-bind="data-id:item.id, id:'acc-h-' + item.id, aria-controls:'acc-p-' + item.id,
+                   aria-expanded:isOpen(item.id) ? 'true' : 'false'"&gt;
         &lt;span data-text="item.title"&gt;&lt;/span&gt;
         &lt;svg data-class="open:isOpen(item.id)"&gt;…chevron…&lt;/svg&gt;
       &lt;/button&gt;
-      &lt;div class="accordion-body"
-           data-if="isOpen(item.id)"
-           data-text="item.body"&gt;&lt;/div&gt;
+      &lt;div class="accordion-body" role="region"
+           data-if="isOpen(item.id)" data-text="item.body"
+           data-bind="id:'acc-p-' + item.id, aria-labelledby:'acc-h-' + item.id"&gt;&lt;/div&gt;
     &lt;/div&gt;
   &lt;/template&gt;
 &lt;/div&gt;</code></pre>

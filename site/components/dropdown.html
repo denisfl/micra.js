@@ -133,7 +133,15 @@
             <h3>Live preview</h3>
             <div class="component-preview preview-left">
               <div class="dropdown" data-component="dropdown-demo">
-                <button class="btn dropdown-toggle" @click="toggle">
+                <button
+                  class="btn dropdown-toggle"
+                  data-ref="trigger"
+                  aria-haspopup="listbox"
+                  aria-controls="dd-listbox"
+                  data-bind="aria-expanded:open ? 'true' : 'false'"
+                  @click="toggle"
+                  @keydown.down.prevent="openMenu"
+                >
                   <span data-text="selectedLabel() || 'Sort by'"></span>
                   <svg
                     class="icon icon-chev"
@@ -143,12 +151,22 @@
                     <use href="#icon-chevron-down"></use>
                   </svg>
                 </button>
-                <div class="dropdown-menu" data-if="open">
+                <div
+                  class="dropdown-menu"
+                  id="dd-listbox"
+                  role="listbox"
+                  aria-label="Sort by"
+                  data-if="open"
+                  @keydown.down.prevent="moveDown"
+                  @keydown.up.prevent="moveUp"
+                  @keydown.escape="close"
+                >
                   <template data-each="options" data-key="value">
                     <button
                       class="menu-item"
+                      role="option"
                       @click="select"
-                      data-bind="data-value:item.value"
+                      data-bind="data-value:item.value, tabindex:active === $index ? 0 : -1, aria-selected:item.value === selected ? 'true' : 'false'"
                       data-class="selected:item.value === selected"
                     >
                       <span data-text="item.label"></span>
@@ -169,16 +187,20 @@
           <section class="component-section">
             <h3>Markup</h3>
             <pre><code>&lt;div class="dropdown" data-component="dropdown-demo"&gt;
-  &lt;button class="dropdown-toggle" @click="toggle"&gt;
+  &lt;button class="dropdown-toggle" data-ref="trigger"
+    aria-haspopup="listbox" aria-controls="dd-listbox"
+    data-bind="aria-expanded:open ? 'true' : 'false'"
+    @click="toggle" @keydown.down.prevent="openMenu"&gt;
     &lt;span data-text="selectedLabel() || 'Sort by'"&gt;&lt;/span&gt;
     &lt;svg data-class="open:open"&gt;…chevron…&lt;/svg&gt;
   &lt;/button&gt;
 
-  &lt;div class="dropdown-menu" data-if="open"&gt;
+  &lt;div class="dropdown-menu" id="dd-listbox" role="listbox" data-if="open"
+    @keydown.down.prevent="moveDown" @keydown.up.prevent="moveUp" @keydown.escape="close"&gt;
     &lt;template data-each="options" data-key="value"&gt;
-      &lt;button class="menu-item"
-        @click="select"
-        data-bind="data-value:item.value"
+      &lt;button class="menu-item" role="option" @click="select"
+        data-bind="data-value:item.value, tabindex:active === $index ? 0 : -1,
+                   aria-selected:item.value === selected ? 'true' : 'false'"
         data-class="selected:item.value === selected"&gt;
         &lt;span data-text="item.label"&gt;&lt;/span&gt;
       &lt;/button&gt;
@@ -216,13 +238,40 @@
     document.removeEventListener('click', this._outside)
   },
 
-  toggle() { this.state.open = !this.state.open },
+  toggle() { this.state.open ? this.close() : this.openMenu() },
+
+  openMenu() {
+    this.state.open = true
+    const i = this.state.options.findIndex(o =&gt; o.value === this.state.selected)
+    this.state.active = i &gt;= 0 ? i : 0
+    setTimeout(() =&gt; this._focusActive(), 0)   // listbox mounts next tick
+  },
+
+  close() {
+    if (!this.state.open) return
+    this.state.open = false
+    if (this.refs.trigger) this.refs.trigger.focus()   // restore focus
+  },
+
+  moveDown() {
+    const n = this.state.options.length
+    this.state.active = (this.state.active + 1) % n
+    this._focusActive()
+  },
+  moveUp() {
+    const n = this.state.options.length
+    this.state.active = (this.state.active - 1 + n) % n
+    this._focusActive()
+  },
 
   select(e) {
     this.state.selected = e.currentTarget.dataset.value
-    this.state.open = false
     Micra.emit('sort:changed', this.state.selected)
+    this.close()
   },
+
+  _options() { return Array.from(this.$el.querySelectorAll('[role="option"]')) },
+  _focusActive() { const el = this._options()[this.state.active]; if (el) el.focus() },
 })
 
 Micra.define('dropdown-display', {
@@ -236,6 +285,17 @@ Micra.define('dropdown-display', {
           <section class="component-section">
             <h3>Integration</h3>
             <ul>
+              <li>
+                <strong>Listbox keyboard.</strong> The trigger is
+                <span class="inline-code">aria-haspopup="listbox"</span> with a
+                bound <span class="inline-code">aria-expanded</span>; the menu is
+                a <span class="inline-code">role="listbox"</span> of
+                <span class="inline-code">role="option"</span> buttons. ↓ on the
+                trigger (or click) opens and focuses the selected option; ↑/↓
+                rove focus via <span class="inline-code">tabindex</span>
+                (only the active option is 0); Enter/Space pick; Escape closes
+                and returns focus to the trigger.
+              </li>
               <li>
                 <strong>Outside click closes</strong> via one document listener
                 attached in <span class="inline-code">onCreate</span>, removed
@@ -328,6 +388,7 @@ Micra.define('dropdown-display', {
       Micra.define("dropdown-demo", {
         state: {
           open: false,
+          active: 0,
           selected: "",
           options: [
             { label: "Newest first", value: "new" },
@@ -351,12 +412,43 @@ Micra.define('dropdown-display', {
           document.removeEventListener("click", this._outside);
         },
         toggle() {
-          this.state.open = !this.state.open;
+          this.state.open ? this.close() : this.openMenu();
+        },
+        openMenu() {
+          this.state.open = true;
+          const i = this.state.options.findIndex(
+            (o) => o.value === this.state.selected,
+          );
+          this.state.active = i >= 0 ? i : 0;
+          // listbox mounts on the next render tick — focus the active option after
+          setTimeout(() => this._focusActive(), 0);
+        },
+        close() {
+          if (!this.state.open) return;
+          this.state.open = false;
+          if (this.refs.trigger) this.refs.trigger.focus();
+        },
+        moveDown() {
+          const n = this.state.options.length;
+          this.state.active = (this.state.active + 1) % n;
+          this._focusActive();
+        },
+        moveUp() {
+          const n = this.state.options.length;
+          this.state.active = (this.state.active - 1 + n) % n;
+          this._focusActive();
         },
         select(e) {
           this.state.selected = e.currentTarget.dataset.value;
-          this.state.open = false;
           Micra.emit("sort:changed", this.state.selected);
+          this.close();
+        },
+        _options() {
+          return Array.from(this.$el.querySelectorAll('[role="option"]'));
+        },
+        _focusActive() {
+          const el = this._options()[this.state.active];
+          if (el) el.focus();
         },
       });
 

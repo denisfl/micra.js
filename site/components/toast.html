@@ -135,7 +135,8 @@
                 <button class="btn" @click="error">Show error</button>
                 <button class="btn" @click="warning">Show warning</button>
               </div>
-              <div class="toast-stack" data-component="toast-stack">
+              <div class="toast-stack" data-component="toast-stack"
+                   role="status" aria-live="polite" aria-atomic="false">
                 <template data-each="toasts" data-key="id">
                   <div class="toast" data-bind="class:item.severityClass">
                     <svg
@@ -168,7 +169,8 @@
           <section class="component-section">
             <h3>Markup</h3>
             <pre><code>&lt;!-- Anywhere on the page: the renderer --&gt;
-&lt;div class="toast-stack" data-component="toast-stack"&gt;
+&lt;div class="toast-stack" data-component="toast-stack"
+     role="status" aria-live="polite" aria-atomic="false"&gt;
   &lt;template data-each="toasts" data-key="id"&gt;
     &lt;div class="toast" data-bind="class:item.severityClass"&gt;
       &lt;div class="toast-body"&gt;
@@ -235,6 +237,14 @@ Micra.define('toast-trigger', {
           <section class="component-section">
             <h3>Integration</h3>
             <ul>
+              <li>
+                <strong>Announced to screen readers.</strong> The stack is a
+                <span class="inline-code">role="status"</span> live region with
+                <span class="inline-code">aria-live="polite"</span> — new toasts
+                are read out without stealing focus.
+                <span class="inline-code">aria-atomic="false"</span> announces
+                only the toast that was added, not the whole stack.
+              </li>
               <li>
                 <strong>Decoupled emit.</strong> Any code on the page can emit
                 <span class="inline-code">'toast'</span> — Micra components,

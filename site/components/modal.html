@@ -135,6 +135,8 @@
                   role="dialog"
                   aria-modal="true"
                   aria-labelledby="m-title"
+                  data-ref="dialog"
+                  @keydown.tab="trap"
                 >
                   <header class="modal-header">
                     <h3 id="m-title">Delete project?</h3>
@@ -171,7 +173,8 @@
   &lt;button @click="open"&gt;Open dialog&lt;/button&gt;
 
   &lt;div class="modal-backdrop" data-if="visible" @click.self="cancel"&gt;
-    &lt;div class="modal-dialog" role="dialog" aria-modal="true"&gt;
+    &lt;div class="modal-dialog" role="dialog" aria-modal="true"
+         data-ref="dialog" @keydown.tab="trap"&gt;
       &lt;header class="modal-header"&gt;
         &lt;h3&gt;Delete project?&lt;/h3&gt;
         &lt;button class="icon-btn" aria-label="Close" @click="cancel"&gt;×&lt;/button&gt;
@@ -204,8 +207,13 @@
   },
 
   open() {
+    this._returnTo = document.activeElement       // remember focus origin
     this.state.visible = true
-    document.body.style.overflow = 'hidden'   // lock scroll
+    document.body.style.overflow = 'hidden'        // lock scroll
+    setTimeout(() =&gt; {                             // dialog mounts next tick
+      const f = this._focusable()
+      ;(f[0] || this.refs.dialog).focus()
+    }, 0)
   },
 
   // close() is the bare close — does NOT touch lastAction so confirm()
@@ -213,6 +221,8 @@
   close() {
     this.state.visible = false
     document.body.style.overflow = ''
+    const back = this._returnTo                    // restore focus to opener
+    setTimeout(() =&gt; back &amp;&amp; back.focus &amp;&amp; back.focus(), 0)
   },
 
   cancel() {
@@ -224,12 +234,37 @@
     this.state.lastAction = 'confirmed'
     this.close()
   },
+
+  // keep Tab / Shift+Tab cycling inside the dialog
+  trap(e) {
+    const f = this._focusable(); if (!f.length) return
+    const first = f[0], last = f[f.length - 1], active = document.activeElement
+    if (e.shiftKey &amp;&amp; active === first) { e.preventDefault(); last.focus() }
+    else if (!e.shiftKey &amp;&amp; active === last) { e.preventDefault(); first.focus() }
+  },
+
+  _focusable() {
+    const sel = 'a[href],button:not([disabled]),input:not([disabled]),' +
+                'select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+    return Array.from(this.refs.dialog.querySelectorAll(sel))
+  },
 })</code></pre>
           </section>
 
           <section class="component-section">
             <h3>Integration</h3>
             <ul>
+              <li>
+                <strong>Focus management.</strong> On open, the opener is saved
+                and focus moves to the first focusable inside the dialog;
+                <span class="inline-code">@keydown.tab="trap"</span> keeps Tab /
+                Shift+Tab cycling within
+                <span class="inline-code">this.refs.dialog</span>; on close,
+                focus returns to the opener. The
+                <span class="inline-code">setTimeout(…, 0)</span> waits for the
+                <span class="inline-code">data-if</span> dialog to mount before
+                focusing.
+              </li>
               <li>
                 <strong>Backdrop click closes.</strong>
                 <span class="inline-code">@click.self="close"</span> fires only
@@ -337,12 +372,20 @@
           document.body.style.overflow = "";
         },
         open() {
+          this._returnTo = document.activeElement; // remember focus origin
           this.state.visible = true;
           document.body.style.overflow = "hidden";
+          // dialog mounts on the next render tick — focus it once it exists
+          setTimeout(() => {
+            const f = this._focusable();
+            (f[0] || this.refs.dialog).focus();
+          }, 0);
         },
         close() {
           this.state.visible = false;
           document.body.style.overflow = "";
+          const back = this._returnTo;
+          setTimeout(() => back && back.focus && back.focus(), 0);
         },
         cancel() {
           this.state.lastAction = "cancelled";
@@ -351,6 +394,21 @@
         confirm() {
           this.state.lastAction = "confirmed";
           this.close();
+        },
+        // keep Tab / Shift+Tab cycling inside the dialog
+        trap(e) {
+          const f = this._focusable();
+          if (!f.length) return;
+          const first = f[0], last = f[f.length - 1];
+          const active = document.activeElement;
+          if (e.shiftKey && active === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
+        },
+        _focusable() {
+          const sel =
+            'a[href], button:not([disabled]), input:not([disabled]),' +
+            'select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+          return Array.from(this.refs.dialog.querySelectorAll(sel));
         },
       });
 
