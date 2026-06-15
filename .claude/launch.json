@@ -6,6 +6,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["serve", "-p", "4321", "site"],
       "port": 4321
+    },
+    {
+      "name": "ui-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "site"],
+      "autoPort": true
     }
   ]
 }

@@ -471,3 +471,72 @@ describe('components/command-palette.html — Command palette', () => {
     expect(active(api)).toBe(trigger)
   })
 })
+
+// ── Date picker (datepicker-demo) ───────────────────────────────────────────
+
+describe('components/date-picker.html — Date picker (grid)', () => {
+  /** Local-time ISO shift, mirroring the component's own date math so
+   *  assertions stay exact even when a move crosses a month boundary. */
+  const addDays = (iso: string, n: number) => {
+    const [y, m, d] = iso.split('-').map(Number)
+    const dt = new Date(y, m - 1, d + n)
+    const p = (x: number) => String(x).padStart(2, '0')
+    return `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())}`
+  }
+  const days = (api: any) => within(api, '.datepicker', '.datepicker-day')
+
+  it('exposes grid / row / gridcell roles, 7 columnheaders, and a month-labelled grid', async () => {
+    const api = await load('date-picker.html')
+    expect(api.errors).toEqual([])
+    const grid = api.$('[role="grid"]')
+    expect(grid).not.toBeNull()
+    expect(grid.getAttribute('aria-label')).toBeTruthy() // bound to title()
+    expect(api.$$('[role="columnheader"]')).toHaveLength(7)
+    // one header row + one row per displayed week
+    expect(api.$$('[role="row"]').length).toBeGreaterThanOrEqual(5)
+    expect(api.$$('[role="gridcell"]').length).toBeGreaterThanOrEqual(28)
+  })
+
+  it('uses roving tabindex — exactly one day is tabbable, the rest are -1', async () => {
+    const api = await load('date-picker.html')
+    const tabbable = days(api).filter((b: Element) => b.getAttribute('tabindex') === '0')
+    expect(tabbable).toHaveLength(1)
+    expect(days(api).filter((b: Element) => b.getAttribute('tabindex') === '-1').length).toBeGreaterThan(0)
+  })
+
+  it('binds aria-selected as the string "true" on the picked day, "false" elsewhere', async () => {
+    const api = await load('date-picker.html')
+    const focused = days(api).find((b: Element) => b.getAttribute('tabindex') === '0')!
+    expect(focused).toBeTruthy()
+    await api.click(focused)
+    await api.sleep(20)
+    expect(focused.getAttribute('aria-selected')).toBe('true')
+    // regression: every other real day reports the literal "false", not "" / null
+    const others = days(api).filter((b: Element) => b !== focused && !b.hasAttribute('disabled'))
+    expect(others.length).toBeGreaterThan(0)
+    expect(others.every((b: Element) => b.getAttribute('aria-selected') === 'false')).toBe(true)
+  })
+
+  it('moves focus + roving tabindex with ArrowRight (next day) and ArrowDown (next week)', async () => {
+    const api = await load('date-picker.html')
+    const start = days(api).find((b: Element) => b.getAttribute('tabindex') === '0')!
+    const startIso = start.getAttribute('data-iso')!
+
+    press(api, start, 'ArrowRight')
+    await api.sleep(30)
+    const rightIso = addDays(startIso, 1)
+    const right = api.$(`[data-iso="${rightIso}"]`)
+    expect(right).not.toBeNull()
+    expect(active(api)).toBe(right)
+    expect(right.getAttribute('tabindex')).toBe('0')
+    expect(api.$(`[data-iso="${startIso}"]`)?.getAttribute('tabindex')).toBe('-1')
+
+    press(api, right, 'ArrowDown')
+    await api.sleep(30)
+    const downIso = addDays(rightIso, 7)
+    const down = api.$(`[data-iso="${downIso}"]`)
+    expect(down).not.toBeNull()
+    expect(active(api)).toBe(down)
+    expect(down.getAttribute('tabindex')).toBe('0')
+  })
+})

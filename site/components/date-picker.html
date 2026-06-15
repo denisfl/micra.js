@@ -122,12 +122,16 @@
           <section class="hero">
             <h2>Date picker</h2>
             <p>
-              Month calendar with prev/next navigation and click-to-pick day.
-              The grid is rendered from
-              <span class="inline-code">days()</span> — a derived array of
-              <span class="inline-code">{ day, iso, empty }</span> objects.
-              Selected and "today" states are decided per cell via methods, not
-              stored as flags.
+              A keyboard-navigable month calendar built to the WAI-ARIA grid
+              pattern: <span class="inline-code">role="grid"</span> of
+              <span class="inline-code">role="row"</span> weeks, arrow-key
+              roving focus, and a single tab stop. The grid is rendered from
+              <span class="inline-code">weeks()</span> — a derived array of
+              week objects whose cells (<span class="inline-code">d0…d6</span>)
+              are <span class="inline-code">{ day, iso, empty }</span>. Selected,
+              "today", and roving-focus states are decided per cell by comparing
+              its <span class="inline-code">iso</span> to state, not stored as
+              flags.
             </p>
           </section>
 
@@ -160,30 +164,92 @@
                     </svg>
                   </button>
                 </div>
-                <div class="datepicker-weekdays">
-                  <span class="datepicker-weekday">Mo</span>
-                  <span class="datepicker-weekday">Tu</span>
-                  <span class="datepicker-weekday">We</span>
-                  <span class="datepicker-weekday">Th</span>
-                  <span class="datepicker-weekday">Fr</span>
-                  <span class="datepicker-weekday">Sa</span>
-                  <span class="datepicker-weekday">Su</span>
-                </div>
-                <div class="datepicker-grid">
-                  <template data-each="days()" data-key="iso">
-                    <button
-                      class="datepicker-day"
-                      data-class="empty:item.empty, selected:item.iso === selected, today:item.iso === today"
-                      data-bind="data-iso:item.iso, disabled:item.empty"
-                      @click="pick"
-                      data-text="item.day"
-                    ></button>
+                <div
+                  class="datepicker-grid"
+                  role="grid"
+                  data-bind="aria-label:title()"
+                  @keydown.up.prevent="moveUp"
+                  @keydown.down.prevent="moveDown"
+                  @keydown.left.prevent="moveLeft"
+                  @keydown.right.prevent="moveRight"
+                  @keydown="onKey"
+                >
+                  <div class="datepicker-weekdays" role="row">
+                    <span class="datepicker-weekday" role="columnheader" aria-label="Monday">Mo</span>
+                    <span class="datepicker-weekday" role="columnheader" aria-label="Tuesday">Tu</span>
+                    <span class="datepicker-weekday" role="columnheader" aria-label="Wednesday">We</span>
+                    <span class="datepicker-weekday" role="columnheader" aria-label="Thursday">Th</span>
+                    <span class="datepicker-weekday" role="columnheader" aria-label="Friday">Fr</span>
+                    <span class="datepicker-weekday" role="columnheader" aria-label="Saturday">Sa</span>
+                    <span class="datepicker-weekday" role="columnheader" aria-label="Sunday">Su</span>
+                  </div>
+                  <template data-each="weeks()" data-key="key">
+                    <div class="datepicker-week" role="row">
+                      <button
+                        class="datepicker-day"
+                        role="gridcell"
+                        @click="pick"
+                        data-text="item.d0.day"
+                        data-class="empty:item.d0.empty, selected:item.d0.iso === selected, today:item.d0.iso === today"
+                        data-bind="data-iso:item.d0.iso, tabindex:item.d0.iso === focus ? 0 : -1, disabled:item.d0.empty, aria-selected:item.d0.iso === selected ? 'true' : 'false', aria-current:item.d0.iso === today ? 'date' : 'false'"
+                      ></button>
+                      <button
+                        class="datepicker-day"
+                        role="gridcell"
+                        @click="pick"
+                        data-text="item.d1.day"
+                        data-class="empty:item.d1.empty, selected:item.d1.iso === selected, today:item.d1.iso === today"
+                        data-bind="data-iso:item.d1.iso, tabindex:item.d1.iso === focus ? 0 : -1, disabled:item.d1.empty, aria-selected:item.d1.iso === selected ? 'true' : 'false', aria-current:item.d1.iso === today ? 'date' : 'false'"
+                      ></button>
+                      <button
+                        class="datepicker-day"
+                        role="gridcell"
+                        @click="pick"
+                        data-text="item.d2.day"
+                        data-class="empty:item.d2.empty, selected:item.d2.iso === selected, today:item.d2.iso === today"
+                        data-bind="data-iso:item.d2.iso, tabindex:item.d2.iso === focus ? 0 : -1, disabled:item.d2.empty, aria-selected:item.d2.iso === selected ? 'true' : 'false', aria-current:item.d2.iso === today ? 'date' : 'false'"
+                      ></button>
+                      <button
+                        class="datepicker-day"
+                        role="gridcell"
+                        @click="pick"
+                        data-text="item.d3.day"
+                        data-class="empty:item.d3.empty, selected:item.d3.iso === selected, today:item.d3.iso === today"
+                        data-bind="data-iso:item.d3.iso, tabindex:item.d3.iso === focus ? 0 : -1, disabled:item.d3.empty, aria-selected:item.d3.iso === selected ? 'true' : 'false', aria-current:item.d3.iso === today ? 'date' : 'false'"
+                      ></button>
+                      <button
+                        class="datepicker-day"
+                        role="gridcell"
+                        @click="pick"
+                        data-text="item.d4.day"
+                        data-class="empty:item.d4.empty, selected:item.d4.iso === selected, today:item.d4.iso === today"
+                        data-bind="data-iso:item.d4.iso, tabindex:item.d4.iso === focus ? 0 : -1, disabled:item.d4.empty, aria-selected:item.d4.iso === selected ? 'true' : 'false', aria-current:item.d4.iso === today ? 'date' : 'false'"
+                      ></button>
+                      <button
+                        class="datepicker-day"
+                        role="gridcell"
+                        @click="pick"
+                        data-text="item.d5.day"
+                        data-class="empty:item.d5.empty, selected:item.d5.iso === selected, today:item.d5.iso === today"
+                        data-bind="data-iso:item.d5.iso, tabindex:item.d5.iso === focus ? 0 : -1, disabled:item.d5.empty, aria-selected:item.d5.iso === selected ? 'true' : 'false', aria-current:item.d5.iso === today ? 'date' : 'false'"
+                      ></button>
+                      <button
+                        class="datepicker-day"
+                        role="gridcell"
+                        @click="pick"
+                        data-text="item.d6.day"
+                        data-class="empty:item.d6.empty, selected:item.d6.iso === selected, today:item.d6.iso === today"
+                        data-bind="data-iso:item.d6.iso, tabindex:item.d6.iso === focus ? 0 : -1, disabled:item.d6.empty, aria-selected:item.d6.iso === selected ? 'true' : 'false', aria-current:item.d6.iso === today ? 'date' : 'false'"
+                      ></button>
+                    </div>
                   </template>
                 </div>
               </div>
               <p
                 class="hint"
                 style="margin-top: var(--sp-4)"
+                role="status"
+                aria-live="polite"
                 data-component="datepicker-display"
               >
                 Picked: <strong data-text="value || '(none)'"></strong>
@@ -200,18 +266,31 @@
     &lt;button @click="nextMonth"&gt;›&lt;/button&gt;
   &lt;/div&gt;
 
-  &lt;div class="datepicker-weekdays"&gt;
-    &lt;span&gt;Mo&lt;/span&gt;&lt;span&gt;Tu&lt;/span&gt;&lt;span&gt;We&lt;/span&gt;
-    &lt;span&gt;Th&lt;/span&gt;&lt;span&gt;Fr&lt;/span&gt;&lt;span&gt;Sa&lt;/span&gt;&lt;span&gt;Su&lt;/span&gt;
-  &lt;/div&gt;
+  &lt;!-- One role="grid". Arrow keys via @keydown modifiers; Home/End/PageUp/
+       PageDown go through onKey (Micra has no modifier for those). --&gt;
+  &lt;div class="datepicker-grid" role="grid" data-bind="aria-label:title()"
+    @keydown.up.prevent="moveUp"     @keydown.down.prevent="moveDown"
+    @keydown.left.prevent="moveLeft" @keydown.right.prevent="moveRight"
+    @keydown="onKey"&gt;
 
-  &lt;div class="datepicker-grid"&gt;
-    &lt;template data-each="days()" data-key="iso"&gt;
-      &lt;button class="datepicker-day"
-        @click="pick"
-        data-bind="data-iso:item.iso, disabled:item.empty"
-        data-class="empty:item.empty, selected:item.iso === selected, today:item.iso === today"
-        data-text="item.day"&gt;&lt;/button&gt;
+    &lt;div class="datepicker-weekdays" role="row"&gt;
+      &lt;span role="columnheader" aria-label="Monday"&gt;Mo&lt;/span&gt;
+      &lt;!-- …Tu We Th Fr Sa Su, each role="columnheader"… --&gt;
+    &lt;/div&gt;
+
+    &lt;template data-each="weeks()" data-key="key"&gt;
+      &lt;div class="datepicker-week" role="row"&gt;
+        &lt;button class="datepicker-day" role="gridcell" @click="pick"
+          data-text="item.d0.day"
+          data-class="empty:item.d0.empty, selected:item.d0.iso === selected,
+                      today:item.d0.iso === today"
+          data-bind="data-iso:item.d0.iso,
+                     tabindex:item.d0.iso === focus ? 0 : -1,
+                     disabled:item.d0.empty,
+                     aria-selected:item.d0.iso === selected ? 'true' : 'false',
+                     aria-current:item.d0.iso === today ? 'date' : 'false'"&gt;&lt;/button&gt;
+        &lt;!-- …d1 … d6 — same shape, one &lt;button role="gridcell"&gt; per weekday… --&gt;
+      &lt;/div&gt;
     &lt;/template&gt;
   &lt;/div&gt;
 &lt;/div&gt;</code></pre>
@@ -223,11 +302,13 @@
   state: {
     today:    new Date().toISOString().slice(0, 10),
     selected: '',
-    cursor:   '',   // 'YYYY-MM' — the visible month
+    cursor:   '',   // 'YYYY-MM'    — the visible month
+    focus:    '',   // 'YYYY-MM-DD' — the roving-focus day
   },
 
   onCreate() {
     this.state.cursor = this.state.today.slice(0, 7)
+    this.state.focus  = this.state.today
   },
 
   // ── derived ──────────────────────────────────────────────
@@ -238,42 +319,94 @@
     })
   },
 
-  days() {
+  // Full Monday-aligned weeks. Cells are named d0…d6 because the CSP-safe
+  // evaluator has no bracket indexing — `item.days[0]` won't parse.
+  weeks() {
     const [y, m] = this.state.cursor.split('-').map(Number)
     const first  = new Date(y, m - 1, 1)
     const last   = new Date(y, m, 0).getDate()
-    // Monday = 0, Sunday = 6
-    const lead   = (first.getDay() + 6) % 7
+    const lead   = (first.getDay() + 6) % 7   // Monday = 0
     const cells  = []
 
-    for (let i = 0; i &lt; lead; i++) {
-      cells.push({ day: '', iso: `pad-${m}-${i}`, empty: true })
+    for (let i = 0; i &lt; lead; i++)
+      cells.push({ day: '', iso: `pad-${m}-a${i}`, empty: true })
+    for (let d = 1; d &lt;= last; d++)
+      cells.push({ day: d, iso: `${y}-${this._p(m)}-${this._p(d)}`, empty: false })
+    while (cells.length % 7 !== 0)
+      cells.push({ day: '', iso: `pad-${m}-b${cells.length}`, empty: true })
+
+    const rows = []
+    for (let w = 0; w &lt; cells.length; w += 7) {
+      const r = cells.slice(w, w + 7)
+      rows.push({ key: `${this.state.cursor}-w${w / 7}`,
+        d0: r[0], d1: r[1], d2: r[2], d3: r[3], d4: r[4], d5: r[5], d6: r[6] })
     }
-    for (let d = 1; d &lt;= last; d++) {
-      const iso = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-      cells.push({ day: d, iso, empty: false })
-    }
-    return cells
+    return rows
   },
 
-  // ── actions ──────────────────────────────────────────────
+  // ── month navigation (header buttons) ────────────────────
   prevMonth() {
     const [y, m] = this.state.cursor.split('-').map(Number)
-    const prev = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`
-    this.state.cursor = prev
+    this.state.cursor = m === 1 ? `${y - 1}-12` : `${y}-${this._p(m - 1)}`
+    this._clampFocus()
   },
-
   nextMonth() {
     const [y, m] = this.state.cursor.split('-').map(Number)
-    const next = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`
-    this.state.cursor = next
+    this.state.cursor = m === 12 ? `${y + 1}-01` : `${y}-${this._p(m + 1)}`
+    this._clampFocus()
   },
 
+  // ── grid keyboard ────────────────────────────────────────
+  moveLeft()  { this._shift(-1) },
+  moveRight() { this._shift(1)  },
+  moveUp()    { this._shift(-7) },
+  moveDown()  { this._shift(7)  },
+
+  onKey(e) {                       // keys Micra has no modifier for
+    const d = this._focusDate(), dow = (d.getDay() + 6) % 7
+    if (e.key === 'Home')      { e.preventDefault(); d.setDate(d.getDate() - dow);       this._setFocus(d) }
+    else if (e.key === 'End')  { e.preventDefault(); d.setDate(d.getDate() + (6 - dow)); this._setFocus(d) }
+    else if (e.key === 'PageUp')   { e.preventDefault(); this._setFocus(this._addMonths(d, e.shiftKey ? -12 : -1)) }
+    else if (e.key === 'PageDown') { e.preventDefault(); this._setFocus(this._addMonths(d, e.shiftKey ?  12 :  1)) }
+  },
+
+  // Enter / Space activate the focused &lt;button&gt; natively → @click="pick".
   pick(e) {
     const iso = e.currentTarget.dataset.iso
     if (!iso || iso.startsWith('pad-')) return
     this.state.selected = iso
+    this.state.focus    = iso
     Micra.emit('date:picked', iso)
+  },
+
+  // ── helpers ──────────────────────────────────────────────
+  _p(n)        { return String(n).padStart(2, '0') },
+  _iso(d)      { return `${d.getFullYear()}-${this._p(d.getMonth() + 1)}-${this._p(d.getDate())}` },
+  _focusDate() { const [y, m, d] = this.state.focus.split('-').map(Number); return new Date(y, m - 1, d) },
+  _addMonths(d, n) {
+    const day = d.getDate()
+    d.setDate(1); d.setMonth(d.getMonth() + n)
+    const dim = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+    d.setDate(Math.min(day, dim)); return d
+  },
+  _shift(days) { const d = this._focusDate(); d.setDate(d.getDate() + days); this._setFocus(d) },
+  _setFocus(d) {
+    this.state.focus = this._iso(d)
+    const ym = this.state.focus.slice(0, 7)
+    if (ym !== this.state.cursor) this.state.cursor = ym
+    this._focusActive()
+  },
+  _clampFocus() {            // keep the focus day inside the visible month
+    const [cy, cm] = this.state.cursor.split('-').map(Number)
+    const day = Number(this.state.focus.slice(8, 10))
+    const dim = new Date(cy, cm, 0).getDate()
+    this.state.focus = `${cy}-${this._p(cm)}-${this._p(Math.min(day, dim))}`
+  },
+  _focusActive() {           // grid re-renders next microtask — then focus
+    setTimeout(() =&gt; {
+      const el = this.$el.querySelector(`[data-iso="${this.state.focus}"]`)
+      if (el) el.focus()
+    }, 0)
   },
 })</code></pre>
           </section>
@@ -282,25 +415,70 @@
             <h3>Integration</h3>
             <ul>
               <li>
+                <strong>ARIA grid pattern.</strong> The calendar is a
+                <span class="inline-code">role="grid"</span> labelled by
+                <span class="inline-code">title()</span>; the weekday header is a
+                <span class="inline-code">role="row"</span> of
+                <span class="inline-code">role="columnheader"</span> cells, and
+                each <span class="inline-code">weeks()</span> entry renders a
+                <span class="inline-code">role="row"</span> of seven
+                <span class="inline-code">role="gridcell"</span> day buttons.
+              </li>
+              <li>
+                <strong>Roving tabindex + keyboard.</strong> A
+                <span class="inline-code">focus</span> state field (a
+                <span class="inline-code">'YYYY-MM-DD'</span> day) is the single
+                tab stop — only the cell whose
+                <span class="inline-code">iso === focus</span> gets
+                <span class="inline-code">tabindex="0"</span>, the rest
+                <span class="inline-code">-1</span>. Arrows move a day/week (via
+                <span class="inline-code">@keydown.left/right/up/down.prevent</span>),
+                Home/End jump to week edges, and PageUp/PageDown change month
+                (Shift for year) through <span class="inline-code">onKey</span> —
+                the keys Micra has no modifier for. After each move, focus is
+                sent to the new cell on the next tick (the grid re-renders
+                first). Enter/Space activate the focused
+                <span class="inline-code">&lt;button&gt;</span> natively.
+              </li>
+              <li>
+                <strong>String-valued ARIA.</strong>
+                <span class="inline-code">data-bind</span> renders a JS boolean
+                as attribute <em>presence</em>, so every ARIA state binds a
+                string expression:
+                <span class="inline-code"
+                  >aria-selected:item.d0.iso === selected ? 'true' :
+                  'false'</span
+                >
+                and
+                <span class="inline-code"
+                  >aria-current:item.d0.iso === today ? 'date' : 'false'</span
+                >, never a bare boolean.
+              </li>
+              <li>
                 <strong>Cursor is a string</strong>
                 (<span class="inline-code">'YYYY-MM'</span>) — survives JSON
                 round-trips, easy to compare, and reading it never produces a
-                stale <span class="inline-code">Date</span> object.
+                stale <span class="inline-code">Date</span> object. It always
+                tracks the focus day's month, so the visible grid is guaranteed
+                to contain the tab stop.
               </li>
               <li>
-                <strong>Padding cells</strong> for the Monday-aligned grid carry
+                <strong>Padding cells</strong> for the Monday-aligned grid (lead
+                <em>and</em> trailing, so every row is a full seven) carry
                 <span class="inline-code">empty: true</span> and a synthetic
                 <span class="inline-code">iso</span> like
-                <span class="inline-code">pad-3-0</span> so the keyed
-                <span class="inline-code">data-each</span> can diff them without
-                colliding with real dates.
+                <span class="inline-code">pad-3-a0</span> — they render as
+                <span class="inline-code">disabled</span>, visually-hidden
+                buttons that drop out of the accessibility tree.
               </li>
               <li>
-                <strong>Selected + today state</strong> are computed by
+                <strong>Selected / today / focus state</strong> are computed by
                 comparing each cell's <span class="inline-code">iso</span> to
                 <span class="inline-code">state.selected</span> /
-                <span class="inline-code">state.today</span> inside
-                <span class="inline-code">data-class</span> — never written back
+                <span class="inline-code">state.today</span> /
+                <span class="inline-code">state.focus</span> inside
+                <span class="inline-code">data-class</span> and
+                <span class="inline-code">data-bind</span> — never written back
                 to the day object.
               </li>
               <li>
@@ -329,14 +507,35 @@
                 stable.
               </li>
               <li>
-                Don't precompute <span class="inline-code">days</span> into
-                state. Cursor changes already trigger a re-render; the days
+                Don't precompute <span class="inline-code">weeks</span> into
+                state. Cursor/focus changes already trigger a re-render; the
                 method runs on read.
               </li>
               <li>
-                Don't use <span class="inline-code">$index</span> as
-                <span class="inline-code">data-key</span> — month-to-month
-                transitions reorder cells and you'd lose keyed-diff benefits.
+                Don't key the weeks on <span class="inline-code">$index</span> —
+                month-to-month transitions reorder rows and you'd lose
+                keyed-diff benefits. Key on a value that ties the row to its
+                month (here <span class="inline-code">cursor + week index</span>).
+              </li>
+              <li>
+                Don't bind a bare boolean to
+                <span class="inline-code">aria-selected</span> /
+                <span class="inline-code">aria-current</span>:
+                <span class="inline-code">data-bind</span> would emit attribute
+                presence (<span class="inline-code">aria-selected=""</span>) or
+                remove it, not the literal
+                <span class="inline-code">"true"</span>/<span class="inline-code"
+                  >"false"</span
+                >
+                a screen reader needs. Always bind the string ternary.
+              </li>
+              <li>
+                Don't <span class="inline-code">.focus()</span> the new cell
+                synchronously inside a key handler — its
+                <span class="inline-code">tabindex</span> still reflects the old
+                <span class="inline-code">focus</span> until Micra's batched
+                re-render runs. Defer with
+                <span class="inline-code">setTimeout(…, 0)</span>.
               </li>
             </ul>
           </section>
@@ -371,11 +570,15 @@
         state: {
           today: new Date().toISOString().slice(0, 10),
           selected: "",
-          cursor: "",
+          cursor: "", // 'YYYY-MM' — the visible month
+          focus: "", // 'YYYY-MM-DD' — the roving-focus day
         },
         onCreate() {
           this.state.cursor = this.state.today.slice(0, 7);
+          this.state.focus = this.state.today;
         },
+
+        // ── derived ────────────────────────────────────────────
         title() {
           const [y, m] = this.state.cursor.split("-").map(Number);
           return new Date(y, m - 1, 1).toLocaleString(undefined, {
@@ -383,36 +586,129 @@
             year: "numeric",
           });
         },
-        days() {
+
+        // Month as full Monday-aligned weeks. Each week exposes its seven
+        // cells as d0…d6 — the CSP-safe evaluator has no bracket indexing,
+        // so day cells are named, not item.days[0].
+        weeks() {
           const [y, m] = this.state.cursor.split("-").map(Number);
           const first = new Date(y, m - 1, 1);
           const last = new Date(y, m, 0).getDate();
-          const lead = (first.getDay() + 6) % 7;
+          const lead = (first.getDay() + 6) % 7; // Mon = 0
           const cells = [];
           for (let i = 0; i < lead; i++) {
-            cells.push({ day: "", iso: `pad-${m}-${i}`, empty: true });
+            cells.push({ day: "", iso: `pad-${m}-a${i}`, empty: true });
           }
           for (let d = 1; d <= last; d++) {
-            const iso = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-            cells.push({ day: d, iso, empty: false });
+            cells.push({
+              day: d,
+              iso: `${y}-${this._p(m)}-${this._p(d)}`,
+              empty: false,
+            });
           }
-          return cells;
+          while (cells.length % 7 !== 0) {
+            cells.push({ day: "", iso: `pad-${m}-b${cells.length}`, empty: true });
+          }
+          const rows = [];
+          for (let w = 0; w < cells.length; w += 7) {
+            const r = cells.slice(w, w + 7);
+            rows.push({
+              key: `${this.state.cursor}-w${w / 7}`,
+              d0: r[0], d1: r[1], d2: r[2], d3: r[3], d4: r[4], d5: r[5], d6: r[6],
+            });
+          }
+          return rows;
         },
+
+        // ── month navigation (header buttons) ──────────────────
         prevMonth() {
           const [y, m] = this.state.cursor.split("-").map(Number);
-          this.state.cursor =
-            m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`;
+          this.state.cursor = m === 1 ? `${y - 1}-12` : `${y}-${this._p(m - 1)}`;
+          this._clampFocus();
         },
         nextMonth() {
           const [y, m] = this.state.cursor.split("-").map(Number);
-          this.state.cursor =
-            m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
+          this.state.cursor = m === 12 ? `${y + 1}-01` : `${y}-${this._p(m + 1)}`;
+          this._clampFocus();
         },
+
+        // ── grid keyboard (arrows via @keydown modifiers) ──────
+        moveLeft() { this._shift(-1); },
+        moveRight() { this._shift(1); },
+        moveUp() { this._shift(-7); },
+        moveDown() { this._shift(7); },
+
+        // Home/End/PageUp/PageDown have no Micra key modifiers — branch on e.key.
+        onKey(e) {
+          const d = this._focusDate();
+          const dow = (d.getDay() + 6) % 7; // Mon = 0
+          if (e.key === "Home") {
+            e.preventDefault();
+            d.setDate(d.getDate() - dow);
+            this._setFocus(d);
+          } else if (e.key === "End") {
+            e.preventDefault();
+            d.setDate(d.getDate() + (6 - dow));
+            this._setFocus(d);
+          } else if (e.key === "PageUp") {
+            e.preventDefault();
+            this._setFocus(this._addMonths(d, e.shiftKey ? -12 : -1));
+          } else if (e.key === "PageDown") {
+            e.preventDefault();
+            this._setFocus(this._addMonths(d, e.shiftKey ? 12 : 1));
+          }
+        },
+
+        // ── selection (Enter/Space activate the focused button natively) ──
         pick(e) {
           const iso = e.currentTarget.dataset.iso;
           if (!iso || iso.startsWith("pad-")) return;
           this.state.selected = iso;
+          this.state.focus = iso;
           Micra.emit("date:picked", iso);
+        },
+
+        // ── helpers ────────────────────────────────────────────
+        _p(n) { return String(n).padStart(2, "0"); },
+        _iso(d) {
+          return `${d.getFullYear()}-${this._p(d.getMonth() + 1)}-${this._p(d.getDate())}`;
+        },
+        _focusDate() {
+          const [y, m, d] = this.state.focus.split("-").map(Number);
+          return new Date(y, m - 1, d);
+        },
+        _addMonths(d, n) {
+          const day = d.getDate();
+          d.setDate(1);
+          d.setMonth(d.getMonth() + n);
+          const dim = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+          d.setDate(Math.min(day, dim));
+          return d;
+        },
+        _shift(days) {
+          const d = this._focusDate();
+          d.setDate(d.getDate() + days);
+          this._setFocus(d);
+        },
+        _setFocus(d) {
+          this.state.focus = this._iso(d);
+          const ym = this.state.focus.slice(0, 7);
+          if (ym !== this.state.cursor) this.state.cursor = ym;
+          this._focusActive();
+        },
+        _clampFocus() {
+          const [cy, cm] = this.state.cursor.split("-").map(Number);
+          const day = Number(this.state.focus.slice(8, 10));
+          const dim = new Date(cy, cm, 0).getDate();
+          this.state.focus = `${cy}-${this._p(cm)}-${this._p(Math.min(day, dim))}`;
+        },
+        _focusActive() {
+          // Grid re-renders on the next microtask; move focus once the matching
+          // cell's tabindex has flipped to 0.
+          setTimeout(() => {
+            const el = this.$el.querySelector(`[data-iso="${this.state.focus}"]`);
+            if (el) el.focus();
+          }, 0);
         },
       });
 
