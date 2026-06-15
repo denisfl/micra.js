@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Micra.js
 
-Micra.js is a ~5 KB reactive UI library for server-rendered pages: reactive
+Micra.js is a ~7 KB reactive UI library for server-rendered pages: reactive
 `state` via a shallow `Proxy`, declarative `data-*` directives, a keyed
 `data-each` list diff, and a cross-component event bus. No build step, no
 virtual DOM. It is NOT React, Vue, or Alpine — do not translate its patterns

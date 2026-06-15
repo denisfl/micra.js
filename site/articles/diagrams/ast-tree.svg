@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 340" font-family="-apple-system, system-ui, Segoe UI, Roboto, sans-serif">
+  <style>
+    .edge{stroke:#9aa1ac;stroke-width:1.5}
+    .op{fill:#eef0ff;stroke:#c3c8f5;stroke-width:1.5}
+    .opt{font-size:20px;fill:#4f46e5;font-weight:700;text-anchor:middle}
+    .leaf{fill:#f6f7f9;stroke:#d0d5dd;stroke-width:1.5}
+    .leaft{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;fill:#1f2933;text-anchor:middle}
+    .mut{font-size:12px;fill:#6b7280;text-anchor:middle}
+  </style>
+
+  <text x="280" y="28" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="15" fill="#1f2933">price * qty + 10</text>
+
+  <!-- edges -->
+  <line class="edge" x1="280" y1="86" x2="170" y2="156"/>
+  <line class="edge" x1="280" y1="86" x2="400" y2="156"/>
+  <line class="edge" x1="170" y1="186" x2="100" y2="256"/>
+  <line class="edge" x1="170" y1="186" x2="240" y2="256"/>
+
+  <!-- root: + -->
+  <circle cx="280" cy="70" r="26" class="op"/>
+  <text x="280" y="78" class="opt">+</text>
+  <text x="318" y="66" class="mut" text-anchor="start" style="text-anchor:start">root — evaluated last</text>
+
+  <!-- left: * -->
+  <circle cx="170" cy="170" r="26" class="op"/>
+  <text x="170" y="178" class="opt">*</text>
+
+  <!-- right: 10 -->
+  <rect x="372" y="146" width="56" height="40" rx="8" class="leaf"/>
+  <text x="400" y="171" class="leaft">10</text>
+
+  <!-- leaves: price, qty -->
+  <rect x="62" y="246" width="76" height="40" rx="8" class="leaf"/>
+  <text x="100" y="271" class="leaft">price</text>
+  <rect x="206" y="246" width="68" height="40" rx="8" class="leaf"/>
+  <text x="240" y="271" class="leaft">qty</text>
+
+  <text x="280" y="322" text-anchor="middle" font-size="13" fill="#6b7280">precedence is baked into the tree's shape — the interpreter just walks it bottom-up</text>
+</svg>

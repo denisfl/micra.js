@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="-apple-system, system-ui, Segoe UI, Roboto, sans-serif">
+  <defs>
+    <marker id="mv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#4f46e5"/>
+    </marker>
+  </defs>
+  <style>
+    .row{font-size:12px;fill:#6b7280}
+    .node{fill:#ecfdf3;stroke:#a6e3c0;stroke-width:1.5}
+    .ntext{font-family:ui-monospace,Menlo,monospace;font-size:15px;fill:#15803d;font-weight:600;text-anchor:middle}
+    .move{fill:#eef0ff;stroke:#4f46e5;stroke-width:2}
+    .mtext{font-family:ui-monospace,Menlo,monospace;font-size:15px;fill:#4f46e5;font-weight:700;text-anchor:middle}
+    .stable{stroke:#bfc4cd;stroke-width:1.5;fill:none}
+    .moveedge{stroke:#4f46e5;stroke-width:2;fill:none}
+  </style>
+
+  <text x="20" y="44" class="row">before</text>
+  <text x="20" y="244" class="row">after</text>
+
+  <!-- stable connectors A,C,D,E -->
+  <path class="stable" d="M100 104 V210"/>
+  <path class="stable" d="M340 104 C340 160 220 150 220 210"/>
+  <path class="stable" d="M460 104 C460 160 340 150 340 210"/>
+  <path class="stable" d="M580 104 C580 160 460 150 460 210"/>
+  <!-- mover B col1 -> col4 -->
+  <path class="moveedge" marker-end="url(#mv)" d="M220 104 C220 160 580 150 580 204"/>
+
+  <!-- BEFORE row: A B C D E -->
+  <g>
+    <rect x="60" y="60" width="80" height="44" rx="8" class="node"/><text x="100" y="88" class="ntext">A</text>
+    <rect x="180" y="60" width="80" height="44" rx="8" class="move"/><text x="220" y="88" class="mtext">B</text>
+    <rect x="300" y="60" width="80" height="44" rx="8" class="node"/><text x="340" y="88" class="ntext">C</text>
+    <rect x="420" y="60" width="80" height="44" rx="8" class="node"/><text x="460" y="88" class="ntext">D</text>
+    <rect x="540" y="60" width="80" height="44" rx="8" class="node"/><text x="580" y="88" class="ntext">E</text>
+  </g>
+
+  <!-- AFTER row: A C D E B -->
+  <g>
+    <rect x="60" y="210" width="80" height="44" rx="8" class="node"/><text x="100" y="238" class="ntext">A</text>
+    <rect x="180" y="210" width="80" height="44" rx="8" class="node"/><text x="220" y="238" class="ntext">C</text>
+    <rect x="300" y="210" width="80" height="44" rx="8" class="node"/><text x="340" y="238" class="ntext">D</text>
+    <rect x="420" y="210" width="80" height="44" rx="8" class="node"/><text x="460" y="238" class="ntext">E</text>
+    <rect x="540" y="210" width="80" height="44" rx="8" class="move"/><text x="580" y="238" class="mtext">B</text>
+  </g>
+
+  <text x="350" y="300" text-anchor="middle" font-size="13" fill="#1f2933">
+    LIS = <tspan fill="#15803d" font-weight="600">A · C · D · E</tspan> stays put; only <tspan fill="#4f46e5" font-weight="700">B</tspan> moves — 1 DOM operation, not 5.
+  </text>
+</svg>

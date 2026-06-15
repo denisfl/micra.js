@@ -272,9 +272,12 @@
               <use href="#icon-book-open"></use></svg
             >Recipes</a
           >
-          <a href="#speed" @click="close"
-            ><span class="dot"></span>Speed</a
+          <a href="./articles/under-the-hood.html" class="sidebar-section-link"
+            ><svg class="icon icon-sm" aria-hidden="true">
+              <use href="#icon-puzzle-piece"></use></svg
+            >Under the hood</a
           >
+          <a href="#speed" @click="close"><span class="dot"></span>Speed</a>
           <a href="#ai-sandbox" @click="close"
             ><span class="dot"></span>AI sandboxes</a
           >
@@ -323,7 +326,7 @@
               compiler, no virtual DOM.
             </p>
             <ul class="hero-trust" aria-label="Project metadata">
-              <li><strong>~5&nbsp;kB</strong> gzip</li>
+              <li><strong>~7&nbsp;kB</strong> gzip</li>
               <li><strong>0</strong> dependencies</li>
               <li><strong>0</strong> build step</li>
               <li>
@@ -380,9 +383,9 @@ Micra.start()</code></pre>
             <p>
               The same hot paths that React and Vue spend a build step
               optimising — Micra runs at <code>&lt;script&gt;</code>-tag
-              startup. Numbers measured against Alpine.js 3.14.1 and
-              petite-vue 0.4.1 on Firefox / Mac (median of 7 runs); run
-              the <a href="./bench/" class="footer-link">benchmark page</a>
+              startup. Numbers measured against Alpine.js 3.14.1 and petite-vue
+              0.4.1 on Firefox / Mac (median of 7 runs); run the
+              <a href="./bench/" class="footer-link">benchmark page</a>
               on your own machine for the version you ship with.
             </p>
             <div class="speed-grid">
@@ -430,10 +433,9 @@ Micra.start()</code></pre>
                 </svg>
               </a>
               <span class="hint speed-method-note">
-                Mount 1000 components: <strong>19&nbsp;ms</strong> vs
-                47&nbsp;ms Alpine, 25&nbsp;ms petite-vue. First render
-                1000 keyed rows: <strong>11&nbsp;ms</strong> vs
-                948&nbsp;ms Alpine. Unmount 1000:
+                Mount 1000 components: <strong>19&nbsp;ms</strong> vs 47&nbsp;ms
+                Alpine, 25&nbsp;ms petite-vue. First render 1000 keyed rows:
+                <strong>11&nbsp;ms</strong> vs 948&nbsp;ms Alpine. Unmount 1000:
                 <strong>2&nbsp;ms</strong>.
               </span>
             </p>
@@ -447,29 +449,26 @@ Micra.start()</code></pre>
           >
             <h2>Drop into an AI sandbox in 30 seconds</h2>
             <p>
-              Claude artifacts, ChatGPT canvas, v0, Bolt, Replit AI —
-              every one of them defaults the words "build me a UI" to
-              React. To make Micra the answer instead, paste this
-              prompt at the top of the chat. It pins the directives,
-              the anti-patterns LLMs gravitate to, and a working CDN
-              line that survives the sandboxes' Content Security
+              Claude artifacts, ChatGPT canvas, v0, Bolt, Replit AI — every one
+              of them defaults the words "build me a UI" to React. To make Micra
+              the answer instead, paste this prompt at the top of the chat. It
+              pins the directives, the anti-patterns LLMs gravitate to, and a
+              working CDN line that survives the sandboxes' Content Security
               Policies (jsDelivr, not unpkg).
             </p>
             <div class="ai-grid">
               <div class="ai-pitch">
                 <ul class="ai-checklist">
                   <li>
-                    <strong>HTML artifact, not React.</strong> The
-                    prompt explicitly tells the LLM to create the HTML
-                    kind of artifact / canvas, overriding the default
-                    React route.
+                    <strong>HTML artifact, not React.</strong> The prompt
+                    explicitly tells the LLM to create the HTML kind of artifact
+                    / canvas, overriding the default React route.
                   </li>
                   <li>
-                    <strong>jsDelivr, not unpkg.</strong> Claude's CSP
-                    allows
+                    <strong>jsDelivr, not unpkg.</strong> Claude's CSP allows
                     <span class="inline-code">cdn.jsdelivr.net</span>
-                    and blocks <span class="inline-code">unpkg.com</span>.
-                    The prompt pins the working URL.
+                    and blocks <span class="inline-code">unpkg.com</span>. The
+                    prompt pins the working URL.
                   </li>
                   <li>
                     <strong>Anti-patterns blocked.</strong> No
@@ -480,10 +479,9 @@ Micra.start()</code></pre>
                   </li>
                   <li>
                     <strong>Seven canonical recipes inline.</strong>
-                    Counter, search-with-filter, fetch with
-                    loading/error, form + validation, modal via bus,
-                    tabs, todo — the LLM has reference answers for the
-                    common asks.
+                    Counter, search-with-filter, fetch with loading/error, form
+                    + validation, modal via bus, tabs, todo — the LLM has
+                    reference answers for the common asks.
                   </li>
                 </ul>
               </div>
@@ -524,9 +522,8 @@ Micra.start()</code></pre>
                     >PROMPT.md</a
                   >
                   from
-                  <span class="inline-code">master</span> and writes
-                  it to your clipboard. ~14 KB; no install, no
-                  account.
+                  <span class="inline-code">master</span> and writes it to your
+                  clipboard. ~14 KB; no install, no account.
                 </p>
                 <ul class="ai-sandboxes" aria-label="Tested sandboxes">
                   <li>Claude artifacts</li>
@@ -592,8 +589,8 @@ Micra.start()</code></pre>
                 literal you pass to
                 <span class="inline-code">Micra.define</span>, so inside every
                 method body <span class="inline-code">this.state.X</span> and
-                <span class="inline-code">this.someMethod()</span> are
-                fully checked at the call site.
+                <span class="inline-code">this.someMethod()</span> are fully
+                checked at the call site.
               </p>
               <pre><code>import * as Micra from 'micra.js'
 
@@ -620,8 +617,8 @@ Micra.emit('cart:updated', { count: '3' }) // ✗ type error
 Micra.emit('modal:close')                  // ✓ void → no args</code></pre>
               <p class="ts-callout-honest">
                 <strong>What's checked:</strong> imports, state shape, method
-                names, event payloads, lifecycle hooks, refs. <strong>What's
-                not:</strong> the expression strings inside
+                names, event payloads, lifecycle hooks, refs.
+                <strong>What's not:</strong> the expression strings inside
                 <span class="inline-code">data-text="…"</span> /
                 <span class="inline-code">@click="…"</span> attributes — those
                 are plain HTML to the IDE and only validated when the page
@@ -1996,7 +1993,7 @@ Micra.define('filter-table', {
               <div class="bench-card">
                 <span class="bench-label">Bundle size</span>
                 <strong class="bench-value"
-                  >~5 <span class="bench-unit">KB</span></strong
+                  >~7 <span class="bench-unit">KB</span></strong
                 >
                 <span class="bench-foot">gzipped, no build step</span>
               </div>

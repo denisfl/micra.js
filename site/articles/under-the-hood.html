@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Micra.js under the hood — how a reactive framework fits in 7 KB</title>
+    <meta name="description" content="A deep dive into how Micra.js works on the inside: shallow Proxy reactivity, a microtask scheduler, a single-pass TreeWalker scanner, a CSP-safe Pratt-parser expression evaluator, and a keyed-diff list renderer with LIS — all in ~7 KB." />
+    <style>
+      :root { color-scheme: light; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #fff; color: #1f2933;
+        font: 17px/1.7 -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        -webkit-font-smoothing: antialiased; }
+      .prose { max-width: 760px; margin: 0 auto; padding: 48px 20px 80px; }
+      .prose h1 { font-size: 2rem; line-height: 1.25; margin: 0 0 .6em; letter-spacing: -.01em; }
+      .prose h2 { font-size: 1.45rem; margin: 2.2em 0 .6em; padding-top: 1.2em; border-top: 1px solid #eceef1; letter-spacing: -.01em; }
+      .prose h3 { font-size: 1.15rem; margin: 1.8em 0 .5em; }
+      .prose p, .prose ul { margin: 0 0 1.15em; }
+      .prose ul { padding-left: 1.4em; }
+      .prose li { margin: .3em 0; }
+      .prose a { color: #4f46e5; text-decoration: none; }
+      .prose a:hover { text-decoration: underline; }
+      .prose strong { font-weight: 650; }
+      .prose code { background: #f3f4f6; padding: .12em .4em; border-radius: 5px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .88em; }
+      .prose pre { background: #f6f8fa; border: 1px solid #eceef1; border-radius: 10px;
+        padding: 16px 18px; overflow-x: auto; margin: 0 0 1.4em; line-height: 1.55; }
+      .prose pre code { background: none; padding: 0; font-size: .84em; color: #24292f; }
+      .prose img { display: block; max-width: 100%; height: auto; margin: 1.6em auto; }
+      .diagram { display: block; margin: 1.8em 0; }
+      .diagram svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+      .back { margin-top: 3.5em; font-size: .95rem; }
+      @media (max-width: 600px) { .prose { padding: 32px 16px 60px; } body { font-size: 16px; } }
+    </style>
+  </head>
+  <body>
+    <main class="prose">
+<h1>Micra.js under the hood: how a reactive framework fits in 7 kilobytes</h1>
+<p>This is a long read about how Micra.js works on the inside — a tiny library that adds reactivity to HTML rendered on the server. I built it to fill one specific niche: pages and admin panels where the server already ships ready-made markup and the client only needs a little interactivity — switch a tab, open a modal, filter a table, fetch some data. People used to reach for jQuery for this, then for Alpine. Micra is an attempt to give you the same &quot;sprinkle&quot; of reactivity, but predictably, with types, and with Content-Security-Policy in mind.</p>
+<p>In this article I want to talk about the engineering: what happens under the hood, why it&#39;s done this way, and which concepts from &quot;big&quot; programming hide behind each module. Along the way I&#39;ll try to explain things like microtasks, the abstract syntax tree, and the longest-increasing-subsequence algorithm.</p>
+<h2>The core idea: animate markup, don&#39;t build it</h2>
+<p>Before we look at any code, there&#39;s one decision that everything else follows from. Micra doesn&#39;t build the DOM. It <em>finds</em> it. You write ordinary HTML — by hand or from a server template engine — and sprinkle directive attributes onto it:</p>
+<pre><code class="language-html">&lt;div data-component=&quot;counter&quot;&gt;
+  &lt;button @click=&quot;decrement&quot;&gt;−&lt;/button&gt;
+  &lt;strong data-text=&quot;count&quot;&gt;&lt;/strong&gt;
+  &lt;button @click=&quot;increment&quot;&gt;+&lt;/button&gt;
+&lt;/div&gt;
+</code></pre>
+<p>When the page has loaded, you call <code>Micra.start()</code>. It scans the document, finds elements with <code>data-component</code>, and for each one creates an &quot;instance&quot; — an object with state and methods, bound to that piece of markup. From then on Micra watches the state and updates only the nodes that need it.</p>
+<p>React and frameworks like it go the opposite way: the markup is the <em>result</em> of running JavaScript, the tree lives in memory as a virtual DOM, and the HTML is just its projection. That&#39;s powerful, but expensive — you need a bundler, a runtime weighing tens of kilobytes, and you need the <em>entire</em> UI to pass through JS. That&#39;s justified for a full SPA. But for small sites, simple SaaS, or admin panels it&#39;s complete overkill.</p>
+<p>So Micra&#39;s job is to &quot;animate server HTML&quot; by adding a bit of dynamic change. Imagine adding search to your blog, a collapsible navigation panel, or a modal dialog. For cases like these you often want something lighter than React.</p>
+<p>The &quot;animate server HTML&quot; principle also dictates the size budget. I initially tried to fit everything into 5 kilobytes. In the course of development I had to move toward 7 kilobytes gzipped. Almost every decision below was made with an eye on the byte count, and I worked hard to make &quot;small&quot; and &quot;correct&quot; line up.</p>
+<h2>The map</h2>
+<p>Micra is a handful of tiny modules, each doing one thing:</p>
+<ul>
+<li><strong>reactive state</strong> — a <code>Proxy</code> that notices writes to <code>state</code>;</li>
+<li><strong>scheduler</strong> — collects a batch of changes into a single render pass;</li>
+<li><strong>scanner</strong> — one tree walk that finds all directives and caches them;</li>
+<li><strong>directives</strong> — functions that read state and write to the DOM;</li>
+<li><strong>expression evaluator</strong> — turns strings like <code>count &gt; 0</code> into values without <code>eval</code>;</li>
+<li><strong>list rendering</strong> — keyed diff for <code>data-each</code>;</li>
+<li><strong>events</strong> — binding <code>@click</code>, modifiers, automatic cleanup;</li>
+<li><strong>event bus</strong> — communication between components;</li>
+<li><strong>fetch, lifecycle, types</strong> — the wrapping around the core.</li>
+</ul>
+<p>When you write <code>this.state.count++</code>, here&#39;s the chain: the <code>Proxy</code> catches the write and tells the scheduler &quot;a render is needed&quot;; the scheduler queues a single microtask; in that microtask <code>render()</code> runs, takes the cached scan result, runs the directives over it, they evaluate expressions and update the DOM. Let&#39;s take apart each link.</p>
+<h2>Reactivity: why <code>Proxy</code>, and why &quot;shallow&quot;</h2>
+<p>Reactivity is when you change data and the UI updates itself. For that to work, the library needs to <em>learn</em> that the data changed. There are two ways. You can require a special function call (<code>setState</code>, <code>this.set</code>) — then the library learns about the change at the moment of the call. Or you can intercept the assignments themselves, so that <code>this.state.count = 5</code> works like ordinary JavaScript but secretly pulls the right lever. Micra takes the second route, and the tool for it is <code>Proxy</code>.</p>
+<p>A <code>Proxy</code> is a wrapper object around another object. You define &quot;traps&quot; on operations: reading a property, writing, deleting. When someone touches the wrapper, your trap runs instead of the default behavior. The entire reactive layer of Micra is, literally, a few lines:</p>
+<pre><code class="language-ts">export function createReactiveState(obj, schedule, onKey) {
+  return new Proxy(obj, {
+    set(target, key, value) {
+      target[key] = value; // do the ordinary write
+      onKey?.(key); // remember which key changed
+      schedule(); // ask for a re-render
+      return true;
+    },
+  });
+}
+</code></pre>
+<p>Only <code>set</code> is intercepted. Reads pass straight through — that matters for speed: on the hot path (when directives read state dozens of times per render) there&#39;s no wrapper at all.</p>
+<p>The trap sits only on the top level of the object. That&#39;s the <strong>shallow</strong> part. It means this updates the UI:</p>
+<pre><code class="language-ts">this.state.user = { ...this.state.user, name: &quot;Ann&quot; }; // write to state.user — trap fired
+</code></pre>
+<p>and this doesn&#39;t:</p>
+<pre><code class="language-ts">this.state.user.name = &quot;Ann&quot;; // write to user.name, not state.user — trap stays silent
+</code></pre>
+<p>In the second case we&#39;re writing into the <em>nested</em> object <code>user</code>, and <code>Proxy</code> never wrapped it — it only wrapped <code>state</code>.</p>
+<p>Why not make reactivity deep, so that anything at any nesting level is tracked? Because it&#39;s expensive. First, in size and speed: you&#39;d have to recursively wrap each nested object in its own <code>Proxy</code>, create them lazily on access, and keep track of the links. Second, in predictability: deep proxies breed bugs when the same object lives in two places in the state, or when you pass a slice of state into an external function and lose reactivity. The shallow model is more honest: &quot;only writes to the top level of <code>state</code> are reactive; want to update something nested — replace the top-level key wholesale.&quot; It&#39;s the same immutability discipline React arrived at with its <code>setState({ ...prev })</code>.</p>
+<p>To remove the pain of &quot;flattening&quot; nested objects by hand on every form input, there&#39;s some syntactic sugar — <code>this.set(&#39;user.name&#39;, x)</code> and <code>data-model=&quot;user.name&quot;</code>. Underneath sits the <code>setPath</code> function, which does exactly what you&#39;d write by hand: it rebuilds the chain of nested objects and reassigns the top-level key.</p>
+<pre><code class="language-ts">export function setPath(state, path, value) {
+  const parts = path.split(&quot;.&quot;); // &#39;user.address.city&#39; → [&#39;user&#39;,&#39;address&#39;,&#39;city&#39;]
+  const top = parts[0];
+  if (parts.length === 1) {
+    state[top] = value;
+    return;
+  } // flat path — an ordinary write
+  const root = { ...state[top] }; // copy the top-level object
+  let cur = root;
+  for (let i = 1; i &lt; parts.length - 1; i++) {
+    cur = cur[parts[i]] = { ...cur[parts[i]] }; // copy each intermediate level
+  }
+  cur[parts[parts.length - 1]] = value; // write the deepest one
+  state[top] = root; // ← this write is what wakes the Proxy
+}
+</code></pre>
+<p>Notice: the last line writes to <code>state[top]</code> — the top level. That&#39;s what triggers a single render. This is sugar over shallow reactivity. The difference is fundamental: we don&#39;t pay to track the whole tree, we just automate the correct immutable update.</p>
+<h2>Scheduler: why one render per batch of changes</h2>
+<p>Say in a handler you write three times in a row:</p>
+<pre><code class="language-ts">this.state.loading = false;
+this.state.page = 2;
+this.state.items = nextItems;
+</code></pre>
+<p>The naive reaction is to repaint the UI three times. That&#39;s both slow and produces visible &quot;flicker&quot; of intermediate states. The right thing is to collect all synchronous changes into a single batch and repaint once, when the call stack empties. For that you need a scheduler, and this is where <strong>microtasks</strong> come on stage.</p>
+<p>The browser event loop works like this: there are macrotasks (a click handler, a timer, a network response) and microtasks (the things <code>Promise.then</code> and <code>queueMicrotask</code> queue). After the current macrotask has run its synchronous code to the end, the browser <em>fully</em> drains the microtask queue — and only then, possibly, repaints the screen. So a microtask is the ideal place for &quot;defer until the end of the current code, but make it before paint.&quot;</p>
+<p>Micra&#39;s scheduler uses this directly:</p>
+<pre><code class="language-ts">export function createScheduler(render) {
+  let pending = false;
+  const flush = () =&gt; {
+    pending = false;
+    render();
+  };
+  return function schedule() {
+    if (pending) return; // a render is already queued — bail out
+    pending = true;
+    queueMicrotask(flush); // one microtask for the whole batch
+  };
+}
+</code></pre>
+<p>The first write to state raises the <code>pending</code> flag and queues a microtask. The second and third see the raised flag and just bail. When the handler&#39;s synchronous code finishes, the browser runs the single microtask, <code>flush</code> lowers the flag and calls <code>render()</code> once. Three writes — one render. No timers, no extra promise allocations, no strings attached.</p>
+<p><span class="diagram"><svg width="820" height="360" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 360" font-family="-apple-system, system-ui, Segoe UI, Roboto, sans-serif">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#6b7280"/>
+    </marker>
+  </defs>
+  <style>
+    .box{fill:#f6f7f9;stroke:#d0d5dd;stroke-width:1.5;rx:8}
+    .code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;fill:#1f2933}
+    .lbl{font-size:13px;fill:#1f2933}
+    .mut{font-size:12px;fill:#6b7280}
+    .accent{fill:#4f46e5;font-weight:600}
+    .edge{stroke:#9aa1ac;stroke-width:1.5;fill:none}
+  </style>
+
+  <!-- one synchronous tick -->
+  <text x="20" y="28" class="mut">one synchronous task (a click handler)</text>
+  <rect x="20" y="40" width="250" height="120" rx="10" fill="none" stroke="#c7cdd6" stroke-dasharray="4 4"/>
+
+  <rect x="38" y="56" width="214" height="28" class="box" rx="8"/>
+  <text x="50" y="74" class="code">state.loading = false</text>
+  <rect x="38" y="92" width="214" height="28" class="box" rx="8"/>
+  <text x="50" y="110" class="code">state.page = 2</text>
+  <rect x="38" y="128" width="214" height="28" class="box" rx="8"/>
+  <text x="50" y="146" class="code">state.items = next</text>
+
+  <!-- arrows into schedule -->
+  <path class="edge" marker-end="url(#ar)" d="M252 70 H300 V96 H344"/>
+  <path class="edge" marker-end="url(#ar)" d="M252 106 H344"/>
+  <path class="edge" marker-end="url(#ar)" d="M252 142 H300 V116 H344"/>
+
+  <!-- schedule() -->
+  <rect x="346" y="62" width="220" height="92" rx="10" fill="#eef0ff" stroke="#c3c8f5" stroke-width="1.5"/>
+  <text x="358" y="84" class="code accent">schedule()</text>
+  <text x="358" y="106" class="mut">1st call: pending → true,</text>
+  <text x="358" y="122" class="mut">queueMicrotask(flush)</text>
+  <text x="358" y="142" class="mut">2nd, 3rd: pending already true → return</text>
+
+  <!-- end of sync divider -->
+  <line x1="600" y1="30" x2="600" y2="330" stroke="#c7cdd6" stroke-dasharray="5 5"/>
+  <text x="610" y="28" class="mut">— end of synchronous code —</text>
+
+  <!-- microtask -->
+  <path class="edge" marker-end="url(#ar)" d="M566 108 H636"/>
+  <rect x="638" y="84" width="160" height="48" rx="10" class="box"/>
+  <text x="650" y="104" class="lbl">microtask queue</text>
+  <text x="650" y="122" class="code">flush()</text>
+
+  <!-- render once -->
+  <path class="edge" marker-end="url(#ar)" d="M718 132 V196"/>
+  <rect x="636" y="198" width="164" height="60" rx="10" fill="#ecfdf3" stroke="#a6e3c0" stroke-width="1.5"/>
+  <text x="718" y="222" text-anchor="middle" class="code accent" style="fill:#16a34a">render()</text>
+  <text x="718" y="244" text-anchor="middle" class="mut">one pass</text>
+
+  <text x="410" y="300" text-anchor="middle" font-size="15" fill="#1f2933" font-weight="600">3 state writes → 1 render, not 3</text>
+</svg></span></p>
+<h2>Scanner: one walk instead of ten</h2>
+<p>When it&#39;s time to render, you need to know <em>where</em> in the markup the directives live — which elements have <code>data-text</code>, which have <code>data-if</code>, which have <code>@click</code>. The simple solution is <code>querySelectorAll(&#39;[data-text]&#39;)</code>, <code>querySelectorAll(&#39;[data-if]&#39;)</code>, and so on: a dozen tree walks per render. But that&#39;s wasteful, especially when there are many renders.</p>
+<p>Micra walks a component&#39;s subtree exactly once — via <code>TreeWalker</code>, the low-level browser iterator over nodes. In a single pass, the <code>classify</code> function looks at each element&#39;s attributes and sorts it into &quot;buckets&quot;: text bindings into one, conditions into another, events into a third. The result — a <code>ScanIndex</code> object — is cached right on the component&#39;s root element (<code>el.__micraScan</code>). The first render pays for the walk; every render after that takes the ready-made index and doesn&#39;t touch the DOM tree at all.</p>
+<p>The classification hides two nice little touches. The first is a check on the char code of the attribute&#39;s first character:</p>
+<pre><code class="language-ts">const first = name.charCodeAt(0);
+if (first === 64 /* &#39;@&#39; */) {
+  /* this is an event */
+}
+if (first === 100 /* &#39;d&#39; */ &amp;&amp; name.charCodeAt(4) === 45 /* &#39;-&#39; */) {
+  /* this is data-* */
+}
+</code></pre>
+<p>Most attributes (<code>id</code>, <code>class</code>, <code>href</code>) aren&#39;t ours. Comparing a single number rejects them with no string-comparison overhead.</p>
+<p>The second: <code>TreeWalker</code> is configured to return <code>FILTER_REJECT</code> on any nested <code>data-component</code>. That means a parent component doesn&#39;t even <em>enter</em> its children&#39;s subtrees: each component owns only its own directives. The result is a kind of free isolation.</p>
+<p>On top of that, <code>TreeWalker</code> doesn&#39;t descend into <code>&lt;template&gt;</code> content by default — which is exactly what we want, because list rows live in <code>template.content</code> and are handled by a separate module.</p>
+<p><span class="diagram"><svg width="800" height="380" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 380" font-family="-apple-system, system-ui, Segoe UI, Roboto, sans-serif">
+  <defs>
+    <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#9aa1ac"/>
+    </marker>
+    <marker id="i" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#4f46e5"/>
+    </marker>
+  </defs>
+  <style>
+    .h{font-size:14px;fill:#1f2933;font-weight:600}
+    .chip{fill:#f6f7f9;stroke:#d0d5dd;stroke-width:1.5}
+    .ct{font-family:ui-monospace,Menlo,monospace;font-size:12px;fill:#374151}
+    .mut{font-size:12px;fill:#6b7280}
+    .edge{stroke:#9aa1ac;stroke-width:1.5;fill:none}
+    .iedge{stroke:#4f46e5;stroke-width:2;fill:none}
+    .bucket{fill:#eef0ff;stroke:#c3c8f5;stroke-width:1.5}
+    .bt{font-family:ui-monospace,Menlo,monospace;font-size:11px;fill:#4f46e5;text-anchor:middle}
+  </style>
+
+  <line x1="400" y1="20" x2="400" y2="360" stroke="#e3e6ea"/>
+
+  <!-- ───── LEFT: querySelectorAll × N ───── -->
+  <text x="30" y="36" class="h">Naive: querySelectorAll</text>
+
+  <!-- DOM outline -->
+  <rect x="150" y="70" width="210" height="26" rx="6" class="chip"/><text x="162" y="88" class="ct">&lt;div data-component&gt;</text>
+  <rect x="170" y="104" width="190" height="26" rx="6" class="chip"/><text x="182" y="122" class="ct">&lt;span data-text&gt;</text>
+  <rect x="170" y="138" width="190" height="26" rx="6" class="chip"/><text x="182" y="156" class="ct">&lt;button @click&gt;</text>
+  <rect x="170" y="172" width="190" height="26" rx="6" class="chip"/><text x="182" y="190" class="ct">&lt;p data-if&gt;</text>
+
+  <!-- separate passes -->
+  <path class="edge" marker-end="url(#g)" d="M40 96 H150"/>
+  <text x="34" y="92" class="mut" text-anchor="start">[data-text]</text>
+  <path class="edge" marker-end="url(#g)" d="M40 130 H170"/>
+  <text x="34" y="126" class="mut" text-anchor="start">[data-if]</text>
+  <path class="edge" marker-end="url(#g)" d="M40 164 H170"/>
+  <text x="34" y="160" class="mut" text-anchor="start">@event</text>
+  <path class="edge" marker-end="url(#g)" d="M40 198 H170"/>
+  <text x="34" y="194" class="mut" text-anchor="start">[data-bind]</text>
+
+  <text x="200" y="248" text-anchor="middle" font-size="13" fill="#1f2933" font-weight="600">≈10 tree walks</text>
+  <text x="200" y="268" text-anchor="middle" class="mut">on EVERY render</text>
+
+  <!-- ───── RIGHT: TreeWalker × 1 ───── -->
+  <text x="430" y="36" class="h">Micra: one TreeWalker</text>
+
+  <rect x="540" y="70" width="210" height="26" rx="6" class="chip"/><text x="552" y="88" class="ct">&lt;div data-component&gt;</text>
+  <rect x="560" y="104" width="190" height="26" rx="6" class="chip"/><text x="572" y="122" class="ct">&lt;span data-text&gt;</text>
+  <rect x="560" y="138" width="190" height="26" rx="6" class="chip"/><text x="572" y="156" class="ct">&lt;button @click&gt;</text>
+  <rect x="560" y="172" width="190" height="26" rx="6" class="chip"/><text x="572" y="190" class="ct">&lt;p data-if&gt;</text>
+
+  <!-- single sweep -->
+  <path class="iedge" marker-end="url(#i)" d="M524 76 V196"/>
+  <text x="516" y="140" class="mut" fill="#4f46e5" transform="rotate(-90 516 140)" style="text-anchor:middle">1 pass</text>
+
+  <!-- into buckets -->
+  <path class="iedge" marker-end="url(#i)" d="M650 198 V224"/>
+  <g>
+    <rect x="430" y="228" width="54" height="26" rx="6" class="bucket"/><text x="457" y="245" class="bt">text</text>
+    <rect x="490" y="228" width="44" height="26" rx="6" class="bucket"/><text x="512" y="245" class="bt">if</text>
+    <rect x="540" y="228" width="56" height="26" rx="6" class="bucket"/><text x="568" y="245" class="bt">bind</text>
+    <rect x="602" y="228" width="62" height="26" rx="6" class="bucket"/><text x="633" y="245" class="bt">model</text>
+    <rect x="670" y="228" width="44" height="26" rx="6" class="bucket"/><text x="692" y="245" class="bt">on</text>
+    <rect x="720" y="228" width="46" height="26" rx="6" class="bucket"/><text x="743" y="245" class="bt">ref</text>
+  </g>
+  <text x="598" y="288" text-anchor="middle" font-size="13" fill="#1f2933" font-weight="600">→ ScanIndex</text>
+  <text x="598" y="308" text-anchor="middle" class="mut">cached on the element — later renders are free</text>
+</svg></span></p>
+<h2>Directives: read state, write to the DOM</h2>
+<p>A directive is a small pure function: &quot;read state, update one aspect of the DOM.&quot; <code>data-text</code> sets <code>textContent</code>, <code>data-show</code> toggles <code>style.display</code>, <code>data-bind</code> sets attributes, <code>data-class</code> toggles classes. They&#39;re all trivial, except for two places where a characteristic decision hides.</p>
+<p>The first is <code>data-if</code>. It doesn&#39;t hide the element via <code>display: none</code> — it <em>physically removes</em> it from the tree, leaving an empty comment placeholder in its place; when the condition becomes truthy again, the element returns to the placeholder&#39;s spot. The point is that an element hidden via CSS is still in the accessibility tree: screen readers see it, tab focus can land in it, its child components stay alive and burn resources. <code>data-if</code> removes the node for real. And when you specifically want a cheap visual toggle without removal — there&#39;s <code>data-show</code>.</p>
+<p>The second is the semantics of <code>data-bind</code>. Here it&#39;s important to distinguish value types. If the expression returns a boolean <code>true</code>/<code>false</code>, the attribute is treated as present/absent. That&#39;s how real boolean HTML attributes like <code>disabled</code> and <code>hidden</code> work. If a string is returned, it&#39;s set as-is. The catch is that ARIA states are <em>not</em> boolean HTML attributes: <code>aria-expanded</code> must contain the literal string <code>&quot;true&quot;</code> or <code>&quot;false&quot;</code>, and an empty <code>aria-expanded=&quot;&quot;</code> or a missing attribute mean something different to a screen reader. So a bare boolean here is a bug:</p>
+<pre><code class="language-html">&lt;!-- Bug: open === true → aria-expanded=&quot;&quot; ; open === false → attribute removed --&gt;
+&lt;button data-bind=&quot;aria-expanded: open&quot;&gt;…&lt;/button&gt;
+
+&lt;!-- always a string: &quot;true&quot; or &quot;false&quot; --&gt;
+&lt;button data-bind=&quot;aria-expanded: open ? &#39;true&#39; : &#39;false&#39;&quot;&gt;…&lt;/button&gt;
+</code></pre>
+<h2>The expression evaluator without <code>eval</code></h2>
+<p>In directives you write JavaScript-like expressions: <code>data-if=&quot;count &gt; 0&quot;</code>, <code>data-text=&quot;formatDate(user.createdAt)&quot;</code>, <code>data-class=&quot;active: tab === &#39;home&#39;&quot;</code>. Something has to turn these <em>strings</em> into <em>values</em>. The simplest way is <code>new Function(&#39;count&#39;, &#39;return count &gt; 0&#39;)</code> or <code>eval</code>. That&#39;s exactly what Alpine, for example, does. And it&#39;s exactly why Alpine doesn&#39;t work under a strict Content-Security-Policy.</p>
+<p>CSP is a header by which the server tells the browser what code it&#39;s allowed to execute. A strict policy of <code>default-src &#39;self&#39;</code> without <code>&#39;unsafe-eval&#39;</code> forbids <code>eval</code> and <code>new Function</code> entirely: any attempt to turn a string into executable code fails with an error. So <code>eval</code> is out. And if it&#39;s out, you have to write your own expression evaluator. This is the most complex module in the library, and it consists of the three classic stages of any interpreter: tokenizer, parser, interpreter.</p>
+<h3>Tokenizer: string → stream of tokens</h3>
+<p>The tokenizer (a.k.a. lexer) breaks the string into &quot;tokens&quot; — indivisible pieces: numbers, strings, identifiers, operator signs. The expression <code>price * qty</code> becomes the stream <code>[id &quot;price&quot;, punct &quot;*&quot;, id &quot;qty&quot;]</code>. It&#39;s tedious but necessary work: the parser then finds it easier to work with a stream of meaningful tokens than with characters. Micra&#39;s tokenizer is a single <code>while</code> loop over the string&#39;s characters: see a quote — collect a string up to the closing one; see a digit — collect a number; see a letter — collect an identifier; otherwise look for the longest matching operator sign.</p>
+<h3>The abstract syntax tree</h3>
+<p>Before we talk about the parser, we need to explain what it builds — the abstract syntax tree (AST). It&#39;s a representation of an expression as a tree, where each node is an operation or a value, and the links reflect structure and precedence. Take <code>price * qty + 10</code>. We know from school that multiplication binds &quot;tighter&quot; than addition, so the expression means <code>(price * qty) + 10</code>. The AST encodes that explicitly:</p>
+<p><span class="diagram"><svg width="560" height="340" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 340" font-family="-apple-system, system-ui, Segoe UI, Roboto, sans-serif">
+  <style>
+    .edge{stroke:#9aa1ac;stroke-width:1.5}
+    .op{fill:#eef0ff;stroke:#c3c8f5;stroke-width:1.5}
+    .opt{font-size:20px;fill:#4f46e5;font-weight:700;text-anchor:middle}
+    .leaf{fill:#f6f7f9;stroke:#d0d5dd;stroke-width:1.5}
+    .leaft{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;fill:#1f2933;text-anchor:middle}
+    .mut{font-size:12px;fill:#6b7280;text-anchor:middle}
+  </style>
+
+  <text x="280" y="28" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="15" fill="#1f2933">price * qty + 10</text>
+
+  <!-- edges -->
+  <line class="edge" x1="280" y1="86" x2="170" y2="156"/>
+  <line class="edge" x1="280" y1="86" x2="400" y2="156"/>
+  <line class="edge" x1="170" y1="186" x2="100" y2="256"/>
+  <line class="edge" x1="170" y1="186" x2="240" y2="256"/>
+
+  <!-- root: + -->
+  <circle cx="280" cy="70" r="26" class="op"/>
+  <text x="280" y="78" class="opt">+</text>
+  <text x="318" y="66" class="mut" text-anchor="start" style="text-anchor:start">root — evaluated last</text>
+
+  <!-- left: * -->
+  <circle cx="170" cy="170" r="26" class="op"/>
+  <text x="170" y="178" class="opt">*</text>
+
+  <!-- right: 10 -->
+  <rect x="372" y="146" width="56" height="40" rx="8" class="leaf"/>
+  <text x="400" y="171" class="leaft">10</text>
+
+  <!-- leaves: price, qty -->
+  <rect x="62" y="246" width="76" height="40" rx="8" class="leaf"/>
+  <text x="100" y="271" class="leaft">price</text>
+  <rect x="206" y="246" width="68" height="40" rx="8" class="leaf"/>
+  <text x="240" y="271" class="leaft">qty</text>
+
+  <text x="280" y="322" text-anchor="middle" font-size="13" fill="#6b7280">precedence is baked into the tree's shape — the interpreter just walks it bottom-up</text>
+</svg></span></p>
+<p>The root of the tree is the addition, because it&#39;s evaluated last (at the very top level). Its left child is the multiplication, its right child is the literal <code>10</code>. Once the tree is built, evaluating the expression is easy: just walk it recursively, bottom-up. There are no precedences left to remember — they&#39;re already &quot;stored&quot; in the shape of the tree.</p>
+<p>That&#39;s why parsing and evaluation are two separate stages: the parser sorts out precedence once and builds the tree, and the interpreter then walks it as many times as you like. In Micra the tree nodes are described by a compact type: literal, identifier, member access (<code>mem</code>), call (<code>call</code>), unary operation (<code>un</code>), binary (<code>bin</code>), ternary (<code>tern</code>).</p>
+<h3>Parser: why Pratt</h3>
+<p>The parser turns the flat stream of tokens into a tree, placing precedence correctly.</p>
+<p>The naive way is recursive descent with one function per precedence level: <code>parseTernary</code> calls <code>parseOr</code>, which calls <code>parseAnd</code>, which calls <code>parseEquality</code>, which calls <code>parseComparison</code>, which calls <code>parseAddition</code>, which calls <code>parseMultiplication</code>, which calls <code>parseUnary</code>. Seven precedence levels — seven nearly identical functions, each differing from its neighbor only by its list of operators and who it calls below. It works, but there&#39;s a lot of nearly duplicated code. And that risks blowing past the 7 KB budget.</p>
+<p>Pratt parsing (in its &quot;precedence climbing&quot; variant) folds all those levels into one function, parameterized by a minimum precedence. The idea lives in a table: each binary operator is assigned a number — its &quot;binding power.&quot;</p>
+<pre><code class="language-ts">const BIN_PREC = {
+  &quot;||&quot;: 1,
+  &quot;&amp;&amp;&quot;: 2,
+  &quot;==&quot;: 3,
+  &quot;!=&quot;: 3,
+  &quot;===&quot;: 3,
+  &quot;!==&quot;: 3,
+  &quot;&lt;&quot;: 4,
+  &quot;&lt;=&quot;: 4,
+  &quot;&gt;&quot;: 4,
+  &quot;&gt;=&quot;: 4,
+  &quot;+&quot;: 5,
+  &quot;-&quot;: 5,
+  &quot;*&quot;: 6,
+  &quot;/&quot;: 6,
+  &quot;%&quot;: 6,
+};
+</code></pre>
+<p>And the entire logic for parsing binary operations fits in one loop:</p>
+<pre><code class="language-ts">function parseBin(minPrec) {
+  let left = parseUnary();
+  for (;;) {
+    const t = peek();
+    const prec = t ? BIN_PREC[t.v] : undefined;
+    if (prec === undefined || prec &lt; minPrec) break; // operator too &quot;weak&quot; — stop
+    next();
+    const right = parseBin(prec + 1); // parse the right side at a higher precedence
+    left = { k: &quot;bin&quot;, op: t.v, l: left, r: right };
+  }
+  return left;
+}
+</code></pre>
+<p>Read this loop slowly — it holds the whole idea. We parse the left operand, then look at the next operator. If its precedence is below the <code>minPrec</code> bar, we stop and hand what we&#39;ve collected upward (a weaker operator out there will take us as its left operand). If it&#39;s higher or equal, we &quot;eat&quot; the operator and recursively parse the right side, but now with the bar at <code>prec + 1</code>. That <code>+ 1</code> is what makes operators left-associative: <code>a - b - c</code> is assembled as <code>(a - b) - c</code>, not <code>a - (b - c)</code>. One loop with a table replaces seven functions, extends trivially (adding an operator is one row in the table), and weighs a handful of bytes.</p>
+<h3>Interpreter and the security model</h3>
+<p>Once the tree is built, the interpreter walks it recursively: a literal returns its value, a binary node evaluates the left and right branches and applies the operation, a ternary picks a branch, and so on. The logical <code>&amp;&amp;</code> and <code>||</code> are short-circuiting — like in real JS, they return the operand&#39;s value.</p>
+<p>But what&#39;s more interesting isn&#39;t <em>what</em> the interpreter can do, but what it fundamentally <em>can&#39;t</em>. When an expression mentions a bare identifier — say, <code>count</code> — the interpreter looks it up in a strictly defined order: first in the component&#39;s state, then in a whitelist of safe globals (<code>Math</code>, <code>JSON</code>, <code>Date</code>, <code>String</code>, <code>Number</code>…). If the name is in neither — it resolves to <code>undefined</code>. That means <code>window</code>, <code>document</code>, <code>fetch</code>, <code>eval</code> are unreachable <strong>by construction</strong>. We didn&#39;t hide them or shadow them — there&#39;s simply no scope where they exist for an expression. No variable, no access.</p>
+<p>The classic prototype-escape trick is closed off separately: <code>item.constructor.constructor(&quot;…&quot;)()</code> — the chain that in old eval-based engines let you reach the <code>Function</code> constructor and execute arbitrary code, bypassing everything. On member access the interpreter refuses the names <code>__proto__</code>, <code>constructor</code>, <code>prototype</code>. To be honest, it&#39;s worth stressing: method calls still execute real JS — if <em>your</em> method touches <code>window</code>, it will. Directive templates are trusted code that you write; the protection here is to keep an <em>expression in markup</em> from accidentally or maliciously reaching a dangerous global, not a sandbox for someone else&#39;s code.</p>
+<h3>Two-tier cache</h3>
+<p>Parsing a string into a tree isn&#39;t free, and doing it on every render would be silly. So the result is cached by the expression string itself. But there&#39;s a subtler optimization too: the overwhelming majority of expressions in real templates are simple paths like <code>count</code>, <code>user.name</code>, <code>item.email</code>. For those there&#39;s no point running the tokenizer and parser. A regex recognizes a &quot;simple path,&quot; and then the expression is stored just as an array of parts <code>[&#39;user&#39;, &#39;name&#39;]</code>, and evaluation is a walk over the object. A full AST is built only for actual expressions with operations. So the hot path stays cheap, and the heavy machinery kicks in only when it&#39;s truly needed.</p>
+<h2>How expressions see both state and methods</h2>
+<p>Derived values — counters, totals, filtered subsets — aren&#39;t stored in state in Micra; they&#39;re computed by methods. <code>data-text=&quot;totalCount()&quot;</code> calls the <code>totalCount</code> method. For that to work, an expression has to see not only <code>state</code> but also the component&#39;s methods. That&#39;s handled by <code>exprState</code> — a <code>Proxy</code> that on read first returns the state&#39;s own keys, and if they&#39;re absent, returns the component&#39;s method, having first bound <code>this</code> to it (so that inside the method <code>this.state</code> works as expected). Bound copies of methods are memoized so repeated reads are cheap. Another perimeter is closed off here too: names from <code>Object.prototype</code> (<code>constructor</code>, <code>toString</code>, and the rest) are unreachable via an expression — you get <code>undefined</code>, not a leaked prototype.</p>
+<p>Why are derived values methods, not state fields? Because a field is a second source of truth that will, sooner or later, drift from the first. If you store both <code>todos</code> and <code>todosCount</code>, then any code that forgets to update the counter breeds a bug. A method, on the other hand, is computed on read and is always consistent. And the expression cache plus batched rendering make repeated calls cheap enough that this purity isn&#39;t embarrassing to pay for.</p>
+<h2><code>data-each</code>: keyed diff, and why there&#39;s a whole algorithm here</h2>
+<p>Lists are the most demanding part of any UI. <code>data-each</code> renders a list from a <code>&lt;template&gt;</code>:</p>
+<pre><code class="language-html">&lt;template data-each=&quot;rows()&quot; data-key=&quot;id&quot;&gt;
+  &lt;tr&gt;
+    &lt;td data-text=&quot;item.name&quot;&gt;&lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/template&gt;
+</code></pre>
+<p>The simplest implementation is to wipe all rows on every change and draw them anew. But that destroys DOM state: focus in an input inside a row is lost, CSS animations are interrupted, the browser does extra work. The right thing is to <em>match</em> old nodes to new ones and touch only what really changed. That&#39;s keyed diffing, and the key to it is the <code>data-key</code> attribute, which gives each row a stable identity.</p>
+<p>With keys, Micra reuses existing DOM nodes where the key matched, creates nodes only for new keys, and removes the nodes of vanished ones. But the subtlest part is <em>reordering</em>. Say the list was rearranged. How many nodes have to be physically moved in the DOM? Naively — all of them. Optimally — as few as possible. And here the longest-increasing-subsequence (LIS) algorithm comes in.</p>
+<p>Match each node in the new order to its position in the old order — you get an array of numbers. If you find the longest subsequence of strictly increasing numbers in it, then those nodes are already in the correct relative order to one another — you don&#39;t need to touch them at all. You only need to move the rest, inserting them relative to the &quot;stationary skeleton.&quot; For swapping two adjacent rows that means two moves instead of redrawing the whole list. Micra computes the LIS with patience sorting in O(n log n) and performs exactly as many DOM operations as nodes that actually changed position.</p>
+<p><span class="diagram"><svg width="700" height="330" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 330" font-family="-apple-system, system-ui, Segoe UI, Roboto, sans-serif">
+  <defs>
+    <marker id="mv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#4f46e5"/>
+    </marker>
+  </defs>
+  <style>
+    .row{font-size:12px;fill:#6b7280}
+    .node{fill:#ecfdf3;stroke:#a6e3c0;stroke-width:1.5}
+    .ntext{font-family:ui-monospace,Menlo,monospace;font-size:15px;fill:#15803d;font-weight:600;text-anchor:middle}
+    .move{fill:#eef0ff;stroke:#4f46e5;stroke-width:2}
+    .mtext{font-family:ui-monospace,Menlo,monospace;font-size:15px;fill:#4f46e5;font-weight:700;text-anchor:middle}
+    .stable{stroke:#bfc4cd;stroke-width:1.5;fill:none}
+    .moveedge{stroke:#4f46e5;stroke-width:2;fill:none}
+  </style>
+
+  <text x="20" y="44" class="row">before</text>
+  <text x="20" y="244" class="row">after</text>
+
+  <!-- stable connectors A,C,D,E -->
+  <path class="stable" d="M100 104 V210"/>
+  <path class="stable" d="M340 104 C340 160 220 150 220 210"/>
+  <path class="stable" d="M460 104 C460 160 340 150 340 210"/>
+  <path class="stable" d="M580 104 C580 160 460 150 460 210"/>
+  <!-- mover B col1 -> col4 -->
+  <path class="moveedge" marker-end="url(#mv)" d="M220 104 C220 160 580 150 580 204"/>
+
+  <!-- BEFORE row: A B C D E -->
+  <g>
+    <rect x="60" y="60" width="80" height="44" rx="8" class="node"/><text x="100" y="88" class="ntext">A</text>
+    <rect x="180" y="60" width="80" height="44" rx="8" class="move"/><text x="220" y="88" class="mtext">B</text>
+    <rect x="300" y="60" width="80" height="44" rx="8" class="node"/><text x="340" y="88" class="ntext">C</text>
+    <rect x="420" y="60" width="80" height="44" rx="8" class="node"/><text x="460" y="88" class="ntext">D</text>
+    <rect x="540" y="60" width="80" height="44" rx="8" class="node"/><text x="580" y="88" class="ntext">E</text>
+  </g>
+
+  <!-- AFTER row: A C D E B -->
+  <g>
+    <rect x="60" y="210" width="80" height="44" rx="8" class="node"/><text x="100" y="238" class="ntext">A</text>
+    <rect x="180" y="210" width="80" height="44" rx="8" class="node"/><text x="220" y="238" class="ntext">C</text>
+    <rect x="300" y="210" width="80" height="44" rx="8" class="node"/><text x="340" y="238" class="ntext">D</text>
+    <rect x="420" y="210" width="80" height="44" rx="8" class="node"/><text x="460" y="238" class="ntext">E</text>
+    <rect x="540" y="210" width="80" height="44" rx="8" class="move"/><text x="580" y="238" class="mtext">B</text>
+  </g>
+
+  <text x="350" y="300" text-anchor="middle" font-size="13" fill="#1f2933">
+    LIS = <tspan fill="#15803d" font-weight="600">A · C · D · E</tspan> stays put; only <tspan fill="#4f46e5" font-weight="700">B</tspan> moves — 1 DOM operation, not 5.
+  </text>
+</svg></span></p>
+<p>A template row can contain a single root element (<code>&lt;tr&gt;</code>) or several nodes. If there&#39;s one root — it becomes the row&#39;s node. If there are several — they&#39;re wrapped in a service <code>&lt;micra-each-item style=&quot;display:contents&quot;&gt;</code>, so a row always corresponds to one stable DOM node (and <code>display:contents</code> makes the wrapper visually transparent). The subtlety is that &quot;single root&quot; detection must ignore whitespace text nodes — otherwise a nicely formatted <code>&lt;template&gt;</code> with line breaks around <code>&lt;tr&gt;</code> would count as multi-root, and the <code>&lt;micra-each-item&gt;</code> wrapper would slide inside <code>&lt;tbody&gt;</code>, breaking <code>tbody &gt; tr</code> selectors. And each row gets its own &quot;row state&quot; via <code>Object.create(state)</code> — an object that holds <code>item</code> and <code>index</code> in its own fields and, through the prototype chain, reaches the shared state and the component&#39;s methods. That&#39;s why both <code>item.name</code> and method calls work inside a row.</p>
+<h2>Events, modifiers, and why cleanup matters</h2>
+<p><code>@click=&quot;increment&quot;</code> and <code>data-on=&quot;click:save&quot;</code> attach handlers. Under the hood there are two forms: a bare method name (<code>increment</code> — <code>instance.increment</code> is called) and a call expression (<code>select(item.id)</code> — evaluated against the row&#39;s scope, with access to <code>item</code> and <code>$event</code>). The second form goes through the same expression evaluator as the directives.</p>
+<p>Modifiers — <code>@keydown.enter</code>, <code>@click.ctrl.prevent</code>, <code>@click.self</code> — are a small pipeline of checks before the handler runs. And there&#39;s a non-obvious subtlety: the checks run <em>in the order written</em> and stop at the first one that fails. So <code>@keydown.enter.prevent</code> means &quot;if the key is Enter — then preventDefault and the handler,&quot; not &quot;always preventDefault.&quot; The key guard comes first, and only if it passes does <code>prevent</code> run. If the order were reversed, <code>prevent</code> would fire on every keystroke. That&#39;s why order matters here.</p>
+<p>Every attached handler is recorded in a list on the component instance. When the component is destroyed, <code>destroy()</code> walks the list and removes all the listeners. This cures a whole class of leaks typical of &quot;hand-written&quot; jQuery code: there, a handler attached via <code>addEventListener</code> and forgotten keeps holding a reference to the node and its closure after the element has logically disappeared. In Micra a listener&#39;s lifecycle is tied to the component&#39;s lifecycle — attach it declaratively, forget about it, and it removes itself.</p>
+<h2>The event bus: how components talk to each other</h2>
+<p>Components are isolated — each has its own state. But sometimes they need to talk: a dropdown picked a value, a table should re-filter. Direct references between components would create brittle coupling, so communication goes through a bus — a <code>Map</code> where the key is an event name and the value is a <code>Set</code> of handlers. <code>emit</code> runs through the subscribers and calls each, wrapping the call in <code>try/catch</code> so that an error in one subscriber doesn&#39;t take down the rest. A subscription via <code>this.on(...)</code> is automatically registered for cleanup on <code>destroy()</code> — the same discipline as with DOM listeners. By declaring <code>&#39;cart:updated&#39;: { count: number }</code> in the <code>MicraEvents</code> interface, you get type checking on <code>emit</code> and <code>on</code> across the whole project.</p>
+<h2>Lifecycle: what <code>mount</code> does from start to finish</h2>
+<p>All of this comes together in <code>mount</code> — the function that turns a component definition into a live instance. It copies the methods from the definition onto the instance; attaches the helpers (<code>prop</code>, <code>set</code>, <code>fetch</code>, <code>emit</code>, <code>on</code>); wraps the state in a reactive <code>Proxy</code> connected to the scheduler; builds <code>exprState</code>; and defines <code>render()</code> — the function that takes the (cached) scan result, runs the directives, renders the lists, binds the events, and collects the refs. Then comes the first render, and a call to <code>onCreate</code> in a microtask (which is why in <code>onCreate</code> the refs are already available and it&#39;s safe to go fetch data). Symmetrically, <code>onDestroy</code> is called on teardown, after all the listeners are removed and all the bus subscriptions are unsubscribed.</p>
+<p><code>render</code> hides one more safeguard: the <code>isRendering</code> flag. If, inside evaluating an expression, you accidentally mutate state, that would trigger a render during a render — an infinite or simply unexpected recursion. The flag catches that situation, suppresses the nested render, and warns once in the console: &quot;move the state write into a method.&quot;</p>
+<h2>The size discipline, and what&#39;s deliberately missing</h2>
+<p>I&#39;ve already mentioned the 7-kilobyte budget. I&#39;d dearly love to fit in everything and a bit more on top. But obviously, in that case the library would grow a lot. During the build, the gzip size of the final bundle is measured, and the build fails if it exceeds 7168 bytes.</p>
+<p>It&#39;s because of the budget, by the way, that the <code>resource()</code> data-fetching helper is a recipe to copy rather than a built-in function: it&#39;s useful, but not so useful as to spend precious core bytes on it.</p>
+<p>Micra has no router, no deep reactivity, no built-in web-components system, no growing &quot;language&quot; inside the directives (object and array literals are deliberately not allowed in there — logic lives in methods, not in markup). Each such feature would trade away exactly what Micra was created for: predictability, a small size, and no build step (well, there is one, of course, but it&#39;s entirely optional). The discipline of stopping is just about the hardest thing in building a tool, because adding a feature always looks like an improvement and refusing one looks like weakness. But it&#39;s precisely the boundary that turns the library from &quot;yet another framework&quot; into a clear choice for a specific job.</p>
+<h2>When Micra is exactly your tool</h2>
+<p>You&#39;ve got Rails, Laravel, Django, Phoenix, or just a server in anything at all that already ships ready HTML. You don&#39;t need a SPA — quite the opposite, you need a handful of interactivity on top of pages: switch a tab, open a modal, filter a table, fetch data and show a loading state. You don&#39;t want to drag in a bundler, hundreds of megabytes of <code>node_modules</code>, and a runtime that weighs more than your business logic. If that&#39;s you — Micra was written literally for you, and everything you read above works to make sure that in your case it &quot;just works&quot; and doesn&#39;t grow into a monster.</p>
+<p>If, on the other hand, you&#39;re building a full single-page app with client-side routing, complex client state, and rich trader-dashboard-grade widgets — reach for React, Vue, or Svelte. That&#39;s their job, and trying to catch up to them in seven kilobytes would be folly, not valor. Micra deliberately declines that fight.</p>
+<p>The most honest way to find out whether it&#39;s your tool is to try it on something small this week. Take one screen in your nearest project — a settings form, a users table, a dropdown filter. Drop a single <code>&lt;script&gt;</code> onto the page, write <code>Micra.define(...)</code> and <code>Micra.start()</code>. No build, no config, no ceremony — it&#39;s a minute from an empty file to a reactive component. And then you&#39;ll feel what this was all for: what it&#39;s like when a tool is exactly the size of the job — no more, no less.</p>
+<p>Thanks for reading :)</p>
+
+      <p class="back"><a href="https://denisfl.github.io/micra.js/">← Micra.js</a></p>
+    </main>
+  </body>
+</html>
