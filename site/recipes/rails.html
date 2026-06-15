@@ -110,21 +110,20 @@
           <section class="hero">
             <h2>Recipe: Rails + Micra</h2>
             <p>
-              How to drop Micra into a Rails app — manually (importmap +
-              twelve lines of layout glue, zero gem dep) or via the
+              How to drop Micra into a Rails app — manually (importmap + twelve
+              lines of layout glue, zero gem dep) or via the
               <a
                 href="https://github.com/denisfl/micra-rails"
                 target="_blank"
                 rel="noopener"
                 >micra-rails</a
               >
-              gem (ERB helpers + one-shot installer). Then a small Tasks
-              board that demonstrates the five SSR-friendly patterns Micra
-              is designed for: server-rendered props, CSRF-attached
-              <span class="inline-code">this.fetch</span>, cross-component
-              event bus, typed
-              <span class="inline-code">this.prop()</span>, and no-flicker
-              hydration.
+              gem (ERB helpers + one-shot installer). Then a small Tasks board
+              that demonstrates the five SSR-friendly patterns Micra is designed
+              for: server-rendered props, CSRF-attached
+              <span class="inline-code">this.fetch</span>, cross-component event
+              bus, typed <span class="inline-code">this.prop()</span>, and
+              no-flicker hydration.
             </p>
             <div class="recipe-meta">
               <span class="tag">importmap-rails</span>
@@ -137,11 +136,9 @@
               <span class="inline-code">&lt;%= csrf_meta_tags %&gt;</span> in
               the default layout. Micra's
               <span class="inline-code">this.fetch()</span> reads
-              <span class="inline-code"
-                >&lt;meta name="csrf-token"&gt;</span
-              >
-              and sends <span class="inline-code">X-CSRF-Token</span> on
-              every non-GET request — no extra configuration, no
+              <span class="inline-code">&lt;meta name="csrf-token"&gt;</span>
+              and sends <span class="inline-code">X-CSRF-Token</span> on every
+              non-GET request — no extra configuration, no
               <span class="inline-code">protect_from_forgery</span>
               workarounds.
             </div>
@@ -160,7 +157,7 @@
             <pre><code># config/importmap.rb
 pin "application"
 pin "micra",
-    to: "https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.esm.js",
+    to: "https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.esm.js",
     preload: true</code></pre>
             <h4>b. Boot Micra from your application layout</h4>
             <pre><code>&lt;%# app/views/layouts/application.html.erb %&gt;
@@ -183,20 +180,21 @@ pin "micra",
             <ul>
               <li>
                 <strong>CSRF is automatic.</strong>
-                <span class="inline-code">this.fetch()</span> reads the
-                token from <span class="inline-code">csrf_meta_tags</span>
-                and adds <span class="inline-code">X-CSRF-Token</span> to
-                every non-GET request.
+                <span class="inline-code">this.fetch()</span> reads the token
+                from <span class="inline-code">csrf_meta_tags</span> and adds
+                <span class="inline-code">X-CSRF-Token</span> to every non-GET
+                request.
               </li>
               <li>
                 <strong
                   ><span class="inline-code">window.Micra</span>
                   assignment.</strong
                 >
-                Importmap modules don't leak symbols to the global scope,
-                but you'll often want
+                Importmap modules don't leak symbols to the global scope, but
+                you'll often want
                 <span class="inline-code">Micra.define()</span> from a
-                non-module inline <span class="inline-code">&lt;script&gt;</span>
+                non-module inline
+                <span class="inline-code">&lt;script&gt;</span>
                 inside a partial. Exposing it on
                 <span class="inline-code">window</span> keeps that ergonomic.
               </li>
@@ -205,18 +203,17 @@ pin "micra",
                   ><span class="inline-code">turbo:load</span> mirror.</strong
                 >
                 If you're using Turbo Drive (the default in Rails 7+),
-                <span class="inline-code">DOMContentLoaded</span> only fires
-                on the first page load. After a Turbo navigation,
+                <span class="inline-code">DOMContentLoaded</span> only fires on
+                the first page load. After a Turbo navigation,
                 <span class="inline-code">&lt;body&gt;</span> is swapped but
-                <span class="inline-code">DOMContentLoaded</span> does NOT
-                fire again, so new
-                <span class="inline-code">[data-component]</span> elements
-                never mount.
-                <span class="inline-code">turbo:load</span> is the canonical
-                "page is ready" signal that fires on both fresh loads and
-                soft navigations.
-                <span class="inline-code">Micra.start()</span> is idempotent,
-                so calling both is safe.
+                <span class="inline-code">DOMContentLoaded</span> does NOT fire
+                again, so new
+                <span class="inline-code">[data-component]</span> elements never
+                mount. <span class="inline-code">turbo:load</span> is the
+                canonical "page is ready" signal that fires on both fresh loads
+                and soft navigations.
+                <span class="inline-code">Micra.start()</span> is idempotent, so
+                calling both is safe.
               </li>
             </ul>
             <h4>c. Define components in app/javascript/application.js</h4>
@@ -236,8 +233,8 @@ Micra.define("counter", {
   &lt;button @click="inc"&gt;+&lt;/button&gt;
 &lt;/div&gt;</code></pre>
             <p>
-              Done. The whole integration is twelve lines of ERB glue and
-              one importmap pin.
+              Done. The whole integration is twelve lines of ERB glue and one
+              importmap pin.
             </p>
           </section>
 
@@ -246,8 +243,8 @@ Micra.define("counter", {
             <p>
               If the inline
               <span class="inline-code">&lt;script&gt;</span> block in your
-              layout grows past comfort, or you find yourself building lots
-              of components with server-rendered props, the
+              layout grows past comfort, or you find yourself building lots of
+              components with server-rendered props, the
               <a
                 href="https://github.com/denisfl/micra-rails"
                 target="_blank"
@@ -260,8 +257,7 @@ Micra.define("counter", {
 bin/rails generate micra:install</code></pre>
             <p>
               The installer pins Micra in
-              <span class="inline-code">config/importmap.rb</span> and
-              inserts
+              <span class="inline-code">config/importmap.rb</span> and inserts
               <span class="inline-code">&lt;%= micra_includes %&gt;</span>
               into your application layout. After that:
             </p>
@@ -278,25 +274,23 @@ bin/rails generate micra:install</code></pre>
                 data-count="0"&gt;…&lt;/div&gt;</span
               >
               — exactly the markup you would write by hand. The helper
-              auto-dasherizes prop names
-              (<span class="inline-code">current_user_id</span> →
-              <span class="inline-code">data-current-user-id</span>) and
-              JSON-encodes non-primitive values
-              (Hash, Array, ActiveRecord
+              auto-dasherizes prop names (<span class="inline-code"
+                >current_user_id</span
+              >
+              → <span class="inline-code">data-current-user-id</span>) and
+              JSON-encodes non-primitive values (Hash, Array, ActiveRecord
               <span class="inline-code">.as_json</span>).
             </p>
             <div class="recipe-callout">
               <strong>Caveats to be aware of as of v0.3.0.</strong>
               <ul>
                 <li>
-                  <span class="inline-code"
-                    >micra_state(...).to_html</span
-                  >
+                  <span class="inline-code">micra_state(...).to_html</span>
                   as shown in the gem's README doesn't compile —
-                  <span class="inline-code">Hash#to_html</span> isn't a
-                  Rails method. Until the helper returns a
-                  <span class="inline-code">SafeBuffer</span>, wrap the
-                  element with
+                  <span class="inline-code">Hash#to_html</span> isn't a Rails
+                  method. Until the helper returns a
+                  <span class="inline-code">SafeBuffer</span>, wrap the element
+                  with
                   <span class="inline-code">micra_component</span>
                   instead, or expand the hash inline yourself.
                 </li>
@@ -305,50 +299,48 @@ bin/rails generate micra:install</code></pre>
                     >JSON-encoded props need client-side
                     <span class="inline-code">JSON.parse</span>.</strong
                   >
-                  When you pass a non-primitive
-                  (<span class="inline-code">@user.as_json</span>,
-                  <span class="inline-code">@tasks.as_json</span>),
+                  When you pass a non-primitive (<span class="inline-code"
+                    >@user.as_json</span
+                  >, <span class="inline-code">@tasks.as_json</span>),
                   <span class="inline-code">micra_component</span>
                   serializes it into the <span class="inline-code">data-*</span>
                   attribute with
                   <span class="inline-code">to_json</span>. But Micra's
-                  <span class="inline-code">this.prop()</span> returns the
-                  raw string — it doesn't auto-detect JSON. See the next
-                  section for the canonical seed-in-<span
-                    class="inline-code"
+                  <span class="inline-code">this.prop()</span> returns the raw
+                  string — it doesn't auto-detect JSON. See the next section for
+                  the canonical seed-in-<span class="inline-code"
                     >onCreate</span
                   >
                   pattern.
                 </li>
                 <li>
                   <strong
-                    ><span class="inline-code">micra_includes</span> does
-                    NOT add the
+                    ><span class="inline-code">micra_includes</span> does NOT
+                    add the
                     <span class="inline-code">turbo:load</span>
                     listener.</strong
                   >
                   It only wires
-                  <span class="inline-code">DOMContentLoaded</span>. If
-                  you're on Turbo Drive, append the second listener manually
-                  in
+                  <span class="inline-code">DOMContentLoaded</span>. If you're
+                  on Turbo Drive, append the second listener manually in
                   <span class="inline-code">application.js</span>.
                 </li>
               </ul>
-              None of these block the gem from being useful — they just
-              need to be known.
+              None of these block the gem from being useful — they just need to
+              be known.
             </div>
           </section>
 
           <section class="recipe-section">
             <h3>3. The Tasks board — five canonical patterns</h3>
             <p>
-              A board with a list of tasks. Each task has a title and a
-              done flag. Adding, toggling, and deleting are
-              <span class="inline-code">this.fetch(...)</span> calls that
-              return JSON. A separate component in the header — a "pending
-              count" badge — listens to a
-              <span class="inline-code">tasks:changed</span> event on the
-              global bus.
+              A board with a list of tasks. Each task has a title and a done
+              flag. Adding, toggling, and deleting are
+              <span class="inline-code">this.fetch(...)</span> calls that return
+              JSON. A separate component in the header — a "pending count" badge
+              — listens to a
+              <span class="inline-code">tasks:changed</span> event on the global
+              bus.
             </p>
             <h4>a. Schema and controller</h4>
             <pre><code># db/migrate/…_create_tasks.rb
@@ -429,9 +421,9 @@ resources :tasks, only: %i[index create update destroy]</code></pre>
 &lt;/section&gt;</code></pre>
             <p>
               Two
-              <span class="inline-code">data-component</span> roots — they
-              are independent instances and only communicate through the
-              global event bus. The
+              <span class="inline-code">data-component</span> roots — they are
+              independent instances and only communicate through the global
+              event bus. The
               <span class="inline-code">data-initial-tasks</span> attribute
               carries the full list as JSON for the component to seed
               <span class="inline-code">state.tasks</span> on
@@ -494,22 +486,20 @@ Micra.define("pending-count", {
           </section>
 
           <section class="recipe-section">
-            <h3>
-              4. Seeding non-primitive state from server-rendered props
-            </h3>
+            <h3>4. Seeding non-primitive state from server-rendered props</h3>
             <p>
               Primitives round-trip cleanly:
               <span class="inline-code">data-count="3"</span> →
               <span class="inline-code">this.prop('count')</span> returns
-              <span class="inline-code">3</span> as a number. For arrays
-              and objects, Micra deliberately does not assume JSON — the
-              prop comes back as the literal string. The pattern is
-              "parse in <span class="inline-code">onCreate</span>", which
-              the component above already follows.
+              <span class="inline-code">3</span> as a number. For arrays and
+              objects, Micra deliberately does not assume JSON — the prop comes
+              back as the literal string. The pattern is "parse in
+              <span class="inline-code">onCreate</span>", which the component
+              above already follows.
             </p>
             <p>
-              A no-flicker alternative for SSR-heavy pages: instead of
-              seeding in
+              A no-flicker alternative for SSR-heavy pages: instead of seeding
+              in
               <span class="inline-code">onCreate</span> (which runs in a
               microtask, after the initial render — see the
               <a
@@ -517,8 +507,8 @@ Micra.define("pending-count", {
                 target="_blank"
                 rel="noopener"
                 >hydration contract</a
-              >), inline the state into the definition so the very first
-              render already matches the server's HTML:
+              >), inline the state into the definition so the very first render
+              already matches the server's HTML:
             </p>
             <pre><code>&lt;%# When you want truly zero flicker — define inline next to the view %&gt;
 &lt;section data-component="tasks-board"&gt;
@@ -536,40 +526,39 @@ Micra.define("pending-count", {
   })
 &lt;/script&gt;</code></pre>
             <p>
-              Trade-off: this couples one definition to one view, so reuse
-              is harder. Use it where flicker matters (above-the-fold
-              lists, dashboards); use the
+              Trade-off: this couples one definition to one view, so reuse is
+              harder. Use it where flicker matters (above-the-fold lists,
+              dashboards); use the
               <span class="inline-code">data-*</span> +
-              <span class="inline-code">onCreate</span> pattern everywhere
-              else.
+              <span class="inline-code">onCreate</span> pattern everywhere else.
             </p>
           </section>
 
           <section class="recipe-section">
             <h3>5. Turbo Drive, Turbo Streams, and Turbo Frames</h3>
-            <p>
-              The integration story changes by Turbo feature.
-            </p>
+            <p>The integration story changes by Turbo feature.</p>
             <h4>Turbo Drive — works with the turbo:load listener</h4>
             <p>
               Drive replaces
               <span class="inline-code">&lt;body&gt;</span> on click-through
               navigations without a full reload. The
-              <span class="inline-code">turbo:load</span> listener in
-              section 1b is all that's needed. After every soft navigation,
+              <span class="inline-code">turbo:load</span> listener in section 1b
+              is all that's needed. After every soft navigation,
               <span class="inline-code">Micra.start()</span> rescans the new
-              DOM; already-mounted instances are skipped
-              (<span class="inline-code">start()</span> is idempotent).
+              DOM; already-mounted instances are skipped (<span
+                class="inline-code"
+                >start()</span
+              >
+              is idempotent).
             </p>
             <p>
               Drive doesn't unmount instances — the
-              <span class="inline-code">&lt;body&gt;</span> is swapped, the
-              old DOM nodes are gone, but their JS-side
+              <span class="inline-code">&lt;body&gt;</span> is swapped, the old
+              DOM nodes are gone, but their JS-side
               <span class="inline-code">__micraScan</span> and event-bus
-              subscriptions linger. For most apps this is fine (the GC
-              catches them within a tick). If you have long-lived dashboards
-              that navigate frequently and accumulate bus subscriptions,
-              destroy on
+              subscriptions linger. For most apps this is fine (the GC catches
+              them within a tick). If you have long-lived dashboards that
+              navigate frequently and accumulate bus subscriptions, destroy on
               <span class="inline-code">turbo:before-visit</span>:
             </p>
             <pre><code>document.addEventListener("turbo:before-visit", () =&gt; {
@@ -577,12 +566,11 @@ Micra.define("pending-count", {
 })</code></pre>
             <h4>Turbo Streams — server-driven swaps</h4>
             <p>
-              Stream actions
-              (<span class="inline-code"
-                >&lt;turbo-stream action="append" target="tasks"&gt;…&lt;/turbo-stream&gt;</span
-              >) replace fragments of the DOM. New fragments from the
-              server can contain
-              <span class="inline-code">[data-component]</span> elements
+              Stream actions (<span class="inline-code"
+                >&lt;turbo-stream action="append"
+                target="tasks"&gt;…&lt;/turbo-stream&gt;</span
+              >) replace fragments of the DOM. New fragments from the server can
+              contain <span class="inline-code">[data-component]</span> elements
               that need mounting. Listen to
               <span class="inline-code">turbo:before-stream-render</span>
               for cleanup and
@@ -599,11 +587,11 @@ Micra.define("pending-count", {
 document.addEventListener("turbo:render", () =&gt; Micra.start())</code></pre>
             <p>
               Same shape as the
-              <a href="./htmx.html">htmx bridge</a>: destroy before swap,
-              mount after settle. If you're using Turbo Streams via
-              WebSocket (the default for
-              <span class="inline-code">broadcast_*</span> ActionCable
-              hooks), the same listeners fire.
+              <a href="./htmx.html">htmx bridge</a>: destroy before swap, mount
+              after settle. If you're using Turbo Streams via WebSocket (the
+              default for
+              <span class="inline-code">broadcast_*</span> ActionCable hooks),
+              the same listeners fire.
             </p>
             <h4>
               Turbo Frames — avoid co-locating with
@@ -615,8 +603,8 @@ document.addEventListener("turbo:render", () =&gt; Micra.start())</code></pre>
               <span class="inline-code">innerHTML</span> on navigation. If a
               <span class="inline-code">[data-component]</span> element is
               inside the frame, the swap leaves its cached
-              <span class="inline-code">__micraScan</span> pointing at gone
-              DOM — exactly the htmx footgun. Two ways out:
+              <span class="inline-code">__micraScan</span> pointing at gone DOM
+              — exactly the htmx footgun. Two ways out:
             </p>
             <ol>
               <li>
@@ -628,8 +616,8 @@ document.addEventListener("turbo:render", () =&gt; Micra.start())</code></pre>
               </li>
               <li>
                 Listen to
-                <span class="inline-code">turbo:frame-render</span> and
-                re-mount the frame's contents:
+                <span class="inline-code">turbo:frame-render</span> and re-mount
+                the frame's contents:
                 <pre><code>document.addEventListener("turbo:frame-render", (e) =&gt; {
   Micra.instances().forEach((inst, root) =&gt; {
     if (e.target.contains(root) &amp;&amp; root !== e.target) inst.destroy()
@@ -646,18 +634,16 @@ document.addEventListener("turbo:render", () =&gt; Micra.start())</code></pre>
               <li>
                 <strong
                   >Don't put
-                  <span class="inline-code">[data-component]</span> directly
-                  on a
-                  <span class="inline-code"
-                    >&lt;turbo-frame src=…&gt;</span
-                  >
+                  <span class="inline-code">[data-component]</span> directly on
+                  a
+                  <span class="inline-code">&lt;turbo-frame src=…&gt;</span>
                   if the frame swaps its own
                   <span class="inline-code">innerHTML</span>.</strong
                 >
                 Same root cause as putting
                 <span class="inline-code">hx-swap</span> on a
-                <span class="inline-code">data-component</span>. Wrap or use
-                a separate frame target.
+                <span class="inline-code">data-component</span>. Wrap or use a
+                separate frame target.
               </li>
               <li>
                 <strong
@@ -665,21 +651,18 @@ document.addEventListener("turbo:render", () =&gt; Micra.start())</code></pre>
                   <span class="inline-code">turbo:load</span>
                   listener</strong
                 >
-                if you use Turbo Drive. Symptom: components on the landing
-                page mount, components on every subsequent page do nothing.
-                Easy to miss because the landing case works.
+                if you use Turbo Drive. Symptom: components on the landing page
+                mount, components on every subsequent page do nothing. Easy to
+                miss because the landing case works.
               </li>
               <li>
                 <strong>Don't return HTML from a JSON endpoint.</strong>
                 Micra's <span class="inline-code">this.fetch()</span>
                 inspects
-                <span class="inline-code">Content-Type</span>: if it
-                includes
+                <span class="inline-code">Content-Type</span>: if it includes
                 <span class="inline-code">application/json</span>, you get
                 parsed JSON; otherwise you get a string. Forgetting
-                <span class="inline-code"
-                  >respond_to do |fmt| fmt.json</span
-                >
+                <span class="inline-code">respond_to do |fmt| fmt.json</span>
                 will dump ERB into a string and break downstream.
               </li>
               <li>
@@ -687,26 +670,27 @@ document.addEventListener("turbo:render", () =&gt; Micra.start())</code></pre>
                   >Don't return an empty body for non-2xx responses.</strong
                 >
                 Micra throws
-                <span class="inline-code">FetchError(message, status, response)</span>
+                <span class="inline-code"
+                  >FetchError(message, status, response)</span
+                >
                 on non-2xx. If your endpoint returns
                 <span class="inline-code">422 { errors: {...} }</span> for a
                 validation failure, parse the body server-side:
                 <span class="inline-code"
-                  >catch (e) { if (e instanceof FetchError) { const errs =
-                  await e.response.json(); ... } }</span
+                  >catch (e) { if (e instanceof FetchError) { const errs = await
+                  e.response.json(); ... } }</span
                 >.
               </li>
               <li>
                 <strong
-                  >Don't put
-                  <span class="inline-code">Micra.start()</span> in a
-                  <span class="inline-code">&lt;script defer&gt;</span> if
-                  your layout also has
+                  >Don't put <span class="inline-code">Micra.start()</span> in a
+                  <span class="inline-code">&lt;script defer&gt;</span> if your
+                  layout also has
                   <span class="inline-code">turbo:load</span>.</strong
                 >
-                Duplicate calls are safe but make initialization order
-                harder to reason about. One source of truth — the module
-                script in section 1b.
+                Duplicate calls are safe but make initialization order harder to
+                reason about. One source of truth — the module script in section
+                1b.
               </li>
               <li>
                 <strong
@@ -715,9 +699,10 @@ document.addEventListener("turbo:render", () =&gt; Micra.start())</code></pre>
                   attributes.</strong
                 >
                 Numbers and booleans are already strings on the wire; let
-                Micra's auto-cast pick them up
-                (<span class="inline-code">data-count="3"</span> →
-                <span class="inline-code">this.prop('count') === 3</span>).
+                Micra's auto-cast pick them up (<span class="inline-code"
+                  >data-count="3"</span
+                >
+                → <span class="inline-code">this.prop('count') === 3</span>).
                 Only arrays / hashes need the
                 <span class="inline-code">JSON.parse</span>
                 round-trip.
@@ -731,27 +716,24 @@ document.addEventListener("turbo:render", () =&gt; Micra.start())</code></pre>
               You can run Stimulus and Micra side-by-side on the same page —
               they don't fight. Different DOM trees, different identifiers
               (<span class="inline-code">data-controller</span> vs
-              <span class="inline-code">data-component</span>). The clean
-              split:
+              <span class="inline-code">data-component</span>). The clean split:
             </p>
             <ul>
               <li>
                 <strong>Stimulus</strong> for stateless DOM behaviors —
-                clipboard copy, scroll detection, table-row hover,
-                dropdown open/close
-                <em>without</em> needing reactive state.
+                clipboard copy, scroll detection, table-row hover, dropdown
+                open/close <em>without</em> needing reactive state.
               </li>
               <li>
                 <strong>Micra</strong> for pages where state drives the UI —
                 search-with-results, multi-step forms, dashboards, anything
-                where a button click should ripple through three other
-                elements.
+                where a button click should ripple through three other elements.
               </li>
             </ul>
             <p>
               If a controller is just "state + N event handlers + a template
-              that re-renders", that's Micra. If it's "find this child,
-              animate it, forget", that's Stimulus.
+              that re-renders", that's Micra. If it's "find this child, animate
+              it, forget", that's Stimulus.
             </p>
           </section>
 
@@ -764,7 +746,7 @@ cd tasks-demo
 # 1. Pin Micra
 cat &gt;&gt; config/importmap.rb &lt;&lt;'EOF'
 pin "micra",
-    to: "https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.esm.js",
+    to: "https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.esm.js",
     preload: true
 EOF
 
@@ -783,8 +765,8 @@ rails db:migrate</code></pre>
             <p>
               Then convert the generated
               <span class="inline-code">index.html.erb</span> to a
-              <span class="inline-code">data-component</span> wrapper
-              following section 3b, add the component to
+              <span class="inline-code">data-component</span> wrapper following
+              section 3b, add the component to
               <span class="inline-code">app/javascript/application.js</span>
               following section 3c, and the board is live.
             </p>

@@ -28,173 +28,235 @@
  *             identifier | ( expr )
  */
 
-import type { StateRecord } from '../types'
+import type { StateRecord } from "../types";
 
 // ── Whitelisted globals ─────────────────────────────────────────────────────
 const ALLOWED_GLOBALS = new Set<string>(
-  'Math,JSON,Date,String,Number,Boolean,Array,Object,parseInt,parseFloat,isNaN,isFinite,NaN,Infinity,undefined'.split(','),
-)
+  "Math,JSON,Date,String,Number,Boolean,Array,Object,parseInt,parseFloat,isNaN,isFinite,NaN,Infinity,undefined".split(
+    ",",
+  ),
+);
 
 // Property names that would let an expression climb back to the Function
 // constructor / prototype. Blocked on every member access.
-const BLOCKED_PROPS = new Set<string>(['__proto__', 'constructor', 'prototype'])
+const BLOCKED_PROPS = new Set<string>([
+  "__proto__",
+  "constructor",
+  "prototype",
+]);
 
 /** @internal Names that live on Object.prototype (constructor, toString, …). */
-const OBJ_PROTO_KEYS = new Set<string>(Object.getOwnPropertyNames(Object.prototype))
+const OBJ_PROTO_KEYS = new Set<string>(
+  Object.getOwnPropertyNames(Object.prototype),
+);
 
 // ── AST ─────────────────────────────────────────────────────────────────────
 // Compact node shapes; `k` is the kind tag.
 type Node =
-  | { k: 'lit'; v: unknown }
-  | { k: 'id'; n: string }
-  | { k: 'mem'; o: Node; p: string }
-  | { k: 'call'; c: Node; a: Node[] }
-  | { k: 'un'; op: string; x: Node }
-  | { k: 'bin'; op: string; l: Node; r: Node }
-  | { k: 'tern'; c: Node; a: Node; b: Node }
+  | { k: "lit"; v: unknown }
+  | { k: "id"; n: string }
+  | { k: "mem"; o: Node; p: string }
+  | { k: "call"; c: Node; a: Node[] }
+  | { k: "un"; op: string; x: Node }
+  | { k: "bin"; op: string; l: Node; r: Node }
+  | { k: "tern"; c: Node; a: Node; b: Node };
 
 // ── Tokenizer ────────────────────────────────────────────────────────────────
-type Tok = { t: 'num' | 'str' | 'id' | 'p'; v: string }
+type Tok = { t: "num" | "str" | "id" | "p"; v: string };
 
 const PUNCT = [
-  '===', '!==', '==', '!=', '<=', '>=', '&&', '||',
-  '(', ')', '.', ',', '?', ':', '!', '<', '>', '+', '-', '*', '/', '%',
-]
+  "===",
+  "!==",
+  "==",
+  "!=",
+  "<=",
+  ">=",
+  "&&",
+  "||",
+  "(",
+  ")",
+  ".",
+  ",",
+  "?",
+  ":",
+  "!",
+  "<",
+  ">",
+  "+",
+  "-",
+  "*",
+  "/",
+  "%",
+];
 
 function tokenize(src: string): Tok[] {
-  const toks: Tok[] = []
-  let i = 0
-  const n = src.length
+  const toks: Tok[] = [];
+  let i = 0;
+  const n = src.length;
   while (i < n) {
-    const c = src[i]!
-    if (c === ' ' || c === '\t' || c === '\n' || c === '\r' || c === '\f') { i++; continue }
+    const c = src[i]!;
+    if (c === " " || c === "\t" || c === "\n" || c === "\r" || c === "\f") {
+      i++;
+      continue;
+    }
     // string
     if (c === '"' || c === "'") {
-      let s = ''
-      i++
+      let s = "";
+      i++;
       while (i < n && src[i] !== c) {
-        if (src[i] === '\\') { s += src[i + 1] ?? ''; i += 2 }
-        else { s += src[i]; i++ }
+        if (src[i] === "\\") {
+          s += src[i + 1] ?? "";
+          i += 2;
+        } else {
+          s += src[i];
+          i++;
+        }
       }
-      if (src[i] !== c) throw 0 // unterminated
-      i++
-      toks.push({ t: 'str', v: s })
-      continue
+      if (src[i] !== c) throw 0; // unterminated
+      i++;
+      toks.push({ t: "str", v: s });
+      continue;
     }
     // number
-    if (c >= '0' && c <= '9') {
-      let s = ''
-      while (i < n && ((src[i]! >= '0' && src[i]! <= '9') || src[i] === '.')) { s += src[i]; i++ }
-      toks.push({ t: 'num', v: s })
-      continue
+    if (c >= "0" && c <= "9") {
+      let s = "";
+      while (i < n && ((src[i]! >= "0" && src[i]! <= "9") || src[i] === ".")) {
+        s += src[i];
+        i++;
+      }
+      toks.push({ t: "num", v: s });
+      continue;
     }
     // identifier
     if (/[A-Za-z_$]/.test(c)) {
-      let s = ''
-      while (i < n && /[A-Za-z0-9_$]/.test(src[i]!)) { s += src[i]; i++ }
-      toks.push({ t: 'id', v: s })
-      continue
+      let s = "";
+      while (i < n && /[A-Za-z0-9_$]/.test(src[i]!)) {
+        s += src[i];
+        i++;
+      }
+      toks.push({ t: "id", v: s });
+      continue;
     }
     // punctuator (longest match first)
-    const m = PUNCT.find(p => src.startsWith(p, i))
-    if (!m) throw 0 // unknown char
-    toks.push({ t: 'p', v: m })
-    i += m.length
+    const m = PUNCT.find((p) => src.startsWith(p, i));
+    if (!m) throw 0; // unknown char
+    toks.push({ t: "p", v: m });
+    i += m.length;
   }
-  return toks
+  return toks;
 }
 
 // ── Parser (Pratt) ────────────────────────────────────────────────────────────
 const BIN_PREC: Record<string, number> = {
-  '||': 1, '&&': 2,
-  '==': 3, '!=': 3, '===': 3, '!==': 3,
-  '<': 4, '<=': 4, '>': 4, '>=': 4,
-  '+': 5, '-': 5,
-  '*': 6, '/': 6, '%': 6,
-}
+  "||": 1,
+  "&&": 2,
+  "==": 3,
+  "!=": 3,
+  "===": 3,
+  "!==": 3,
+  "<": 4,
+  "<=": 4,
+  ">": 4,
+  ">=": 4,
+  "+": 5,
+  "-": 5,
+  "*": 6,
+  "/": 6,
+  "%": 6,
+};
 
 function parse(toks: Tok[]): Node {
-  let pos = 0
-  const peek = () => toks[pos]
-  const next = () => toks[pos++]
-  const eat = (v: string) => { if (peek()?.v !== v) throw 0; pos++ }
+  let pos = 0;
+  const peek = () => toks[pos];
+  const next = () => toks[pos++];
+  const eat = (v: string) => {
+    if (peek()?.v !== v) throw 0;
+    pos++;
+  };
 
   function parseExpr(): Node {
-    const c = parseBin(1)
-    if (peek()?.v === '?') {
-      next()
-      const a = parseExpr()
-      eat(':')
-      const b = parseExpr()
-      return { k: 'tern', c, a, b }
+    const c = parseBin(1);
+    if (peek()?.v === "?") {
+      next();
+      const a = parseExpr();
+      eat(":");
+      const b = parseExpr();
+      return { k: "tern", c, a, b };
     }
-    return c
+    return c;
   }
 
   function parseBin(minPrec: number): Node {
-    let left = parseUnary()
+    let left = parseUnary();
     for (;;) {
-      const t = peek()
-      const prec = t && t.t === 'p' ? BIN_PREC[t.v] : undefined
-      if (prec === undefined || prec < minPrec) break
-      next()
-      const right = parseBin(prec + 1)
-      left = { k: 'bin', op: t!.v, l: left, r: right }
+      const t = peek();
+      const prec = t && t.t === "p" ? BIN_PREC[t.v] : undefined;
+      if (prec === undefined || prec < minPrec) break;
+      next();
+      const right = parseBin(prec + 1);
+      left = { k: "bin", op: t!.v, l: left, r: right };
     }
-    return left
+    return left;
   }
 
   function parseUnary(): Node {
-    const t = peek()
-    if (t && t.t === 'p' && (t.v === '!' || t.v === '-')) {
-      next()
-      return { k: 'un', op: t.v, x: parseUnary() }
+    const t = peek();
+    if (t && t.t === "p" && (t.v === "!" || t.v === "-")) {
+      next();
+      return { k: "un", op: t.v, x: parseUnary() };
     }
-    return parsePostfix()
+    return parsePostfix();
   }
 
   function parsePostfix(): Node {
-    let node = parsePrimary()
+    let node = parsePrimary();
     for (;;) {
-      const t = peek()
-      if (t?.v === '.') {
-        next()
-        const id = next()
-        if (!id || id.t !== 'id') throw 0
-        node = { k: 'mem', o: node, p: id.v }
-      } else if (t?.v === '(') {
-        next()
-        const args: Node[] = []
-        if (peek()?.v !== ')') {
-          args.push(parseExpr())
-          while (peek()?.v === ',') { next(); args.push(parseExpr()) }
+      const t = peek();
+      if (t?.v === ".") {
+        next();
+        const id = next();
+        if (!id || id.t !== "id") throw 0;
+        node = { k: "mem", o: node, p: id.v };
+      } else if (t?.v === "(") {
+        next();
+        const args: Node[] = [];
+        if (peek()?.v !== ")") {
+          args.push(parseExpr());
+          while (peek()?.v === ",") {
+            next();
+            args.push(parseExpr());
+          }
         }
-        eat(')')
-        node = { k: 'call', c: node, a: args }
-      } else break
+        eat(")");
+        node = { k: "call", c: node, a: args };
+      } else break;
     }
-    return node
+    return node;
   }
 
   function parsePrimary(): Node {
-    const t = next()
-    if (!t) throw 0
-    if (t.t === 'num') return { k: 'lit', v: Number(t.v) }
-    if (t.t === 'str') return { k: 'lit', v: t.v }
-    if (t.v === '(') { const e = parseExpr(); eat(')'); return e }
-    if (t.t === 'id') {
-      if (t.v === 'true') return { k: 'lit', v: true }
-      if (t.v === 'false') return { k: 'lit', v: false }
-      if (t.v === 'null') return { k: 'lit', v: null }
-      if (t.v === 'undefined') return { k: 'lit', v: undefined }
-      return { k: 'id', n: t.v }
+    const t = next();
+    if (!t) throw 0;
+    if (t.t === "num") return { k: "lit", v: Number(t.v) };
+    if (t.t === "str") return { k: "lit", v: t.v };
+    if (t.v === "(") {
+      const e = parseExpr();
+      eat(")");
+      return e;
     }
-    throw 0
+    if (t.t === "id") {
+      if (t.v === "true") return { k: "lit", v: true };
+      if (t.v === "false") return { k: "lit", v: false };
+      if (t.v === "null") return { k: "lit", v: null };
+      if (t.v === "undefined") return { k: "lit", v: undefined };
+      return { k: "id", n: t.v };
+    }
+    throw 0;
   }
 
-  const ast = parseExpr()
-  if (pos !== toks.length) throw 0 // trailing garbage
-  return ast
+  const ast = parseExpr();
+  if (pos !== toks.length) throw 0; // trailing garbage
+  return ast;
 }
 
 // ── Identifier resolution ─────────────────────────────────────────────────────
@@ -206,78 +268,106 @@ function parse(toks: Tok[]): Node {
  * built-in name.
  */
 function safeStateHas(state: object, key: string): boolean {
-  if (!Reflect.has(state, key)) return false
-  if (!OBJ_PROTO_KEYS.has(key)) return true
-  let obj: object | null = state
+  if (!Reflect.has(state, key)) return false;
+  if (!OBJ_PROTO_KEYS.has(key)) return true;
+  let obj: object | null = state;
   while (obj && obj !== Object.prototype) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) return true
-    obj = Object.getPrototypeOf(obj) as object | null
+    if (Object.prototype.hasOwnProperty.call(obj, key)) return true;
+    obj = Object.getPrototypeOf(obj) as object | null;
   }
-  return false
+  return false;
 }
 
 function resolveIdent(name: string, scope: StateRecord): unknown {
-  if (safeStateHas(scope, name)) return scope[name]
-  if (ALLOWED_GLOBALS.has(name)) return (globalThis as Record<string, unknown>)[name]
-  return undefined
+  if (safeStateHas(scope, name)) return scope[name];
+  if (ALLOWED_GLOBALS.has(name))
+    return (globalThis as Record<string, unknown>)[name];
+  return undefined;
 }
 
 // ── Interpreter ────────────────────────────────────────────────────────────────
 
 function evalNode(node: Node, scope: StateRecord): unknown {
   switch (node.k) {
-    case 'lit': return node.v
-    case 'id': return resolveIdent(node.n, scope)
-    case 'mem': {
-      const o = evalNode(node.o, scope)
-      if (o == null || BLOCKED_PROPS.has(node.p)) return undefined
-      return (o as Record<string, unknown>)[node.p]
+    case "lit":
+      return node.v;
+    case "id":
+      return resolveIdent(node.n, scope);
+    case "mem": {
+      const o = evalNode(node.o, scope);
+      if (o == null || BLOCKED_PROPS.has(node.p)) return undefined;
+      return (o as Record<string, unknown>)[node.p];
     }
-    case 'un': {
-      const x = evalNode(node.x, scope)
-      return node.op === '!' ? !x : -(x as number)
+    case "un": {
+      const x = evalNode(node.x, scope);
+      return node.op === "!" ? !x : -(x as number);
     }
-    case 'tern':
-      return evalNode(node.c, scope) ? evalNode(node.a, scope) : evalNode(node.b, scope)
-    case 'bin': {
-      const op = node.op
+    case "tern":
+      return evalNode(node.c, scope)
+        ? evalNode(node.a, scope)
+        : evalNode(node.b, scope);
+    case "bin": {
+      const op = node.op;
       // short-circuit logicals (return operand value, JS semantics)
-      if (op === '&&') { const l = evalNode(node.l, scope); return l ? evalNode(node.r, scope) : l }
-      if (op === '||') { const l = evalNode(node.l, scope); return l ? l : evalNode(node.r, scope) }
-      const l = evalNode(node.l, scope) as never
-      const r = evalNode(node.r, scope) as never
-      switch (op) {
-        case '+': return (l as number) + (r as number)
-        case '-': return (l as number) - (r as number)
-        case '*': return (l as number) * (r as number)
-        case '/': return (l as number) / (r as number)
-        case '%': return (l as number) % (r as number)
-        case '<': return l < r
-        case '<=': return l <= r
-        case '>': return l > r
-        case '>=': return l >= r
-        case '==': return l == r
-        case '!=': return l != r
-        case '===': return l === r
-        case '!==': return l !== r
+      if (op === "&&") {
+        const l = evalNode(node.l, scope);
+        return l ? evalNode(node.r, scope) : l;
       }
-      return undefined
+      if (op === "||") {
+        const l = evalNode(node.l, scope);
+        return l ? l : evalNode(node.r, scope);
+      }
+      const l = evalNode(node.l, scope) as never;
+      const r = evalNode(node.r, scope) as never;
+      switch (op) {
+        case "+":
+          return (l as number) + (r as number);
+        case "-":
+          return (l as number) - (r as number);
+        case "*":
+          return (l as number) * (r as number);
+        case "/":
+          return (l as number) / (r as number);
+        case "%":
+          return (l as number) % (r as number);
+        case "<":
+          return l < r;
+        case "<=":
+          return l <= r;
+        case ">":
+          return l > r;
+        case ">=":
+          return l >= r;
+        case "==":
+          return l == r;
+        case "!=":
+          return l != r;
+        case "===":
+          return l === r;
+        case "!==":
+          return l !== r;
+      }
+      return undefined;
     }
-    case 'call': {
+    case "call": {
       // member call binds `this` to the object (item.fmt(), Math.round(x));
       // bare call leaves `this` undefined (instance methods are pre-bound).
-      let fn: unknown
-      let self: unknown
-      if (node.c.k === 'mem') {
-        self = evalNode(node.c.o, scope)
-        fn = self == null || BLOCKED_PROPS.has(node.c.p)
-          ? undefined
-          : (self as Record<string, unknown>)[node.c.p]
+      let fn: unknown;
+      let self: unknown;
+      if (node.c.k === "mem") {
+        self = evalNode(node.c.o, scope);
+        fn =
+          self == null || BLOCKED_PROPS.has(node.c.p)
+            ? undefined
+            : (self as Record<string, unknown>)[node.c.p];
       } else {
-        fn = evalNode(node.c, scope)
+        fn = evalNode(node.c, scope);
       }
-      if (typeof fn !== 'function') throw new TypeError('not a function')
-      return (fn as (...a: unknown[]) => unknown).apply(self, node.a.map(x => evalNode(x, scope)))
+      if (typeof fn !== "function") throw new TypeError("not a function");
+      return (fn as (...a: unknown[]) => unknown).apply(
+        self,
+        node.a.map((x) => evalNode(x, scope)),
+      );
     }
   }
 }
@@ -285,15 +375,15 @@ function evalNode(node: Node, scope: StateRecord): unknown {
 // ── Cache + public API ──────────────────────────────────────────────────────
 
 type CachedEntry =
-  | { kind: 'path'; parts: string[] }
-  | { kind: 'ast'; ast: Node }
-  | { kind: 'err' }
+  | { kind: "path"; parts: string[] }
+  | { kind: "ast"; ast: Node }
+  | { kind: "err" };
 
-const exprCache = new Map<string, CachedEntry>()
-const warnedRuntime = new Set<string>()
+const exprCache = new Map<string, CachedEntry>();
+const warnedRuntime = new Set<string>();
 
 // Simple identifier or dot-path: "count", "user.name", "item.email".
-const SIMPLE_PATH = /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/
+const SIMPLE_PATH = /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/;
 
 /**
  * Evaluate an expression string against a state object.
@@ -308,40 +398,42 @@ const SIMPLE_PATH = /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/
  * evalExpr('price * qty', { price: 9.99, qty: 3 })     // → 29.97
  */
 export function evalExpr(expr: string, state: StateRecord): unknown {
-  let cached = exprCache.get(expr)
+  let cached = exprCache.get(expr);
 
   if (!cached) {
-    if (SIMPLE_PATH.test(expr)) {
-      cached = { kind: 'path', parts: expr.split('.') }
+    const parts = SIMPLE_PATH.test(expr) ? expr.split(".") : null;
+    if (parts && !parts.some((p) => BLOCKED_PROPS.has(p))) {
+      cached = { kind: "path", parts };
     } else {
       try {
-        cached = { kind: 'ast', ast: parse(tokenize(expr)) }
+        cached = { kind: "ast", ast: parse(tokenize(expr)) };
       } catch {
-        warn(`invalid expression "${expr}"`)
-        cached = { kind: 'err' }
+        warn(`invalid expression "${expr}"`);
+        cached = { kind: "err" };
       }
     }
-    exprCache.set(expr, cached)
+    exprCache.set(expr, cached);
   }
 
-  if (cached.kind === 'path') {
-    const parts = cached.parts
-    if (!safeStateHas(state, parts[0]!)) return undefined
-    let obj: unknown = state
-    for (const key of parts) obj = obj != null ? (obj as StateRecord)[key] : undefined
-    return obj
+  if (cached.kind === "path") {
+    const parts = cached.parts;
+    if (!safeStateHas(state, parts[0]!)) return undefined;
+    let obj: unknown = state;
+    for (const key of parts)
+      obj = obj != null ? (obj as StateRecord)[key] : undefined;
+    return obj;
   }
 
-  if (cached.kind === 'err') return undefined
+  if (cached.kind === "err") return undefined;
 
   try {
-    return evalNode(cached.ast, state)
+    return evalNode(cached.ast, state);
   } catch (e) {
     if (!warnedRuntime.has(expr)) {
-      warnedRuntime.add(expr)
-      warn(`runtime error in "${expr}": ${(e as Error).message}`)
+      warnedRuntime.add(expr);
+      warn(`runtime error in "${expr}": ${(e as Error).message}`);
     }
-    return undefined
+    return undefined;
   }
 }
 
@@ -349,5 +441,5 @@ export function evalExpr(expr: string, state: StateRecord): unknown {
 
 /** @internal Consistent warning prefix. */
 export function warn(msg: string): void {
-  console.warn(`[Micra] ${msg}`)
+  console.warn(`[Micra] ${msg}`);
 }

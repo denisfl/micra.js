@@ -1,4 +1,4 @@
-/* Micra.js v2.5.0 — https://github.com/micra-js/micra — MIT */
+/* Micra.js v2.5.1 — https://github.com/micra-js/micra — MIT */
 "use strict";
 var Micra = (() => {
   var __defProp = Object.defineProperty;
@@ -41,6 +41,13 @@ var Micra = (() => {
     var _a, _b;
     return (_b = (_a = document.querySelector('meta[name="csrf-token"]')) == null ? void 0 : _a.getAttribute("content")) != null ? _b : null;
   }
+  function sameOrigin(url) {
+    try {
+      return new URL(url, location.href).origin === location.origin;
+    } catch {
+      return true;
+    }
+  }
   var FetchError = class extends Error {
     constructor(message, status, response) {
       super(message);
@@ -57,7 +64,7 @@ var Micra = (() => {
       ...options.headers
     };
     const csrf = getCSRF();
-    if (csrf) headers["X-CSRF-Token"] = csrf;
+    if (csrf && sameOrigin(url)) headers["X-CSRF-Token"] = csrf;
     let finalUrl = url;
     let body;
     if (method === "GET" || method === "HEAD") {
@@ -118,10 +125,18 @@ var Micra = (() => {
 
   // src/utils/expr.ts
   var ALLOWED_GLOBALS = new Set(
-    "Math,JSON,Date,String,Number,Boolean,Array,Object,parseInt,parseFloat,isNaN,isFinite,NaN,Infinity,undefined".split(",")
+    "Math,JSON,Date,String,Number,Boolean,Array,Object,parseInt,parseFloat,isNaN,isFinite,NaN,Infinity,undefined".split(
+      ","
+    )
   );
-  var BLOCKED_PROPS = /* @__PURE__ */ new Set(["__proto__", "constructor", "prototype"]);
-  var OBJ_PROTO_KEYS = new Set(Object.getOwnPropertyNames(Object.prototype));
+  var BLOCKED_PROPS = /* @__PURE__ */ new Set([
+    "__proto__",
+    "constructor",
+    "prototype"
+  ]);
+  var OBJ_PROTO_KEYS = new Set(
+    Object.getOwnPropertyNames(Object.prototype)
+  );
   var PUNCT = [
     "===",
     "!==",
@@ -318,7 +333,8 @@ var Micra = (() => {
   }
   function resolveIdent(name, scope) {
     if (safeStateHas(scope, name)) return scope[name];
-    if (ALLOWED_GLOBALS.has(name)) return globalThis[name];
+    if (ALLOWED_GLOBALS.has(name))
+      return globalThis[name];
     return void 0;
   }
   function evalNode(node, scope) {
@@ -390,7 +406,10 @@ var Micra = (() => {
           fn = evalNode(node.c, scope);
         }
         if (typeof fn !== "function") throw new TypeError("not a function");
-        return fn.apply(self, node.a.map((x) => evalNode(x, scope)));
+        return fn.apply(
+          self,
+          node.a.map((x) => evalNode(x, scope))
+        );
       }
     }
   }
@@ -400,8 +419,9 @@ var Micra = (() => {
   function evalExpr(expr, state) {
     let cached = exprCache.get(expr);
     if (!cached) {
-      if (SIMPLE_PATH.test(expr)) {
-        cached = { kind: "path", parts: expr.split(".") };
+      const parts = SIMPLE_PATH.test(expr) ? expr.split(".") : null;
+      if (parts && !parts.some((p) => BLOCKED_PROPS.has(p))) {
+        cached = { kind: "path", parts };
       } else {
         try {
           cached = { kind: "ast", ast: parse(tokenize(expr)) };
@@ -416,7 +436,8 @@ var Micra = (() => {
       const parts = cached.parts;
       if (!safeStateHas(state, parts[0])) return void 0;
       let obj = state;
-      for (const key of parts) obj = obj != null ? obj[key] : void 0;
+      for (const key of parts)
+        obj = obj != null ? obj[key] : void 0;
       return obj;
     }
     if (cached.kind === "err") return void 0;
@@ -526,7 +547,8 @@ var Micra = (() => {
     } else {
       const parent = el.parentNode;
       if (parent) {
-        if (!binding.placeholder) binding.placeholder = document.createComment("if");
+        if (!binding.placeholder)
+          binding.placeholder = document.createComment("if");
         parent.replaceChild(binding.placeholder, el);
       }
     }
@@ -539,6 +561,10 @@ var Micra = (() => {
   function applyBind(el, pairs, state) {
     for (const [attr, valExpr] of pairs) {
       const val = evalExpr(valExpr, state);
+      if (attr[0] === "o" && attr[1] === "n") {
+        warn(`data-bind refused event-handler attribute "${attr}" \u2014 use @${attr.slice(2)}`);
+        continue;
+      }
       if (attr === "class") {
         el.className = String(val != null ? val : "");
       } else if (attr === "value") {
@@ -552,8 +578,13 @@ var Micra = (() => {
         }
       } else if (typeof val === "boolean") {
         val ? el.setAttribute(attr, "") : el.removeAttribute(attr);
+      } else if (val == null) {
+        el.removeAttribute(attr);
+      } else if (/^\s*javascript:/i.test(String(val))) {
+        warn(`data-bind dropped unsafe javascript: URL from "${attr}"`);
+        el.removeAttribute(attr);
       } else {
-        val == null ? el.removeAttribute(attr) : el.setAttribute(attr, String(val));
+        el.setAttribute(attr, String(val));
       }
     }
   }

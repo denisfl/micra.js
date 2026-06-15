@@ -1,41 +1,57 @@
 <!doctype html>
 <html>
-<head><script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.min.js"></script></head>
-<body>
-<div data-component="dropdown" data-label="Sort" data-options='["Newest","Oldest"]'>
-  <button @click="toggle" data-text="label"></button>
-  <ul data-if="open">
-    <template data-each="options">
-      <li data-text="item"></li>
-    </template>
-  </ul>
-</div>
-<div data-component="dropdown" data-label="Filter" data-options='["Open","Closed"]'>
-  <button @click="toggle" data-text="label"></button>
-  <ul data-if="open">
-    <template data-each="options">
-      <li data-text="item"></li>
-    </template>
-  </ul>
-</div>
-<div data-component="dropdown" data-label="View" data-options='["Grid","List"]'>
-  <button @click="toggle" data-text="label"></button>
-  <ul data-if="open">
-    <template data-each="options">
-      <li data-text="item"></li>
-    </template>
-  </ul>
-</div>
-<script>
-Micra.define('dropdown', {
-  state: { open: false, label: '', options: [] },
-  onCreate() {
-    this.state.label = this.prop('label', '')
-    this.state.options = JSON.parse(this.prop('options', '[]'))
-  },
-  toggle() { this.state.open = !this.state.open },
-})
-Micra.start()
-</script>
-</body>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.min.js"></script>
+  </head>
+  <body>
+    <div
+      data-component="dropdown"
+      data-label="Sort"
+      data-options='["Newest","Oldest"]'
+    >
+      <button @click="toggle" data-text="label"></button>
+      <ul data-if="open">
+        <template data-each="options">
+          <li data-text="item"></li>
+        </template>
+      </ul>
+    </div>
+    <div
+      data-component="dropdown"
+      data-label="Filter"
+      data-options='["Open","Closed"]'
+    >
+      <button @click="toggle" data-text="label"></button>
+      <ul data-if="open">
+        <template data-each="options">
+          <li data-text="item"></li>
+        </template>
+      </ul>
+    </div>
+    <div
+      data-component="dropdown"
+      data-label="View"
+      data-options='["Grid","List"]'
+    >
+      <button @click="toggle" data-text="label"></button>
+      <ul data-if="open">
+        <template data-each="options">
+          <li data-text="item"></li>
+        </template>
+      </ul>
+    </div>
+    <script>
+      Micra.define("dropdown", {
+        state: { open: false, label: "", options: [] },
+        onCreate() {
+          this.state.label = this.prop("label", "");
+          this.state.options = JSON.parse(this.prop("options", "[]"));
+        },
+        toggle() {
+          this.state.open = !this.state.open;
+        },
+      });
+      Micra.start();
+    </script>
+  </body>
 </html>

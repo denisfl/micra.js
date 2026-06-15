@@ -30,7 +30,7 @@ The two paths:
 # config/importmap.rb
 pin "application"
 pin "micra",
-    to: "https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.esm.js",
+    to: "https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.esm.js",
     preload: true
 ```
 
@@ -70,7 +70,7 @@ Three things to notice:
    the global scope, but you'll often want to `Micra.define()` from an inline
    `<script>` inside a partial. Exposing it on `window` keeps that ergonomic.
 3. **`turbo:load` mirror.** If you're using Turbo Drive (the default in
-   Rails 7+), `DOMContentLoaded` only fires once — on the *first* page
+   Rails 7+), `DOMContentLoaded` only fires once — on the _first_ page
    load. After a Turbo navigation, `<body>` is swapped but `DOMContentLoaded`
    does NOT fire again, so new `[data-component]` elements never mount.
    `turbo:load` is the canonical signal for "page is ready, now or after a
@@ -80,13 +80,17 @@ Three things to notice:
 
 ```js
 // app/javascript/application.js
-import * as Micra from "micra"
+import * as Micra from "micra";
 
 Micra.define("counter", {
   state: { count: 0 },
-  inc() { this.state.count++ },
-  dec() { this.state.count-- },
-})
+  inc() {
+    this.state.count++;
+  },
+  dec() {
+    this.state.count--;
+  },
+});
 ```
 
 If you're using a single `application.js`, all `Micra.define(...)` calls go
@@ -145,7 +149,7 @@ exactly the markup you would write by hand.
   ```ruby
   # config/importmap.rb — override the gem's pin
   pin "micra",
-      to: "https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.esm.js",
+      to: "https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.esm.js",
       preload: true
   ```
 
@@ -177,8 +181,8 @@ exactly the markup you would write by hand.
 
   ```js
   // app/javascript/application.js
-  import * as Micra from "micra"
-  document.addEventListener("turbo:load", () => Micra.start())
+  import * as Micra from "micra";
+  document.addEventListener("turbo:load", () => Micra.start());
   ```
 
 None of these block the gem from being useful — they just need to be
@@ -296,53 +300,61 @@ initial paint, see [section 4d](#d-seeding-non-primitive-state-from-server-rende
 
 ```js
 // app/javascript/components/tasks.js (imported from application.js)
-import * as Micra from "micra"
+import * as Micra from "micra";
 
 Micra.define("tasks-board", {
   state: { tasks: [], draft: "" },
 
   onCreate() {
     // SSR seed — data-initial-tasks holds JSON, parse once.
-    const raw = this.prop("initialTasks")
-    if (raw) this.state.tasks = JSON.parse(raw)
+    const raw = this.prop("initialTasks");
+    if (raw) this.state.tasks = JSON.parse(raw);
   },
 
   async add() {
-    const title = this.state.draft.trim()
-    if (!title) return
-    const task = await this.fetch("/tasks", { method: "POST", body: { title } })
-    this.state.tasks = [...this.state.tasks, task]
-    this.state.draft = ""
-    this.emit("tasks:changed", { tasks: this.state.tasks })
+    const title = this.state.draft.trim();
+    if (!title) return;
+    const task = await this.fetch("/tasks", {
+      method: "POST",
+      body: { title },
+    });
+    this.state.tasks = [...this.state.tasks, task];
+    this.state.draft = "";
+    this.emit("tasks:changed", { tasks: this.state.tasks });
   },
 
   async toggle(e) {
-    const id = Number(e.currentTarget.closest("li").querySelector("[data-id]")?.dataset.id
-                      || e.currentTarget.dataset.id)
-    const next = !this.state.tasks.find(t => t.id === id).done
-    const task = await this.fetch(`/tasks/${id}`, { method: "PATCH", body: { done: next } })
-    this.state.tasks = this.state.tasks.map(t => t.id === id ? task : t)
-    this.emit("tasks:changed", { tasks: this.state.tasks })
+    const id = Number(
+      e.currentTarget.closest("li").querySelector("[data-id]")?.dataset.id ||
+        e.currentTarget.dataset.id,
+    );
+    const next = !this.state.tasks.find((t) => t.id === id).done;
+    const task = await this.fetch(`/tasks/${id}`, {
+      method: "PATCH",
+      body: { done: next },
+    });
+    this.state.tasks = this.state.tasks.map((t) => (t.id === id ? task : t));
+    this.emit("tasks:changed", { tasks: this.state.tasks });
   },
 
   async remove(e) {
-    const id = Number(e.currentTarget.dataset.id)
-    await this.fetch(`/tasks/${id}`, { method: "DELETE" })
-    this.state.tasks = this.state.tasks.filter(t => t.id !== id)
-    this.emit("tasks:changed", { tasks: this.state.tasks })
+    const id = Number(e.currentTarget.dataset.id);
+    await this.fetch(`/tasks/${id}`, { method: "DELETE" });
+    this.state.tasks = this.state.tasks.filter((t) => t.id !== id);
+    this.emit("tasks:changed", { tasks: this.state.tasks });
   },
-})
+});
 
 Micra.define("pending-count", {
   state: { count: 0 },
 
   onCreate() {
-    this.state.count = this.prop("initial", 0)        // primitive prop — auto-cast to number
+    this.state.count = this.prop("initial", 0); // primitive prop — auto-cast to number
     this.on("tasks:changed", ({ tasks }) => {
-      this.state.count = tasks.filter(t => !t.done).length
-    })
+      this.state.count = tasks.filter((t) => !t.done).length;
+    });
   },
-})
+});
 ```
 
 Subscriptions made with `this.on` are auto-removed on `destroy()` — you
@@ -389,16 +401,16 @@ Use it where flicker matters (above-the-fold lists, dashboards); use the
 Rails' default layout ships `<%= csrf_meta_tags %>`, which emits:
 
 ```html
-<meta name="csrf-param" content="authenticity_token">
-<meta name="csrf-token" content="…">
+<meta name="csrf-param" content="authenticity_token" />
+<meta name="csrf-token" content="…" />
 ```
 
 [`src/utils/fetch.ts`](../../src/utils/fetch.ts) reads that token and
 sends `X-CSRF-Token` on every non-GET request:
 
 ```ts
-const csrf = getCSRF()
-if (csrf) headers['X-CSRF-Token'] = csrf
+const csrf = getCSRF();
+if (csrf) headers["X-CSRF-Token"] = csrf;
 ```
 
 So `this.fetch('/tasks', { method: 'POST', body: {...} })` works against
@@ -431,8 +443,8 @@ navigate frequently and accumulate bus subscriptions, hook
 
 ```js
 document.addEventListener("turbo:before-visit", () => {
-  Micra.instances().forEach(inst => inst.destroy())
-})
+  Micra.instances().forEach((inst) => inst.destroy());
+});
 ```
 
 ### Turbo Streams — server-driven swaps
@@ -445,14 +457,14 @@ replace fragments of the DOM. New fragments from the server can contain
 
 ```js
 document.addEventListener("turbo:before-stream-render", (e) => {
-  const target = document.getElementById(e.target.target)
-  if (!target) return
+  const target = document.getElementById(e.target.target);
+  if (!target) return;
   Micra.instances().forEach((inst, root) => {
-    if (target.contains(root)) inst.destroy()
-  })
-})
+    if (target.contains(root)) inst.destroy();
+  });
+});
 
-document.addEventListener("turbo:render", () => Micra.start())
+document.addEventListener("turbo:render", () => Micra.start());
 ```
 
 It's the same shape as the [htmx bridge](./htmx.md): destroy before swap,
@@ -468,17 +480,17 @@ htmx footgun.
 
 Two ways out:
 
-1. Put `data-component` on a wrapper *outside* the `<turbo-frame>`, so
+1. Put `data-component` on a wrapper _outside_ the `<turbo-frame>`, so
    the swap target is purely inside Micra-managed DOM.
 2. Listen to `turbo:frame-render` and re-mount the frame's contents:
 
    ```js
    document.addEventListener("turbo:frame-render", (e) => {
      Micra.instances().forEach((inst, root) => {
-       if (e.target.contains(root) && root !== e.target) inst.destroy()
-     })
-     Micra.start(e.target)
-   })
+       if (e.target.contains(root) && root !== e.target) inst.destroy();
+     });
+     Micra.start(e.target);
+   });
    ```
 
 ## 6. Things to avoid
@@ -499,7 +511,7 @@ Two ways out:
   `FetchError(message, status, response)` on non-2xx — if your endpoint
   returns `422 { errors: {...} }` for a validation failure, parse the
   body server-side: `catch (e) { if (e instanceof FetchError) {
-  const errs = await e.response.json(); ... } }`.
+const errs = await e.response.json(); ... } }`.
 - **Don't put `Micra.start()` in a `<script defer>` if your layout also
   has `turbo:load`.** Duplicate calls are safe but make initialization
   order harder to reason about. One source of truth: the module script
@@ -516,7 +528,7 @@ don't fight. Different DOM trees, different identifiers
 (`data-controller` vs `data-component`). The clean split:
 
 - **Stimulus** for stateless DOM behaviors — clipboard copy, scroll
-  detection, table-row hover, dropdown open/close *without* needing
+  detection, table-row hover, dropdown open/close _without_ needing
   reactive state.
 - **Micra** for pages where state drives the UI — search-with-results,
   multi-step forms, dashboards, anything where a button click should
@@ -537,7 +549,7 @@ cd tasks-demo
 # 1. Pin Micra
 cat >> config/importmap.rb <<'EOF'
 pin "micra",
-    to: "https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.esm.js",
+    to: "https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.esm.js",
     preload: true
 EOF
 

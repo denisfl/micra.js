@@ -7,7 +7,7 @@ This file follows the llmstxt.org "expanded" convention: it inlines code recipes
 ## Install
 
 ```bash
-npm install micra.js@^2.5.0
+npm install micra.js@^2.5.1
 ```
 
 ```ts
@@ -17,7 +17,7 @@ import * as Micra from 'micra.js'
 Or CDN (no build step):
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.min.js"></script>
 ```
 
 This exposes a global `Micra` object.
@@ -146,7 +146,7 @@ Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeo
   <button @click="inc">+</button>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.min.js"></script>
 <script>
   Micra.define('counter', {
     state: { count: 0 },
@@ -190,7 +190,7 @@ Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeo
   </footer>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.min.js"></script>
 <script>
   Micra.define('todo-app', {
     state: {
@@ -262,7 +262,7 @@ Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeo
   <p data-if="filtered().length === 0">No matches.</p>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.min.js"></script>
 <script>
   Micra.define('users-table', {
     state: {
@@ -303,7 +303,7 @@ Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeo
   <p data-if="success">Invitation sent ✓</p>
 </form>
 
-<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.min.js"></script>
 <script>
   Micra.define('invite-form', {
     state: { email: '', loading: false, error: '', success: false },
@@ -345,7 +345,7 @@ Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeo
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.min.js"></script>
 <script>
   Micra.define('open-modal-btn', {
     open() {
@@ -394,7 +394,7 @@ Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeo
   <section data-if="tab === 'security'">Security content</section>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.min.js"></script>
 <script>
   Micra.define('tabs', {
     state: { tab: 'overview' },
@@ -414,7 +414,7 @@ Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeo
   <button @click="upgrade" data-if="plan !== 'enterprise'">Upgrade</button>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.min.js"></script>
 <script>
   Micra.define('user-card', {
     state: { name: '', plan: '' },
@@ -445,7 +445,7 @@ Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeo
   <p data-if="!loading && results.length === 0 && query">No results.</p>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.min.js"></script>
 <script>
   Micra.define('search', {
     state: { query: '', results: [], loading: false },
@@ -479,7 +479,7 @@ Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeo
   <p data-if="loading">Loading chart…</p>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.min.js"></script>
 <script>
   Micra.define('revenue-chart', {
     state: { loading: true },
@@ -511,7 +511,7 @@ Everything else (`window`, `document`, `fetch`, `eval`, `constructor`, `setTimeo
   <p data-if="!loading && rows.length === 0">No results.</p>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.min.js"></script>
 <script>
   Micra.define('search-bar', {
     state: { query: '' },
@@ -542,7 +542,7 @@ the same page. Twelve lines of glue, written once.
 <main hx-get="/page/home" hx-trigger="load" hx-swap="innerHTML"></main>
 
 <script src="https://cdn.jsdelivr.net/npm/htmx.org@2/dist/htmx.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.min.js"></script>
 <script>
   Micra.define('counter', {
     state: { count: 0 },
@@ -596,7 +596,7 @@ a `turbo:load` mirror so the second navigation doesn't ghost.
 ```ruby
 # config/importmap.rb
 pin "micra",
-    to: "https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.esm.js",
+    to: "https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.esm.js",
     preload: true
 ```
 
@@ -716,9 +716,9 @@ import { ref, computed } from 'vue'
 import Alpine from 'alpinejs'
 
 // ❌ unpkg CDN — blocked by Claude artifacts and most AI sandbox CSPs
-<script src="https://unpkg.com/micra.js@2.5.0/dist/micra.min.js"></script>
+<script src="https://unpkg.com/micra.js@2.5.1/dist/micra.min.js"></script>
 // ✅ Use jsDelivr instead — it auto-mirrors npm and is CSP-allowlisted everywhere
-<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.min.js"></script>
 ```
 
 # Final checklist

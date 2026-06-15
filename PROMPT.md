@@ -36,7 +36,7 @@ Micra.js is a lightweight reactive UI framework (~7 KB gzip). It is NOT React, N
 7. **`data-model` supports dot-paths.** `data-model="filters.search"` reads and writes `state.filters.search` (reconstructs the nested object). Flat keys work as before.
 8. **One single HTML file with CDN preferred** unless told otherwise:
    ```html
-   <script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.min.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.min.js"></script>
    ```
    Use jsDelivr, NOT unpkg. Claude artifacts and many other sandboxed AI environments
    have a Content Security Policy that blocks `unpkg.com` but allows `cdn.jsdelivr.net`.
@@ -76,6 +76,7 @@ Micra.start();
 ```
 
 **`this` inside methods:**
+
 - `this.state` — reactive Proxy
 - `this.$el` — root HTMLElement
 - `this.refs` — `{ name: HTMLElement }` from `data-ref="name"`
@@ -90,28 +91,30 @@ Micra.start();
 
 ## Directives
 
-| Directive | Example | Effect |
-|-----------|---------|--------|
-| `data-text` | `data-text="name"` | sets `textContent` |
-| `data-html` | `data-html="bio"` | sets `innerHTML` ⚠️ XSS-prone — only with sanitized input |
-| `data-if` | `data-if="count > 0"` | mounts/**unmounts** from DOM (true detach + re-insert) |
-| `data-show` | `data-show="loaded"` | toggles `style.display` only — element stays in DOM |
-| `data-bind` | `data-bind="href:url, disabled:loading"` | sets attrs (boolean → add/remove) |
-| `data-model` | `data-model="email"` | two-way input binding; `type=number/range` → number; `type=checkbox` → boolean |
-| `data-each` | `data-each="items" data-key="id"` | keyed list render on `<template>` |
-| `data-ref` | `data-ref="canvas"` | `this.refs.canvas` |
-| `data-class` | `data-class="active:isActive, hidden:!loaded"` | additive class toggle |
-| `@event` | `@click="save"`, `@submit.prevent="submit"` | event binding |
-| `data-on` | `data-on="click:save, blur:close"` | same as `@event` |
+| Directive    | Example                                        | Effect                                                                         |
+| ------------ | ---------------------------------------------- | ------------------------------------------------------------------------------ |
+| `data-text`  | `data-text="name"`                             | sets `textContent`                                                             |
+| `data-html`  | `data-html="bio"`                              | sets `innerHTML` ⚠️ XSS-prone — only with sanitized input                      |
+| `data-if`    | `data-if="count > 0"`                          | mounts/**unmounts** from DOM (true detach + re-insert)                         |
+| `data-show`  | `data-show="loaded"`                           | toggles `style.display` only — element stays in DOM                            |
+| `data-bind`  | `data-bind="href:url, disabled:loading"`       | sets attrs (boolean → add/remove)                                              |
+| `data-model` | `data-model="email"`                           | two-way input binding; `type=number/range` → number; `type=checkbox` → boolean |
+| `data-each`  | `data-each="items" data-key="id"`              | keyed list render on `<template>`                                              |
+| `data-ref`   | `data-ref="canvas"`                            | `this.refs.canvas`                                                             |
+| `data-class` | `data-class="active:isActive, hidden:!loaded"` | additive class toggle                                                          |
+| `@event`     | `@click="save"`, `@submit.prevent="submit"`    | event binding                                                                  |
+| `data-on`    | `data-on="click:save, blur:close"`             | same as `@event`                                                               |
 
 Modifiers (events only): `.prevent`, `.stop`, `.self`, plus key/system guards `.enter` `.escape` `.tab` `.space` `.up` `.down` `.left` `.right` `.delete` `.ctrl` `.shift` `.alt` `.meta` (an unrecognized one matches `e.key` case-insensitively). Combine freely: `@keydown.ctrl.enter="submit"`.
 
 `data-bind` special left-hand-sides:
+
 - `class:` → **replaces** full `className` (don't combine with `data-class` on same element — Micra warns)
 - `value:` → sets input value, but does not fight live typing
 - `style:` → accepts string or object (object assigns to `el.style`, does NOT reset previous keys)
 
 Expression context (what you can write in `data-text="..."` etc.):
+
 - State keys (`count`, `user.name`)
 - Component methods (`format(price)`, `filtered()`) — `this` is bound to the instance
 - A whitelist of globals: `Math`, `JSON`, `Date`, `String`, `Number`, `Boolean`, `Array`, `Object`, `parseInt`, `parseFloat`, `isNaN`, `isFinite`, `NaN`, `Infinity`, `undefined`
@@ -133,10 +136,10 @@ Server emits `data-*` attributes; component reads them with `this.prop()` in `on
 Micra.define("profile", {
   state: { id: null, active: false },
   onCreate() {
-    this.state.id = this.prop("userId")        // 42 (number, auto-cast)
-    this.state.active = this.prop("active")    // true (boolean)
+    this.state.id = this.prop("userId"); // 42 (number, auto-cast)
+    this.state.active = this.prop("active"); // true (boolean)
   },
-})
+});
 ```
 
 Names are camelCased: `data-user-id` → `this.prop('userId')`.
@@ -163,10 +166,12 @@ catch (e) { if (e.status === 404) /* ... */ }
 
 ```js
 // Component A
-Micra.emit("cart:updated", { count: 3 })
+Micra.emit("cart:updated", { count: 3 });
 
 // Component B (or anywhere)
-Micra.on("cart:updated", ({ count }) => { /* ... */ })
+Micra.on("cart:updated", ({ count }) => {
+  /* ... */
+});
 ```
 
 Inside components, prefer `this.emit` / `this.on` — subscriptions made with `this.on` auto-unsubscribe on destroy.
@@ -188,17 +193,21 @@ Inside components, prefer `this.emit` / `this.on` — subscriptions made with `t
 ```js
 Micra.define("counter", {
   state: { count: 0 },
-  inc() { this.state.count++ },
-  dec() { this.state.count-- },
-})
-Micra.start()
+  inc() {
+    this.state.count++;
+  },
+  dec() {
+    this.state.count--;
+  },
+});
+Micra.start();
 ```
 
 ### 2. List with filter and computed values
 
 ```html
 <div data-component="users">
-  <input data-model="query" placeholder="Search…">
+  <input data-model="query" placeholder="Search…" />
   <p data-text="summary()"></p>
 
   <template data-each="filtered()" data-key="id">
@@ -215,26 +224,28 @@ Micra.start()
 Micra.define("users", {
   state: {
     query: "",
-    users: [/* …seeded data… */],
+    users: [
+      /* …seeded data… */
+    ],
   },
   filtered() {
-    const q = this.state.query.toLowerCase()
-    if (!q) return this.state.users
-    return this.state.users.filter(u =>
-      u.name.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q)
-    )
+    const q = this.state.query.toLowerCase();
+    if (!q) return this.state.users;
+    return this.state.users.filter(
+      (u) =>
+        u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q),
+    );
   },
   summary() {
-    const n = this.filtered().length
-    return n + " / " + this.state.users.length + " users"
+    const n = this.filtered().length;
+    return n + " / " + this.state.users.length + " users";
   },
   open(e) {
-    const id = e.currentTarget.closest("[data-id]").dataset.id
-    this.emit("user:open", { id })
+    const id = e.currentTarget.closest("[data-id]").dataset.id;
+    this.emit("user:open", { id });
   },
-})
-Micra.start()
+});
+Micra.start();
 ```
 
 ### 3. Async fetch with loading/error state
@@ -251,28 +262,32 @@ Micra.start()
 ```js
 Micra.define("user-loader", {
   state: { loading: false, error: "", user: null },
-  async onCreate() { await this.load() },
+  async onCreate() {
+    await this.load();
+  },
   async load() {
-    this.state.loading = true
-    this.state.error = ""
+    this.state.loading = true;
+    this.state.error = "";
     try {
-      this.state.user = await this.fetch("/api/user")
+      this.state.user = await this.fetch("/api/user");
     } catch (e) {
-      this.state.error = e.message
+      this.state.error = e.message;
     } finally {
-      this.state.loading = false
+      this.state.loading = false;
     }
   },
-  pretty() { return JSON.stringify(this.state.user, null, 2) },
-})
-Micra.start()
+  pretty() {
+    return JSON.stringify(this.state.user, null, 2);
+  },
+});
+Micra.start();
 ```
 
 ### 4. Form with validation and submit
 
 ```html
 <form data-component="invite-form" @submit.prevent="submit">
-  <input data-model="email" type="email" placeholder="Email">
+  <input data-model="email" type="email" placeholder="Email" />
   <button data-bind="disabled:loading">
     <span data-text="loading ? 'Sending…' : 'Send invite'"></span>
   </button>
@@ -284,21 +299,30 @@ Micra.start()
 ```js
 Micra.define("invite-form", {
   state: { email: "", loading: false, error: "", success: false },
-  isValid() { return this.state.email.includes("@") },
+  isValid() {
+    return this.state.email.includes("@");
+  },
   async submit() {
-    if (!this.isValid()) { this.state.error = "Invalid email"; return }
-    this.state.loading = true; this.state.error = ""
+    if (!this.isValid()) {
+      this.state.error = "Invalid email";
+      return;
+    }
+    this.state.loading = true;
+    this.state.error = "";
     try {
-      await this.fetch("/api/invite", { method: "POST", body: { email: this.state.email } })
-      this.state.success = true
+      await this.fetch("/api/invite", {
+        method: "POST",
+        body: { email: this.state.email },
+      });
+      this.state.success = true;
     } catch (e) {
-      this.state.error = e.message
+      this.state.error = e.message;
     } finally {
-      this.state.loading = false
+      this.state.loading = false;
     }
   },
-})
-Micra.start()
+});
+Micra.start();
 ```
 
 ### 5. Modal via event bus
@@ -319,24 +343,28 @@ Micra.start()
 
 ```js
 Micra.define("open-button", {
-  open() { this.emit("modal:open", { message: "Are you sure?" }) },
-})
+  open() {
+    this.emit("modal:open", { message: "Are you sure?" });
+  },
+});
 
 Micra.define("confirm-modal", {
   state: { show: false, message: "" },
   onCreate() {
     this.on("modal:open", ({ message }) => {
-      this.state.message = message
-      this.state.show = true
-    })
+      this.state.message = message;
+      this.state.show = true;
+    });
   },
   confirm() {
-    this.emit("modal:confirmed")
-    this.close()
+    this.emit("modal:confirmed");
+    this.close();
   },
-  close() { this.state.show = false },
-})
-Micra.start()
+  close() {
+    this.state.show = false;
+  },
+});
+Micra.start();
 ```
 
 ### 6. Tabs
@@ -344,10 +372,20 @@ Micra.start()
 ```html
 <div data-component="tabs">
   <nav>
-    <button @click="select" data-bind="data-tab:'overview'"
-            data-class="active:tab === 'overview'">Overview</button>
-    <button @click="select" data-bind="data-tab:'billing'"
-            data-class="active:tab === 'billing'">Billing</button>
+    <button
+      @click="select"
+      data-bind="data-tab:'overview'"
+      data-class="active:tab === 'overview'"
+    >
+      Overview
+    </button>
+    <button
+      @click="select"
+      data-bind="data-tab:'billing'"
+      data-class="active:tab === 'billing'"
+    >
+      Billing
+    </button>
   </nav>
   <section data-if="tab === 'overview'">…</section>
   <section data-if="tab === 'billing'">…</section>
@@ -357,9 +395,11 @@ Micra.start()
 ```js
 Micra.define("tabs", {
   state: { tab: "overview" },
-  select(e) { this.state.tab = e.currentTarget.dataset.tab },
-})
-Micra.start()
+  select(e) {
+    this.state.tab = e.currentTarget.dataset.tab;
+  },
+});
+Micra.start();
 ```
 
 ### 7. Todo (full recipe)
@@ -371,9 +411,9 @@ See **docs/recipes/todo-app.md** in the repository for the canonical idiomatic t
 ## DevTools
 
 ```js
-Micra.instances()  // Map<HTMLElement, ComponentInstance> of live components
-Micra.registry()   // Map<string, ComponentDefinition> of all definitions
-Micra.debug()      // prints all live components, their state and $el to console
+Micra.instances(); // Map<HTMLElement, ComponentInstance> of live components
+Micra.registry(); // Map<string, ComponentDefinition> of all definitions
+Micra.debug(); // prints all live components, their state and $el to console
 ```
 
 ---
@@ -388,4 +428,4 @@ Micra.debug()      // prints all live components, their state and $el to console
 - [ ] No `this.renderList()` or `this.update()` after mutations.
 - [ ] State is flat — `state.user.name = …` is rewritten as `state.user = { …, name: … }`.
 - [ ] `Micra.start()` is at the end of the script.
-- [ ] `<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.min.js"></script>` is in `<head>` or before the component script. NOT `unpkg.com` (blocked by Claude/AI sandbox CSPs).
+- [ ] `<script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.min.js"></script>` is in `<head>` or before the component script. NOT `unpkg.com` (blocked by Claude/AI sandbox CSPs).

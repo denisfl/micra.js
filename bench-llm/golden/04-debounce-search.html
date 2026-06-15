@@ -1,40 +1,53 @@
 <!doctype html>
 <html>
-<head><script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.min.js"></script></head>
-<body>
-<div data-component="search">
-  <input type="search" data-model="q" @input="changed" placeholder="Search names…">
-  <ul>
-    <template data-each="shown()" data-key="id">
-      <li data-text="item.name"></li>
-    </template>
-  </ul>
-</div>
-<script>
-Micra.define('search', {
-  state: {
-    q: '',
-    applied: '',
-    names: [
-      { id: 1, name: 'Alice' },
-      { id: 2, name: 'Albert' },
-      { id: 3, name: 'Bob' },
-      { id: 4, name: 'Carol' },
-      { id: 5, name: 'Dave' },
-    ],
-  },
-  shown() {
-    const a = this.state.applied.toLowerCase()
-    if (!a) return this.state.names
-    return this.state.names.filter(n => n.name.toLowerCase().includes(a))
-  },
-  changed() {
-    clearTimeout(this._t)
-    this._t = setTimeout(() => { this.state.applied = this.state.q }, 300)
-  },
-  onDestroy() { clearTimeout(this._t) },
-})
-Micra.start()
-</script>
-</body>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.min.js"></script>
+  </head>
+  <body>
+    <div data-component="search">
+      <input
+        type="search"
+        data-model="q"
+        @input="changed"
+        placeholder="Search names…"
+      />
+      <ul>
+        <template data-each="shown()" data-key="id">
+          <li data-text="item.name"></li>
+        </template>
+      </ul>
+    </div>
+    <script>
+      Micra.define("search", {
+        state: {
+          q: "",
+          applied: "",
+          names: [
+            { id: 1, name: "Alice" },
+            { id: 2, name: "Albert" },
+            { id: 3, name: "Bob" },
+            { id: 4, name: "Carol" },
+            { id: 5, name: "Dave" },
+          ],
+        },
+        shown() {
+          const a = this.state.applied.toLowerCase();
+          if (!a) return this.state.names;
+          return this.state.names.filter((n) =>
+            n.name.toLowerCase().includes(a),
+          );
+        },
+        changed() {
+          clearTimeout(this._t);
+          this._t = setTimeout(() => {
+            this.state.applied = this.state.q;
+          }, 300);
+        },
+        onDestroy() {
+          clearTimeout(this._t);
+        },
+      });
+      Micra.start();
+    </script>
+  </body>
 </html>

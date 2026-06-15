@@ -12,20 +12,16 @@
  * Important: this module does NOT handle data-each — see dom/each.ts.
  */
 
-import type {
-  CachedIfBinding,
-  ScanIndex,
-  StateRecord,
-} from '../types'
-import { evalExpr, warn } from '../utils/expr'
-import { _config } from '../core/config'
+import type { CachedIfBinding, ScanIndex, StateRecord } from "../types";
+import { evalExpr, warn } from "../utils/expr";
+import { _config } from "../core/config";
 
 // ── Directive appliers ────────────────────────────────────────────────────────
 // Each function is PURE relative to state — reads state, writes DOM.
 
 function applyText(el: Element, expr: string, state: StateRecord): void {
-  const text = String(evalExpr(expr, state) ?? '')
-  if (el.textContent !== text) el.textContent = text
+  const text = String(evalExpr(expr, state) ?? "");
+  if (el.textContent !== text) el.textContent = text;
 }
 
 /**
@@ -37,9 +33,9 @@ function applyText(el: Element, expr: string, state: StateRecord): void {
  * value here. See docs/directives.md for the full security model.
  */
 function applyHtml(el: Element, expr: string, state: StateRecord): void {
-  const raw = String(evalExpr(expr, state) ?? '')
-  const html = _config.sanitize ? _config.sanitize(raw) : raw
-  if (el.innerHTML !== html) el.innerHTML = html
+  const raw = String(evalExpr(expr, state) ?? "");
+  const html = _config.sanitize ? _config.sanitize(raw) : raw;
+  if (el.innerHTML !== html) el.innerHTML = html;
 }
 
 /**
@@ -54,19 +50,20 @@ function applyHtml(el: Element, expr: string, state: StateRecord): void {
  * Use `data-show` when you want the cheap display:none toggle instead.
  */
 function applyIf(binding: CachedIfBinding, state: StateRecord): void {
-  const el = binding.el as HTMLElement
-  const truthy = !!evalExpr(binding.expr, state)
+  const el = binding.el as HTMLElement;
+  const truthy = !!evalExpr(binding.expr, state);
   if (truthy) {
     // If a placeholder is currently in the DOM in the element's slot, swap back.
-    const ph = binding.placeholder
-    if (ph && ph.parentNode) ph.parentNode.replaceChild(el, ph)
+    const ph = binding.placeholder;
+    if (ph && ph.parentNode) ph.parentNode.replaceChild(el, ph);
   } else {
     // Only detach if currently attached somewhere. Standalone elements
     // (no parent — common in unit tests) are a no-op.
-    const parent = el.parentNode
+    const parent = el.parentNode;
     if (parent) {
-      if (!binding.placeholder) binding.placeholder = document.createComment('if')
-      parent.replaceChild(binding.placeholder, el)
+      if (!binding.placeholder)
+        binding.placeholder = document.createComment("if");
+      parent.replaceChild(binding.placeholder, el);
     }
   }
 }
@@ -75,9 +72,9 @@ function applyIf(binding: CachedIfBinding, state: StateRecord): void {
  * data-show — visibility toggle via `style.display`. Element stays in the DOM.
  */
 function applyShow(el: Element, expr: string, state: StateRecord): void {
-  const desired = evalExpr(expr, state) ? '' : 'none'
-  const htmlEl = el as HTMLElement
-  if (htmlEl.style.display !== desired) htmlEl.style.display = desired
+  const desired = evalExpr(expr, state) ? "" : "none";
+  const htmlEl = el as HTMLElement;
+  if (htmlEl.style.display !== desired) htmlEl.style.display = desired;
 }
 
 function applyBind(
@@ -86,23 +83,36 @@ function applyBind(
   state: StateRecord,
 ): void {
   for (const [attr, valExpr] of pairs) {
-    const val = evalExpr(valExpr, state)
+    const val = evalExpr(valExpr, state);
 
-    if (attr === 'class') {
-      (el as HTMLElement).className = String(val ?? '')
-    } else if (attr === 'value') {
+    // Security: a binding must never install an inline event handler — that's
+    // a direct XSS sink. Use @event for handlers.
+    if (attr[0] === "o" && attr[1] === "n") {
+      warn(`data-bind refused event-handler attribute "${attr}" — use @${attr.slice(2)}`);
+      continue;
+    }
+
+    if (attr === "class") {
+      (el as HTMLElement).className = String(val ?? "");
+    } else if (attr === "value") {
       if (document.activeElement !== el)
-        (el as HTMLInputElement).value = String(val ?? '')
-    } else if (attr === 'style') {
-      if (typeof val === 'object' && val !== null) {
-        Object.assign((el as HTMLElement).style, val)
+        (el as HTMLInputElement).value = String(val ?? "");
+    } else if (attr === "style") {
+      if (typeof val === "object" && val !== null) {
+        Object.assign((el as HTMLElement).style, val);
       } else {
-        el.setAttribute('style', String(val ?? ''))
+        el.setAttribute("style", String(val ?? ""));
       }
-    } else if (typeof val === 'boolean') {
-      val ? el.setAttribute(attr, '') : el.removeAttribute(attr)
+    } else if (typeof val === "boolean") {
+      val ? el.setAttribute(attr, "") : el.removeAttribute(attr);
+    } else if (val == null) {
+      el.removeAttribute(attr);
+    } else if (/^\s*javascript:/i.test(String(val))) {
+      // Security: drop javascript: URLs (XSS via href/src/…)
+      warn(`data-bind dropped unsafe javascript: URL from "${attr}"`);
+      el.removeAttribute(attr);
     } else {
-      val == null ? el.removeAttribute(attr) : el.setAttribute(attr, String(val))
+      el.setAttribute(attr, String(val));
     }
   }
 }
@@ -118,23 +128,19 @@ function applyClass(
   state: StateRecord,
 ): void {
   for (const [cls, valExpr] of pairs) {
-    el.classList.toggle(cls, Boolean(evalExpr(valExpr, state)))
+    el.classList.toggle(cls, Boolean(evalExpr(valExpr, state)));
   }
 }
 
-function applyModel(
-  el: Element,
-  key: string,
-  rawState: StateRecord,
-): void {
-  const html = el as HTMLInputElement
+function applyModel(el: Element, key: string, rawState: StateRecord): void {
+  const html = el as HTMLInputElement;
   // evalExpr resolves both flat keys ("search") and dot-paths ("filters.query")
-  const stateVal = evalExpr(key, rawState)
-  const desired = stateVal == null ? '' : String(stateVal)
+  const stateVal = evalExpr(key, rawState);
+  const desired = stateVal == null ? "" : String(stateVal);
   // Only write when out of sync. This is a no-op during live typing (the input
   // event already drove state to match el.value) but still propagates
   // programmatic resets such as `this.state.q = ''` on focused inputs.
-  if (html.value !== desired) html.value = desired
+  if (html.value !== desired) html.value = desired;
   // listener is attached separately in events.ts — this only syncs the value
 }
 
@@ -157,13 +163,13 @@ export function applyDirectives(
 ): void {
   // data-if runs first so subsequent directives don't write into a tree that's
   // about to be detached this tick.
-  for (const b of scan.if) applyIf(b, state)
-  for (const b of scan.text) applyText(b.el, b.expr, state)
-  for (const b of scan.html) applyHtml(b.el, b.expr, state)
-  for (const b of scan.show) applyShow(b.el, b.expr, state)
-  for (const b of scan.bind) applyBind(b.el, b.pairs, state)
-  for (const b of scan.model) applyModel(b.el, b.expr.trim(), rawState)
-  for (const b of scan.class) applyClass(b.el, b.pairs, state)
+  for (const b of scan.if) applyIf(b, state);
+  for (const b of scan.text) applyText(b.el, b.expr, state);
+  for (const b of scan.html) applyHtml(b.el, b.expr, state);
+  for (const b of scan.show) applyShow(b.el, b.expr, state);
+  for (const b of scan.bind) applyBind(b.el, b.pairs, state);
+  for (const b of scan.model) applyModel(b.el, b.expr.trim(), rawState);
+  for (const b of scan.class) applyClass(b.el, b.pairs, state);
 }
 
 // ── Dev warning helper ────────────────────────────────────────────────────────
@@ -177,28 +183,28 @@ export function applyDirectives(
  */
 export function validateDirectives(scan: ScanIndex): void {
   for (const el of scan.each) {
-    const tmpl = el as HTMLTemplateElement & { __micraNoKeyWarned?: true }
-    if (!el.hasAttribute('data-key') && !tmpl.__micraNoKeyWarned) {
-      tmpl.__micraNoKeyWarned = true
+    const tmpl = el as HTMLTemplateElement & { __micraNoKeyWarned?: true };
+    if (!el.hasAttribute("data-key") && !tmpl.__micraNoKeyWarned) {
+      tmpl.__micraNoKeyWarned = true;
       warn(
-        `data-each="${el.getAttribute('data-each')}" has no data-key — ` +
-        `keyed diff disabled. Add data-key="id" for better performance.`,
-      )
+        `data-each="${el.getAttribute("data-each")}" has no data-key — ` +
+          `keyed diff disabled. Add data-key="id" for better performance.`,
+      );
     }
   }
 
   // data-bind="class:..." replaces className wholesale, which fights with
   // data-class on the same element. Warn so the developer picks one.
   for (const b of scan.bind) {
-    const hasClassBind = b.pairs.some(p => p[0] === 'class')
-    if (hasClassBind && b.el.hasAttribute('data-class')) {
+    const hasClassBind = b.pairs.some((p) => p[0] === "class");
+    if (hasClassBind && b.el.hasAttribute("data-class")) {
       warn(
         `element has both data-bind="class:..." and data-class — they fight ` +
-        `on every render. Use one.`,
-      )
+          `on every render. Use one.`,
+      );
     }
   }
 }
 
 // Re-export warn for use in other modules
-export { warn }
+export { warn };

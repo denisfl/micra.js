@@ -21,6 +21,14 @@ function getCSRF(): string | null {
   return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? null
 }
 
+/**
+ * True for relative / same-origin URLs. The CSRF token is attached only when
+ * this holds, so a request to a third-party URL can't exfiltrate it.
+ */
+function sameOrigin(url: string): boolean {
+  try { return new URL(url, location.href).origin === location.origin } catch { return true }
+}
+
 // ── Typed error ───────────────────────────────────────────────────────────────
 
 /**
@@ -69,7 +77,7 @@ export async function micraFetch(url: string, options: FetchOptions = {}): Promi
   }
 
   const csrf = getCSRF()
-  if (csrf) headers['X-CSRF-Token'] = csrf
+  if (csrf && sameOrigin(url)) headers['X-CSRF-Token'] = csrf
 
   let finalUrl = url
   let body: string | undefined

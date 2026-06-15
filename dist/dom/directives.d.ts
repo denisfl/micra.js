@@ -11,8 +11,8 @@
  *
  * Important: this module does NOT handle data-each — see dom/each.ts.
  */
-import type { ScanIndex, StateRecord } from '../types';
-import { warn } from '../utils/expr';
+import type { ScanIndex, StateRecord } from "../types";
+import { warn } from "../utils/expr";
 /**
  * Apply all non-each directives to a component subtree.
  *

@@ -1,30 +1,32 @@
 <!doctype html>
 <html>
-<head><script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.min.js"></script></head>
-<body>
-<div data-component="users">
-  <p data-if="loading">Loading…</p>
-  <p data-if="error">Something went wrong</p>
-  <ul>
-    <template data-each="users" data-key="id">
-      <li data-text="item.name"></li>
-    </template>
-  </ul>
-</div>
-<script>
-Micra.define('users', {
-  state: { loading: true, error: false, users: [] },
-  async onCreate() {
-    try {
-      this.state.users = await this.fetch('/api/users')
-    } catch (e) {
-      this.state.error = true
-    } finally {
-      this.state.loading = false
-    }
-  },
-})
-Micra.start()
-</script>
-</body>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.min.js"></script>
+  </head>
+  <body>
+    <div data-component="users">
+      <p data-if="loading">Loading…</p>
+      <p data-if="error">Something went wrong</p>
+      <ul>
+        <template data-each="users" data-key="id">
+          <li data-text="item.name"></li>
+        </template>
+      </ul>
+    </div>
+    <script>
+      Micra.define("users", {
+        state: { loading: true, error: false, users: [] },
+        async onCreate() {
+          try {
+            this.state.users = await this.fetch("/api/users");
+          } catch (e) {
+            this.state.error = true;
+          } finally {
+            this.state.loading = false;
+          }
+        },
+      });
+      Micra.start();
+    </script>
+  </body>
 </html>

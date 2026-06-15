@@ -1,26 +1,31 @@
 <!doctype html>
 <html>
-<head><script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.min.js"></script></head>
-<body>
-<form data-component="signup" @submit.prevent="submit">
-  <div data-if="!sent">
-    <input type="email" data-model="email" placeholder="you@example.com">
-    <button type="submit">Subscribe</button>
-    <p data-if="error">Please enter a valid email</p>
-  </div>
-  <p data-if="sent">Thanks for subscribing!</p>
-</form>
-<script>
-Micra.define('signup', {
-  state: { email: '', error: false, sent: false },
-  submit() {
-    const ok = /\S+@\S+\.\S+/.test(this.state.email)
-    if (!ok) { this.state.error = true; return }
-    this.state.error = false
-    this.state.sent = true
-  },
-})
-Micra.start()
-</script>
-</body>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.min.js"></script>
+  </head>
+  <body>
+    <form data-component="signup" @submit.prevent="submit">
+      <div data-if="!sent">
+        <input type="email" data-model="email" placeholder="you@example.com" />
+        <button type="submit">Subscribe</button>
+        <p data-if="error">Please enter a valid email</p>
+      </div>
+      <p data-if="sent">Thanks for subscribing!</p>
+    </form>
+    <script>
+      Micra.define("signup", {
+        state: { email: "", error: false, sent: false },
+        submit() {
+          const ok = /\S+@\S+\.\S+/.test(this.state.email);
+          if (!ok) {
+            this.state.error = true;
+            return;
+          }
+          this.state.error = false;
+          this.state.sent = true;
+        },
+      });
+      Micra.start();
+    </script>
+  </body>
 </html>

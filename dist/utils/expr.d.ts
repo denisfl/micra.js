@@ -27,7 +27,7 @@
  *   primary = number | string | true | false | null | undefined |
  *             identifier | ( expr )
  */
-import type { StateRecord } from '../types';
+import type { StateRecord } from "../types";
 /**
  * Evaluate an expression string against a state object.
  *

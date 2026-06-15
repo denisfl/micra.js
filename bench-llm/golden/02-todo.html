@@ -1,42 +1,55 @@
 <!doctype html>
 <html>
-<head><script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.min.js"></script></head>
-<body>
-<div data-component="todo">
-  <input type="text" data-model="draft" placeholder="New task…">
-  <button @click="add">Add</button>
-  <ul>
-    <template data-each="items" data-key="id">
-      <li>
-        <input type="checkbox" data-bind="checked:item.done,data-id:item.id" @click="toggle">
-        <span data-text="item.title"></span>
-        <button @click="remove" data-bind="data-id:item.id">Delete</button>
-      </li>
-    </template>
-  </ul>
-  <p><span data-text="left()"></span> left</p>
-</div>
-<script>
-Micra.define('todo', {
-  state: { items: [], draft: '', nextId: 1 },
-  left() { return this.state.items.filter(t => !t.done).length },
-  add() {
-    const title = this.state.draft.trim()
-    if (!title) return
-    this.state.items = [...this.state.items, { id: this.state.nextId, title, done: false }]
-    this.state.nextId = this.state.nextId + 1
-    this.state.draft = ''
-  },
-  toggle(e) {
-    const id = Number(e.currentTarget.dataset.id)
-    this.state.items = this.state.items.map(t => t.id === id ? { ...t, done: !t.done } : t)
-  },
-  remove(e) {
-    const id = Number(e.currentTarget.dataset.id)
-    this.state.items = this.state.items.filter(t => t.id !== id)
-  },
-})
-Micra.start()
-</script>
-</body>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.min.js"></script>
+  </head>
+  <body>
+    <div data-component="todo">
+      <input type="text" data-model="draft" placeholder="New task…" />
+      <button @click="add">Add</button>
+      <ul>
+        <template data-each="items" data-key="id">
+          <li>
+            <input
+              type="checkbox"
+              data-bind="checked:item.done,data-id:item.id"
+              @click="toggle"
+            />
+            <span data-text="item.title"></span>
+            <button @click="remove" data-bind="data-id:item.id">Delete</button>
+          </li>
+        </template>
+      </ul>
+      <p><span data-text="left()"></span> left</p>
+    </div>
+    <script>
+      Micra.define("todo", {
+        state: { items: [], draft: "", nextId: 1 },
+        left() {
+          return this.state.items.filter((t) => !t.done).length;
+        },
+        add() {
+          const title = this.state.draft.trim();
+          if (!title) return;
+          this.state.items = [
+            ...this.state.items,
+            { id: this.state.nextId, title, done: false },
+          ];
+          this.state.nextId = this.state.nextId + 1;
+          this.state.draft = "";
+        },
+        toggle(e) {
+          const id = Number(e.currentTarget.dataset.id);
+          this.state.items = this.state.items.map((t) =>
+            t.id === id ? { ...t, done: !t.done } : t,
+          );
+        },
+        remove(e) {
+          const id = Number(e.currentTarget.dataset.id);
+          this.state.items = this.state.items.filter((t) => t.id !== id);
+        },
+      });
+      Micra.start();
+    </script>
+  </body>
 </html>

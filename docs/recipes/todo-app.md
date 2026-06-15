@@ -39,108 +39,187 @@ It is the canonical answer to "build me a todo app". Copy it verbatim and adjust
 ```html
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Todo</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 480px; margin: 40px auto; }
-    .row { display: flex; gap: 8px; margin-bottom: 12px; }
-    .row input { flex: 1; padding: 8px; }
-    .filters { display: flex; gap: 4px; margin-bottom: 12px; }
-    .filters button.active { font-weight: bold; }
-    .item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #eee; }
-    .item.done .text { text-decoration: line-through; opacity: 0.5; }
-    .item button { margin-left: auto; }
-  </style>
-</head>
-<body>
-  <div data-component="todo-app">
-    <h1>Todo <small data-text="counterLabel()"></small></h1>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Todo</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 480px;
+        margin: 40px auto;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .row input {
+        flex: 1;
+        padding: 8px;
+      }
+      .filters {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 12px;
+      }
+      .filters button.active {
+        font-weight: bold;
+      }
+      .item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 0;
+        border-bottom: 1px solid #eee;
+      }
+      .item.done .text {
+        text-decoration: line-through;
+        opacity: 0.5;
+      }
+      .item button {
+        margin-left: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-component="todo-app">
+      <h1>Todo <small data-text="counterLabel()"></small></h1>
 
-    <div class="filters">
-      <button data-class="active:filter==='all'"    @click="setFilter('all')">All</button>
-      <button data-class="active:filter==='active'" @click="setFilter('active')">Active</button>
-      <button data-class="active:filter==='done'"   @click="setFilter('done')">Done</button>
-    </div>
-
-    <div class="row">
-      <input data-model="newTask" placeholder="New task..." @keydown="onKey" maxlength="200">
-      <button @click="addTask">Add</button>
-    </div>
-
-    <template data-each="filtered()" data-key="id">
-      <div class="item" data-class="done:item.done" data-bind="data-id:item.id">
-        <input type="checkbox" data-bind="checked:item.done" @change="toggle">
-        <span class="text" data-text="item.text"></span>
-        <button @click="remove">✕</button>
+      <div class="filters">
+        <button data-class="active:filter==='all'" @click="setFilter('all')">
+          All
+        </button>
+        <button
+          data-class="active:filter==='active'"
+          @click="setFilter('active')"
+        >
+          Active
+        </button>
+        <button data-class="active:filter==='done'" @click="setFilter('done')">
+          Done
+        </button>
       </div>
-    </template>
 
-    <p data-if="filtered().length === 0" data-text="emptyLabel()"></p>
+      <div class="row">
+        <input
+          data-model="newTask"
+          placeholder="New task..."
+          @keydown="onKey"
+          maxlength="200"
+        />
+        <button @click="addTask">Add</button>
+      </div>
 
-    <footer data-if="todos.length > 0">
-      <span data-text="leftLabel()"></span>
-      <button data-if="hasDone()" @click="clearDone">Clear done</button>
-    </footer>
-  </div>
+      <template data-each="filtered()" data-key="id">
+        <div
+          class="item"
+          data-class="done:item.done"
+          data-bind="data-id:item.id"
+        >
+          <input
+            type="checkbox"
+            data-bind="checked:item.done"
+            @change="toggle"
+          />
+          <span class="text" data-text="item.text"></span>
+          <button @click="remove">✕</button>
+        </div>
+      </template>
 
-  <script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.0/dist/micra.min.js"></script>
-  <script>
-    Micra.define('todo-app', {
-      state: {
-        todos: JSON.parse(localStorage.getItem('todos') || '[]'),
-        newTask: '',
-        filter: 'all',
-      },
+      <p data-if="filtered().length === 0" data-text="emptyLabel()"></p>
 
-      // ── derived values: METHODS, not state fields ─────────────
-      filtered() {
-        const { todos, filter } = this.state
-        if (filter === 'active') return todos.filter(t => !t.done)
-        if (filter === 'done')   return todos.filter(t => t.done)
-        return todos
-      },
-      counterLabel() { return this.state.todos.length ? `(${this.state.todos.length})` : '' },
-      leftLabel()    { const n = this.state.todos.filter(t => !t.done).length
-                       return n ? `${n} left` : 'All done 🎉' },
-      hasDone()      { return this.state.todos.some(t => t.done) },
-      emptyLabel()   { return { all: 'No todos yet', active: 'No active todos', done: 'No done todos' }[this.state.filter] },
+      <footer data-if="todos.length > 0">
+        <span data-text="leftLabel()"></span>
+        <button data-if="hasDone()" @click="clearDone">Clear done</button>
+      </footer>
+    </div>
 
-      // ── persistence (called after each mutation) ──────────────
-      save() { localStorage.setItem('todos', JSON.stringify(this.state.todos)) },
-      nextId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6) },
+    <script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.1/dist/micra.min.js"></script>
+    <script>
+      Micra.define("todo-app", {
+        state: {
+          todos: JSON.parse(localStorage.getItem("todos") || "[]"),
+          newTask: "",
+          filter: "all",
+        },
 
-      // ── id extraction from event ──────────────────────────────
-      itemId(e) { return e.currentTarget.closest('[data-id]').dataset.id },
+        // ── derived values: METHODS, not state fields ─────────────
+        filtered() {
+          const { todos, filter } = this.state;
+          if (filter === "active") return todos.filter((t) => !t.done);
+          if (filter === "done") return todos.filter((t) => t.done);
+          return todos;
+        },
+        counterLabel() {
+          return this.state.todos.length ? `(${this.state.todos.length})` : "";
+        },
+        leftLabel() {
+          const n = this.state.todos.filter((t) => !t.done).length;
+          return n ? `${n} left` : "All done 🎉";
+        },
+        hasDone() {
+          return this.state.todos.some((t) => t.done);
+        },
+        emptyLabel() {
+          return {
+            all: "No todos yet",
+            active: "No active todos",
+            done: "No done todos",
+          }[this.state.filter];
+        },
 
-      // ── actions: mutate state, Micra re-renders automatically ─
-      addTask() {
-        const text = this.state.newTask.trim()
-        if (!text) return
-        this.state.todos = [{ id: this.nextId(), text, done: false }, ...this.state.todos]
-        this.state.newTask = ''
-        this.save()
-      },
-      toggle(e) {
-        const id = this.itemId(e)
-        this.state.todos = this.state.todos.map(t => t.id === id ? { ...t, done: !t.done } : t)
-        this.save()
-      },
-      remove(e) {
-        const id = this.itemId(e)
-        this.state.todos = this.state.todos.filter(t => t.id !== id)
-        this.save()
-      },
-      clearDone() {
-        this.state.todos = this.state.todos.filter(t => !t.done)
-        this.save()
-      },
-      setFilter(f) { this.state.filter = f },
-      onKey(e) { if (e.key === 'Enter') this.addTask() },
-    })
-    Micra.start()
-  </script>
-</body>
+        // ── persistence (called after each mutation) ──────────────
+        save() {
+          localStorage.setItem("todos", JSON.stringify(this.state.todos));
+        },
+        nextId() {
+          return (
+            Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+          );
+        },
+
+        // ── id extraction from event ──────────────────────────────
+        itemId(e) {
+          return e.currentTarget.closest("[data-id]").dataset.id;
+        },
+
+        // ── actions: mutate state, Micra re-renders automatically ─
+        addTask() {
+          const text = this.state.newTask.trim();
+          if (!text) return;
+          this.state.todos = [
+            { id: this.nextId(), text, done: false },
+            ...this.state.todos,
+          ];
+          this.state.newTask = "";
+          this.save();
+        },
+        toggle(e) {
+          const id = this.itemId(e);
+          this.state.todos = this.state.todos.map((t) =>
+            t.id === id ? { ...t, done: !t.done } : t,
+          );
+          this.save();
+        },
+        remove(e) {
+          const id = this.itemId(e);
+          this.state.todos = this.state.todos.filter((t) => t.id !== id);
+          this.save();
+        },
+        clearDone() {
+          this.state.todos = this.state.todos.filter((t) => !t.done);
+          this.save();
+        },
+        setFilter(f) {
+          this.state.filter = f;
+        },
+        onKey(e) {
+          if (e.key === "Enter") this.addTask();
+        },
+      });
+      Micra.start();
+    </script>
+  </body>
 </html>
 ```
 
@@ -158,15 +237,15 @@ addTask() { ...; this.renderList(); this.updateComputeds() }
 
 That code **works**, but it bypasses every reason to use Micra. Side-by-side comparison:
 
-| What | ❌ Anti-pattern | ✅ Idiomatic Micra |
-|------|-----------------|---------------------|
-| List rendering | `getElementById` + `innerHTML` | `<template data-each>` |
-| Derived counts | state field synced in `updateComputeds()` | `counterLabel()` method called from `data-text` |
-| Item click handlers | `el.addEventListener('click', ...)` in createItemEl | `@click="toggle"` |
-| After mutation | `this.renderList()` + `this.save()` + `this.updateComputeds()` | Just mutate state; `save()` only |
-| Item id lookup | Closure over `todo.id` in handler | `data-bind="data-id:item.id"` + `e.currentTarget.closest('[data-id]')` |
-| Animations | Re-fire on every state change (innerHTML='') | Fire only for new keyed rows |
-| Memory after `destroy()` | Listeners leak (not tracked by Micra) | Listeners removed automatically |
+| What                     | ❌ Anti-pattern                                                | ✅ Idiomatic Micra                                                     |
+| ------------------------ | -------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| List rendering           | `getElementById` + `innerHTML`                                 | `<template data-each>`                                                 |
+| Derived counts           | state field synced in `updateComputeds()`                      | `counterLabel()` method called from `data-text`                        |
+| Item click handlers      | `el.addEventListener('click', ...)` in createItemEl            | `@click="toggle"`                                                      |
+| After mutation           | `this.renderList()` + `this.save()` + `this.updateComputeds()` | Just mutate state; `save()` only                                       |
+| Item id lookup           | Closure over `todo.id` in handler                              | `data-bind="data-id:item.id"` + `e.currentTarget.closest('[data-id]')` |
+| Animations               | Re-fire on every state change (innerHTML='')                   | Fire only for new keyed rows                                           |
+| Memory after `destroy()` | Listeners leak (not tracked by Micra)                          | Listeners removed automatically                                        |
 
 ## Patterns to reuse
 

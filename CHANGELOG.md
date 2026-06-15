@@ -4,7 +4,44 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
-## [2.5.0] — 2026-06-14
+## [2.5.1] — 2026-06-15
+
+Security hardening. No API changes; behaviour changes only for clearly-unsafe
+inputs, so upgrading from 2.5.1 is recommended and should be transparent.
+
+### Security
+
+- **CSRF token is now same-origin only.** `this.fetch()` attaches the
+  `X-CSRF-Token` (read from `<meta name="csrf-token">`) only when the request
+  URL resolves to the page origin. Previously it was attached to every
+  request, so a `fetch` to an attacker-influenced cross-origin URL could leak
+  the token.
+- **`data-bind` refuses XSS sinks.** A binding can no longer install an inline
+  event handler — `data-bind="onclick: …"` is dropped (use `@click`) — and a
+  `javascript:` URL bound to any attribute (`href`, `src`, …) is stripped.
+  Both emit a dev-console warning.
+- **Expression fast-path closed.** Simple dot-paths such as `o.constructor` /
+  `o.__proto__` took a fast path that skipped the
+  `__proto__`/`constructor`/`prototype` block applied on the AST path, leaving
+  those names _readable_ (never callable — RCE was already blocked). They now
+  route through the interpreter and resolve to `undefined`, matching the
+  documented model.
+
+### Changed
+
+- Size budget raised from 7 KB to 7.5 KB gzip to absorb the hardening above.
+  Real size is ~7.2 KB.
+
+### Note — the expression sandbox is defense-in-depth, not a boundary
+
+The CSP-safe evaluator stops a directive _expression_ from reaching
+`window`/`eval`/`Function`, and CSP blocks injected inline scripts — but
+neither protects against **template/markup injection** (client-side template
+injection). Never interpolate untrusted input into directive attributes or
+expressions; render user data via `data-text` / state only. Treat directive
+markup as trusted code.
+
+## [2.5.1] — 2026-06-14
 
 Ergonomics & safety release — three things the audience kept reaching for.
 
@@ -46,12 +83,13 @@ Ergonomics & safety release — three things the audience kept reaching for.
   (size); opt into one in a line:
 
   ```js
-  import DOMPurify from 'dompurify'
-  Micra.config({ sanitize: DOMPurify.sanitize })
+  import DOMPurify from "dompurify";
+  Micra.config({ sanitize: DOMPurify.sanitize });
   ```
 
   Without it, `data-html` writes raw HTML as before (still XSS-prone — use
   `data-text` for untrusted input if you don't register a sanitizer).
+
 - New exports: `config`, `MicraConfig`.
 
 ### Changed
@@ -95,7 +133,7 @@ Ergonomics & safety release — three things the audience kept reaching for.
 
   ```html
   <button @click="select(item.id)">pick</button>
-  <input @input="set($event.target.value)">
+  <input @input="set($event.target.value)" />
   ```
 
   Bare method names (`@click="save"`) work as before. `data-on` keeps
@@ -104,7 +142,7 @@ Ergonomics & safety release — three things the audience kept reaching for.
 ### Changed
 
 - **Bundle: ~5.5 KB → ~6.6 KB gzip** (size guard raised to 7 KB). The
-  eval-based path was *removed*, not kept as a fallback, so this is the
+  eval-based path was _removed_, not kept as a fallback, so this is the
   whole cost of the parser/interpreter. Micra is no longer the very
   smallest in its class (petite-vue ~6 KB) — the trade is CSP-safety,
   a stronger security model, and call-args in events.
@@ -215,16 +253,16 @@ overwrites aggregate results; the `@next` publish guard distinguishes
   payload types and arity at the call site:
 
   ```ts
-  declare module 'micra.js' {
+  declare module "micra.js" {
     interface MicraEvents {
-      'cart:updated': { count: number }
-      'modal:close':  void
+      "cart:updated": { count: number };
+      "modal:close": void;
     }
   }
 
-  Micra.emit('cart:updated', { count: 3 })   // ✓
-  Micra.emit('cart:updated', { count: '3' }) // ✗ type error
-  Micra.emit('modal:close')                  // ✓ void → no args
+  Micra.emit("cart:updated", { count: 3 }); // ✓
+  Micra.emit("cart:updated", { count: "3" }); // ✗ type error
+  Micra.emit("modal:close"); // ✓ void → no args
   ```
 
 - Events that are NOT declared in `MicraEvents` keep the previous
@@ -236,7 +274,7 @@ overwrites aggregate results; the `@next` publish guard distinguishes
 ### Breaking — types only
 
 - The legacy `on<T>(event, handler)` generic now infers `T` as the
-  event *key*, not the handler payload. Code that explicitly passed a
+  event _key_, not the handler payload. Code that explicitly passed a
   payload type via the generic (`Micra.on<User>('user:updated', h)`)
   still compiles, but `h`'s parameter falls back to `unknown` unless
   the event is declared in `MicraEvents`. Migration: register the
@@ -307,14 +345,14 @@ overwrites aggregate results; the `@next` publish guard distinguishes
   subtrees aren't even visited.
 - Cross-library benchmark numbers on Firefox 150 / Mac (median of 7 runs):
 
-  | Scenario                  | Before  | After     | Vs Alpine.js  | Vs petite-vue |
-  | ------------------------- | ------: | --------: | ------------: | ------------: |
-  | Mount 100 components      | 10.8 ms | **5.6 ms**| × 4.9 faster  | × 3.6 faster  |
-  | Mount 1000 components     |128.3 ms |**65.4 ms**| × 7.0 faster  | × 2.4 faster  |
-  | Update 5 of 1000 rows     |    —    | **1 ms**  | × 886 faster  | × 1002 faster |
-  | 10,000 state writes       |    —    | **1 ms**  | × 980 faster  | × 983 faster  |
-  | First render 1000 keyed   |    —    | **12 ms** | × 79 faster   | × 82 faster   |
-  | Swap first ↔ last of 1000 |    —    | **7 ms**  | × 131 faster  | × 143 faster  |
+  | Scenario                  |   Before |       After | Vs Alpine.js | Vs petite-vue |
+  | ------------------------- | -------: | ----------: | -----------: | ------------: |
+  | Mount 100 components      |  10.8 ms |  **5.6 ms** | × 4.9 faster |  × 3.6 faster |
+  | Mount 1000 components     | 128.3 ms | **65.4 ms** | × 7.0 faster |  × 2.4 faster |
+  | Update 5 of 1000 rows     |        — |    **1 ms** | × 886 faster | × 1002 faster |
+  | 10,000 state writes       |        — |    **1 ms** | × 980 faster |  × 983 faster |
+  | First render 1000 keyed   |        — |   **12 ms** |  × 79 faster |   × 82 faster |
+  | Swap first ↔ last of 1000 |        — |    **7 ms** | × 131 faster |  × 143 faster |
 
   Bundle stays at **5.0 KB gzip** — the rewrite removed code, not added it.
 
@@ -326,15 +364,17 @@ overwrites aggregate results; the `@next` publish guard distinguishes
   hooks **both** `this.state.X` and `this.someMethod()` are fully typed:
 
   ```ts
-  Micra.define('counter', {
+  Micra.define("counter", {
     state: { count: 0 },
     inc() {
-      this.state.count++   // ✓ number
-      this.dec()           // ✓ inferred sibling method
+      this.state.count++; // ✓ number
+      this.dec(); // ✓ inferred sibling method
       // this.foo()        // ❌ Property 'foo' does not exist
     },
-    dec() { this.state.count-- },
-  })
+    dec() {
+      this.state.count--;
+    },
+  });
   ```
 
 - Public `ComponentInstance<S, M>` and `ComponentDefinition<S, M>` now

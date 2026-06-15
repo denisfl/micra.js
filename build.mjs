@@ -127,7 +127,9 @@ if (watch) {
   // 7 KB — raised from 5.5 KB in v2.4 for the CSP-safe expression evaluator
   // (own parser/interpreter, no `new Function`). The eval-based path was
   // removed, not kept as a fallback, so this is the whole cost.
-  const MAX_GZIP_BYTES = 7 * 1024
+  // Headroom bumped from 7 KB to 7.5 KB to absorb the security hardening
+  // (CSRF same-origin gate, data-bind javascript:/on* guards). Real size ~7.2 KB.
+  const MAX_GZIP_BYTES = 7.5 * 1024
   const minified  = readFileSync('dist/micra.min.js')
   const gzipSize  = gzipSync(minified).length
   const kbStr     = (gzipSize / 1024).toFixed(1)
