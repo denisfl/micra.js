@@ -8,3 +8,4 @@ site/llms-full.txt
 # only the aggregated results.md is committed.
 bench-llm/runs/
 bench-llm/results.json
+.claude/launch.json
