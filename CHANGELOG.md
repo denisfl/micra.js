@@ -4,10 +4,10 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
-## [2.5.1] — 2026-06-15
+## [2.5.2] — 2026-06-15
 
 Security hardening. No API changes; behaviour changes only for clearly-unsafe
-inputs, so upgrading from 2.5.1 is recommended and should be transparent.
+inputs, so upgrading from 2.5.2 is recommended and should be transparent.
 
 ### Security
 
@@ -41,7 +41,7 @@ injection). Never interpolate untrusted input into directive attributes or
 expressions; render user data via `data-text` / state only. Treat directive
 markup as trusted code.
 
-## [2.5.1] — 2026-06-14
+## [2.5.2] — 2026-06-14
 
 Ergonomics & safety release — three things the audience kept reaching for.
 

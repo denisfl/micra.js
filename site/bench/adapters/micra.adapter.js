@@ -40,7 +40,7 @@ function uniqId() {
 
 export const adapter = {
   name: "Micra",
-  version: "2.5.1",
+  version: "2.5.2",
   scenarios: {
     "mount-100": {
       _instances: [],
