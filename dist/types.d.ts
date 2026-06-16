@@ -199,6 +199,7 @@ export interface MicraTemplate extends HTMLTemplateElement {
 export interface CachedBinding {
     el: Element;
     expr: string;
+    deps?: Set<string> | null;
 }
 /**
  * @internal data-if binding — like CachedBinding but also carries the
@@ -217,6 +218,7 @@ export interface CachedPairBinding {
     el: Element;
     expr: string;
     pairs: ReadonlyArray<readonly [string, string]>;
+    deps?: Set<string> | null;
 }
 /**
  * @internal Single-pass scan result — built once per Element via one TreeWalker

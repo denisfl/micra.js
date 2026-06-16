@@ -21,6 +21,7 @@
  */
 
 import type { CachedIfBinding, CachedPairBinding, ScanIndex } from "../types";
+import { exprDeps } from "../utils/expr";
 
 function emptyScan(): ScanIndex {
   return {
@@ -50,6 +51,19 @@ function parsePairs(expr: string): Array<readonly [string, string]> {
     out.push([left, right]);
   }
   return out;
+}
+
+/** @internal Union of the dep-sets across pairs; null if any pair has a call. */
+function pairDeps(
+  pairs: ReadonlyArray<readonly [string, string]>,
+): Set<string> | null {
+  const set = new Set<string>();
+  for (const [, expr] of pairs) {
+    const d = exprDeps(expr);
+    if (d === null) return null;
+    for (const k of d) set.add(k);
+  }
+  return set;
 }
 
 /** @internal Classify every relevant attribute on one element. */
@@ -92,28 +106,42 @@ function classify(el: Element, scan: ScanIndex): void {
       const rest = name.slice(5);
       switch (rest) {
         case "text":
-          scan.text.push({ el, expr: a.value });
+          scan.text.push({ el, expr: a.value, deps: exprDeps(a.value) });
           break;
         case "html":
-          scan.html.push({ el, expr: a.value });
+          scan.html.push({ el, expr: a.value, deps: exprDeps(a.value) });
           break;
         case "if":
-          scan.if.push({ el, expr: a.value } as CachedIfBinding);
+          scan.if.push({
+            el,
+            expr: a.value,
+            deps: exprDeps(a.value),
+          } as CachedIfBinding);
           break;
         case "show":
-          scan.show.push({ el, expr: a.value });
+          scan.show.push({ el, expr: a.value, deps: exprDeps(a.value) });
           break;
         case "bind": {
           const pairs = parsePairs(a.value);
-          scan.bind.push({ el, expr: a.value, pairs } as CachedPairBinding);
+          scan.bind.push({
+            el,
+            expr: a.value,
+            pairs,
+            deps: pairDeps(pairs),
+          } as CachedPairBinding);
           break;
         }
         case "model":
-          scan.model.push({ el, expr: a.value });
+          scan.model.push({ el, expr: a.value, deps: exprDeps(a.value) });
           break;
         case "class": {
           const pairs = parsePairs(a.value);
-          scan.class.push({ el, expr: a.value, pairs } as CachedPairBinding);
+          scan.class.push({
+            el,
+            expr: a.value,
+            pairs,
+            deps: pairDeps(pairs),
+          } as CachedPairBinding);
           break;
         }
         case "on":

@@ -416,22 +416,50 @@ var Micra = (() => {
   var exprCache = /* @__PURE__ */ new Map();
   var warnedRuntime = /* @__PURE__ */ new Set();
   var SIMPLE_PATH = /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/;
-  function evalExpr(expr, state) {
-    let cached = exprCache.get(expr);
-    if (!cached) {
-      const parts = SIMPLE_PATH.test(expr) ? expr.split(".") : null;
-      if (parts && !parts.some((p) => BLOCKED_PROPS.has(p))) {
-        cached = { kind: "path", parts };
-      } else {
-        try {
-          cached = { kind: "ast", ast: parse(tokenize(expr)) };
-        } catch {
-          warn(`invalid expression "${expr}"`);
-          cached = { kind: "err" };
-        }
-      }
-      exprCache.set(expr, cached);
+  function collectDeps(node, set) {
+    switch (node.k) {
+      case "lit":
+        return true;
+      case "id":
+        set.add(node.n);
+        return true;
+      case "mem":
+        return collectDeps(node.o, set);
+      // root id is the dep; `.p` is a prop name
+      case "un":
+        return collectDeps(node.x, set);
+      case "tern":
+        return collectDeps(node.c, set) && collectDeps(node.a, set) && collectDeps(node.b, set);
+      case "bin":
+        return collectDeps(node.l, set) && collectDeps(node.r, set);
+      case "call":
+        return false;
     }
+  }
+  function compile(expr) {
+    let cached = exprCache.get(expr);
+    if (cached) return cached;
+    const parts = SIMPLE_PATH.test(expr) ? expr.split(".") : null;
+    if (parts && !parts.some((p) => BLOCKED_PROPS.has(p))) {
+      cached = { kind: "path", parts, deps: /* @__PURE__ */ new Set([parts[0]]) };
+    } else {
+      try {
+        const ast = parse(tokenize(expr));
+        const set = /* @__PURE__ */ new Set();
+        cached = { kind: "ast", ast, deps: collectDeps(ast, set) ? set : null };
+      } catch {
+        warn(`invalid expression "${expr}"`);
+        cached = { kind: "err", deps: null };
+      }
+    }
+    exprCache.set(expr, cached);
+    return cached;
+  }
+  function exprDeps(expr) {
+    return compile(expr).deps;
+  }
+  function evalExpr(expr, state) {
+    const cached = compile(expr);
     if (cached.kind === "path") {
       const parts = cached.parts;
       if (!safeStateHas(state, parts[0])) return void 0;
@@ -599,14 +627,19 @@ var Micra = (() => {
     const desired = stateVal == null ? "" : String(stateVal);
     if (html.value !== desired) html.value = desired;
   }
-  function applyDirectives(scan, state, rawState) {
-    for (const b of scan.if) applyIf(b, state);
-    for (const b of scan.text) applyText(b.el, b.expr, state);
-    for (const b of scan.html) applyHtml(b.el, b.expr, state);
-    for (const b of scan.show) applyShow(b.el, b.expr, state);
-    for (const b of scan.bind) applyBind(b.el, b.pairs, state);
-    for (const b of scan.model) applyModel(b.el, b.expr.trim(), rawState);
-    for (const b of scan.class) applyClass(b.el, b.pairs, state);
+  function applyDirectives(scan, state, rawState, dirty = null) {
+    for (const b of scan.if) if (fresh(b.deps, dirty)) applyIf(b, state);
+    for (const b of scan.text) if (fresh(b.deps, dirty)) applyText(b.el, b.expr, state);
+    for (const b of scan.html) if (fresh(b.deps, dirty)) applyHtml(b.el, b.expr, state);
+    for (const b of scan.show) if (fresh(b.deps, dirty)) applyShow(b.el, b.expr, state);
+    for (const b of scan.bind) if (fresh(b.deps, dirty)) applyBind(b.el, b.pairs, state);
+    for (const b of scan.model) if (fresh(b.deps, dirty)) applyModel(b.el, b.expr.trim(), rawState);
+    for (const b of scan.class) if (fresh(b.deps, dirty)) applyClass(b.el, b.pairs, state);
+  }
+  function fresh(deps, dirty) {
+    if (dirty === null || deps == null) return true;
+    for (const k of dirty) if (deps.has(k)) return true;
+    return false;
   }
   function validateDirectives(scan) {
     for (const el of scan.each) {
@@ -774,6 +807,15 @@ var Micra = (() => {
     }
     return out;
   }
+  function pairDeps(pairs) {
+    const set = /* @__PURE__ */ new Set();
+    for (const [, expr] of pairs) {
+      const d = exprDeps(expr);
+      if (d === null) return null;
+      for (const k of d) set.add(k);
+    }
+    return set;
+  }
   function classify(el, scan) {
     if (el.tagName === "TEMPLATE") {
       if (el.hasAttribute("data-each")) scan.each.push(el);
@@ -796,28 +838,42 @@ var Micra = (() => {
         const rest = name.slice(5);
         switch (rest) {
           case "text":
-            scan.text.push({ el, expr: a.value });
+            scan.text.push({ el, expr: a.value, deps: exprDeps(a.value) });
             break;
           case "html":
-            scan.html.push({ el, expr: a.value });
+            scan.html.push({ el, expr: a.value, deps: exprDeps(a.value) });
             break;
           case "if":
-            scan.if.push({ el, expr: a.value });
+            scan.if.push({
+              el,
+              expr: a.value,
+              deps: exprDeps(a.value)
+            });
             break;
           case "show":
-            scan.show.push({ el, expr: a.value });
+            scan.show.push({ el, expr: a.value, deps: exprDeps(a.value) });
             break;
           case "bind": {
             const pairs = parsePairs(a.value);
-            scan.bind.push({ el, expr: a.value, pairs });
+            scan.bind.push({
+              el,
+              expr: a.value,
+              pairs,
+              deps: pairDeps(pairs)
+            });
             break;
           }
           case "model":
-            scan.model.push({ el, expr: a.value });
+            scan.model.push({ el, expr: a.value, deps: exprDeps(a.value) });
             break;
           case "class": {
             const pairs = parsePairs(a.value);
-            scan.class.push({ el, expr: a.value, pairs });
+            scan.class.push({
+              el,
+              expr: a.value,
+              pairs,
+              deps: pairDeps(pairs)
+            });
             break;
           }
           case "on":
@@ -854,7 +910,7 @@ var Micra = (() => {
   }
 
   // src/dom/each.ts
-  function renderList(templates, state, rawState, instance, triggerKey) {
+  function renderList(templates, state, rawState, instance, dirty) {
     var _a;
     for (const tmplEl of templates) {
       if (tmplEl.tagName !== "TEMPLATE") continue;
@@ -878,11 +934,11 @@ var Micra = (() => {
         keyMap.clear();
         continue;
       }
-      const canSkipUnchanged = triggerKey !== null && triggerKey !== "MULTIPLE" && triggerKey === itemsExpr;
+      const canSkipUnchanged = dirty !== null && dirty.size === 1 && dirty.has(itemsExpr);
       if (keyAttr) {
-        renderKeyed(tmpl, items, keyAttr, marker, keyMap, state, rawState, instance, canSkipUnchanged);
+        renderKeyed(tmpl, items, keyAttr, marker, keyMap, state, rawState, instance, canSkipUnchanged, dirty);
       } else {
-        renderNoKey(tmpl, items, marker, state, rawState, instance, canSkipUnchanged);
+        renderNoKey(tmpl, items, marker, state, rawState, instance, canSkipUnchanged, dirty);
       }
     }
   }
@@ -909,7 +965,7 @@ var Micra = (() => {
     bindModels(rowScan.model, instance);
     return node;
   }
-  function renderKeyed(tmpl, items, keyAttr, marker, keyMap, state, rawState, instance, canSkipUnchanged) {
+  function renderKeyed(tmpl, items, keyAttr, marker, keyMap, state, rawState, instance, canSkipUnchanged, dirty) {
     var _a;
     const nextKeys = /* @__PURE__ */ new Set();
     const nextNodes = [];
@@ -934,6 +990,7 @@ var Micra = (() => {
         nextNodes.push(node);
         continue;
       }
+      const rowDirty = node.__micraItem === item && node.__micraIndex === index ? dirty : null;
       node.__micraItem = item;
       node.__micraIndex = index;
       const itemState = node._itemState;
@@ -941,7 +998,7 @@ var Micra = (() => {
       itemState.index = index;
       itemState.$index = index;
       const rowScan = (_a = node.__micraScan) != null ? _a : node.__micraScan = scanComponent(node);
-      applyDirectives(rowScan, itemState, rawState);
+      applyDirectives(rowScan, itemState, rawState, rowDirty);
       nextNodes.push(node);
     }
     for (const [key, node] of keyMap) {
@@ -1007,7 +1064,7 @@ var Micra = (() => {
       anchor = node;
     }
   }
-  function renderNoKey(tmpl, items, marker, state, rawState, instance, canSkipUnchanged) {
+  function renderNoKey(tmpl, items, marker, state, rawState, instance, canSkipUnchanged, dirty) {
     const prevList = tmpl.__micraList;
     const prevLen = prevList.length;
     const nextLen = items.length;
@@ -1020,13 +1077,14 @@ var Micra = (() => {
         nextList[i] = node;
         continue;
       }
+      const rowDirty = node.__micraItem === item && node.__micraIndex === i ? dirty : null;
       node.__micraItem = item;
       node.__micraIndex = i;
       const itemState = node._itemState;
       itemState.item = item;
       itemState.index = i;
       itemState.$index = i;
-      applyDirectives(node.__micraScan, itemState, rawState);
+      applyDirectives(node.__micraScan, itemState, rawState, rowDirty);
       nextList[i] = node;
     }
     for (let i = nextLen; i < prevLen; i++) {
@@ -1099,11 +1157,10 @@ var Micra = (() => {
       return unsub;
     };
     let isRendering = false;
-    let _triggerKey = null;
+    const _dirty = /* @__PURE__ */ new Set();
     const schedule = createScheduler(() => instance.render());
     instance.state = createReactiveState(rawState, schedule, (key) => {
-      if (_triggerKey === null) _triggerKey = key;
-      else if (_triggerKey !== key) _triggerKey = "MULTIPLE";
+      _dirty.add(key);
     });
     const boundMethods = /* @__PURE__ */ new Map();
     const exprState = new Proxy(rawState, {
@@ -1129,8 +1186,8 @@ var Micra = (() => {
     instance.render = function() {
       var _a2;
       if (instance.__micraDestroyed) return;
-      const triggerKey = _triggerKey;
-      _triggerKey = null;
+      const dirty = _dirty.size ? new Set(_dirty) : null;
+      _dirty.clear();
       if (isRendering) {
         if (!warnedReentry) {
           warn(
@@ -1144,8 +1201,8 @@ var Micra = (() => {
       try {
         const mRoot2 = root;
         const scan = (_a2 = mRoot2.__micraScan) != null ? _a2 : mRoot2.__micraScan = scanComponent(root);
-        applyDirectives(scan, exprState, rawState);
-        renderList(scan.each, exprState, rawState, instance, triggerKey);
+        applyDirectives(scan, exprState, rawState, dirty);
+        renderList(scan.each, exprState, rawState, instance, dirty);
         bindDataOn(scan.on, instance);
         bindAtEvents(scan.atEvents, instance);
         bindModels(scan.model, instance);

@@ -155,21 +155,36 @@ function applyModel(el: Element, key: string, rawState: StateRecord): void {
  * @param scan     - Pre-computed scan from scan.ts (cached per element)
  * @param state    - Expression state (may include item/index for each rows)
  * @param rawState - Raw (non-proxy) state for model sync
+ * @param dirty    - State keys changed this cycle, or null for a full apply.
+ *                   A binding whose deps don't intersect `dirty` is skipped —
+ *                   its value provably didn't change, so the DOM is current.
  */
 export function applyDirectives(
   scan: ScanIndex,
   state: StateRecord,
   rawState: StateRecord,
+  dirty: Set<string> | null = null,
 ): void {
   // data-if runs first so subsequent directives don't write into a tree that's
   // about to be detached this tick.
-  for (const b of scan.if) applyIf(b, state);
-  for (const b of scan.text) applyText(b.el, b.expr, state);
-  for (const b of scan.html) applyHtml(b.el, b.expr, state);
-  for (const b of scan.show) applyShow(b.el, b.expr, state);
-  for (const b of scan.bind) applyBind(b.el, b.pairs, state);
-  for (const b of scan.model) applyModel(b.el, b.expr.trim(), rawState);
-  for (const b of scan.class) applyClass(b.el, b.pairs, state);
+  for (const b of scan.if) if (fresh(b.deps, dirty)) applyIf(b, state);
+  for (const b of scan.text) if (fresh(b.deps, dirty)) applyText(b.el, b.expr, state);
+  for (const b of scan.html) if (fresh(b.deps, dirty)) applyHtml(b.el, b.expr, state);
+  for (const b of scan.show) if (fresh(b.deps, dirty)) applyShow(b.el, b.expr, state);
+  for (const b of scan.bind) if (fresh(b.deps, dirty)) applyBind(b.el, b.pairs, state);
+  for (const b of scan.model) if (fresh(b.deps, dirty)) applyModel(b.el, b.expr.trim(), rawState);
+  for (const b of scan.class) if (fresh(b.deps, dirty)) applyClass(b.el, b.pairs, state);
+}
+
+/**
+ * A binding must re-run when: a full render is requested (`dirty === null`),
+ * its deps are unknown (`null` — contains a call), or any changed key is in
+ * its dep set. Otherwise its value is unchanged and we skip it.
+ */
+function fresh(deps: Set<string> | null | undefined, dirty: Set<string> | null): boolean {
+  if (dirty === null || deps == null) return true;
+  for (const k of dirty) if (deps.has(k)) return true;
+  return false;
 }
 
 // ── Dev warning helper ────────────────────────────────────────────────────────

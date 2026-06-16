@@ -21,7 +21,8 @@ function applyDirectives(
 ): void {
   const mRoot = root as MicraElement
   const scan = mRoot.__micraScan ?? (mRoot.__micraScan = scanComponent(root))
-  _applyDirectives(scan, state, rawState, inst)
+  void inst
+  _applyDirectives(scan, state, rawState, null)
 }
 function validateDirectives(root: Element): void {
   const mRoot = root as MicraElement

@@ -26,6 +26,6 @@ import type { InternalInstance, StateRecord } from '../types';
  * @param state      - Expression state (proxy merging rawState + instance)
  * @param rawState   - Raw (non-proxy) state — used for model binding
  * @param instance   - Component instance (for event binding)
- * @param triggerKey - Which state key triggered this render (null = initial, 'MULTIPLE' = batch)
+ * @param dirty - State keys changed this cycle, or null for a full render.
  */
-export declare function renderList<S extends StateRecord>(templates: Element[], state: StateRecord, rawState: StateRecord, instance: InternalInstance<S>, triggerKey: string | null | 'MULTIPLE'): void;
+export declare function renderList<S extends StateRecord>(templates: Element[], state: StateRecord, rawState: StateRecord, instance: InternalInstance<S>, dirty: Set<string> | null): void;

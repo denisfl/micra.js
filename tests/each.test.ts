@@ -14,7 +14,7 @@ function renderList(
   rawState: StateRecord,
   inst: InternalInstance,
 ): void {
-  _renderList(scanComponent(root).each, state, rawState, inst)
+  _renderList(scanComponent(root).each, state, rawState, inst, null)
 }
 
 function makeInstance(methods: Record<string, unknown> = {}): InternalInstance {

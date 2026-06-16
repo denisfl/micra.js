@@ -29,6 +29,12 @@
  */
 import type { StateRecord } from "../types";
 /**
+ * The set of top-level state keys an expression reads, or `null` when that
+ * can't be determined statically (it contains a call). The renderer uses this
+ * to skip directives whose dependencies didn't change in the current cycle.
+ */
+export declare function exprDeps(expr: string): Set<string> | null;
+/**
  * Evaluate an expression string against a state object.
  *
  * Cached by string. Simple dot-paths take a fast path that skips tokenizing.

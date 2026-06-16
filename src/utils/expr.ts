@@ -375,15 +375,76 @@ function evalNode(node: Node, scope: StateRecord): unknown {
 // ── Cache + public API ──────────────────────────────────────────────────────
 
 type CachedEntry =
-  | { kind: "path"; parts: string[] }
-  | { kind: "ast"; ast: Node }
-  | { kind: "err" };
+  | { kind: "path"; parts: string[]; deps: Set<string> }
+  | { kind: "ast"; ast: Node; deps: Set<string> | null }
+  | { kind: "err"; deps: null };
 
 const exprCache = new Map<string, CachedEntry>();
 const warnedRuntime = new Set<string>();
 
 // Simple identifier or dot-path: "count", "user.name", "item.email".
 const SIMPLE_PATH = /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/;
+
+/**
+ * Collect the root identifiers an AST reads into `set`. Returns false —
+ * "depends on everything" — if the expression contains a call: a method or
+ * global call is opaque (it may read any state), so the renderer must never
+ * skip it on a partial re-render.
+ */
+function collectDeps(node: Node, set: Set<string>): boolean {
+  switch (node.k) {
+    case "lit":
+      return true;
+    case "id":
+      set.add(node.n);
+      return true;
+    case "mem":
+      return collectDeps(node.o, set);
+    case "un":
+      return collectDeps(node.x, set);
+    case "tern":
+      return (
+        collectDeps(node.c, set) &&
+        collectDeps(node.a, set) &&
+        collectDeps(node.b, set)
+      );
+    case "bin":
+      return collectDeps(node.l, set) && collectDeps(node.r, set);
+    case "call":
+      return false; // opaque — treat as depending on everything
+  }
+}
+
+/** Compile (and cache) an expression into its evaluable form + dep set. */
+function compile(expr: string): CachedEntry {
+  let cached = exprCache.get(expr);
+  if (cached) return cached;
+
+  const parts = SIMPLE_PATH.test(expr) ? expr.split(".") : null;
+  if (parts && !parts.some((p) => BLOCKED_PROPS.has(p))) {
+    cached = { kind: "path", parts, deps: new Set([parts[0]!]) };
+  } else {
+    try {
+      const ast = parse(tokenize(expr));
+      const set = new Set<string>();
+      cached = { kind: "ast", ast, deps: collectDeps(ast, set) ? set : null };
+    } catch {
+      warn(`invalid expression "${expr}"`);
+      cached = { kind: "err", deps: null };
+    }
+  }
+  exprCache.set(expr, cached);
+  return cached;
+}
+
+/**
+ * The set of top-level state keys an expression reads, or `null` when that
+ * can't be determined statically (it contains a call). The renderer uses this
+ * to skip directives whose dependencies didn't change in the current cycle.
+ */
+export function exprDeps(expr: string): Set<string> | null {
+  return compile(expr).deps;
+}
 
 /**
  * Evaluate an expression string against a state object.
@@ -398,22 +459,7 @@ const SIMPLE_PATH = /^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/;
  * evalExpr('price * qty', { price: 9.99, qty: 3 })     // → 29.97
  */
 export function evalExpr(expr: string, state: StateRecord): unknown {
-  let cached = exprCache.get(expr);
-
-  if (!cached) {
-    const parts = SIMPLE_PATH.test(expr) ? expr.split(".") : null;
-    if (parts && !parts.some((p) => BLOCKED_PROPS.has(p))) {
-      cached = { kind: "path", parts };
-    } else {
-      try {
-        cached = { kind: "ast", ast: parse(tokenize(expr)) };
-      } catch {
-        warn(`invalid expression "${expr}"`);
-        cached = { kind: "err" };
-      }
-    }
-    exprCache.set(expr, cached);
-  }
+  const cached = compile(expr);
 
   if (cached.kind === "path") {
     const parts = cached.parts;

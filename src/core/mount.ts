@@ -116,13 +116,12 @@ export function mount<S extends StateRecord, M>(
 
   // ── Render ────────────────────────────────────────────────────────────────
   let isRendering = false;
-  // Track which state key triggered the current render cycle.
-  // 'MULTIPLE' means more than one key was written before the microtask fired.
-  let _triggerKey: string | null | "MULTIPLE" = null;
+  // Keys written since the last render. The renderer uses them to skip
+  // directives whose dependencies didn't change this cycle.
+  const _dirty = new Set<string>();
   const schedule = createScheduler(() => instance.render());
   instance.state = createReactiveState(rawState, schedule, (key) => {
-    if (_triggerKey === null) _triggerKey = key;
-    else if (_triggerKey !== key) _triggerKey = "MULTIPLE";
+    _dirty.add(key);
   }) as S;
 
   // Expression state: proxy that falls back to instance methods so expressions
@@ -168,8 +167,10 @@ export function mount<S extends StateRecord, M>(
   let warnedReentry = false;
   instance.render = function () {
     if (instance.__micraDestroyed) return;
-    const triggerKey = _triggerKey;
-    _triggerKey = null;
+    // Snapshot + reset the dirty set. null = full render (initial mount, or a
+    // direct render() call with no pending writes).
+    const dirty = _dirty.size ? new Set(_dirty) : null;
+    _dirty.clear();
     if (isRendering) {
       if (!warnedReentry) {
         warn(
@@ -186,8 +187,8 @@ export function mount<S extends StateRecord, M>(
       const mRoot = root as MicraElement;
       const scan =
         mRoot.__micraScan ?? (mRoot.__micraScan = scanComponent(root));
-      applyDirectives(scan, exprState, rawState);
-      renderList(scan.each, exprState, rawState, instance, triggerKey);
+      applyDirectives(scan, exprState, rawState, dirty);
+      renderList(scan.each, exprState, rawState, instance, dirty);
       bindDataOn(scan.on, instance);
       bindAtEvents(scan.atEvents, instance);
       bindModels(scan.model, instance);

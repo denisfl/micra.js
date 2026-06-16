@@ -14,13 +14,13 @@
  */
 // LLM NOTE: intentionally wide — S is always inferred from the literal `state`
 // property, so the actual type is precise (e.g. { count: number }), not Record.
-export type StateRecord = Record<string, unknown>
+export type StateRecord = Record<string, unknown>;
 
 /** Returns an unsubscribe function. */
-export type UnsubFn = () => void
+export type UnsubFn = () => void;
 
 /** Event bus handler. Generic `T` types the payload. */
-export type EventHandler<T = unknown> = (payload: T) => void
+export type EventHandler<T = unknown> = (payload: T) => void;
 
 /**
  * Type-safe event bus registry. Empty by default — augment it via
@@ -52,7 +52,7 @@ export interface MicraEvents {}
  */
 export type EventPayload<K extends string> = K extends keyof MicraEvents
   ? MicraEvents[K]
-  : unknown
+  : unknown;
 
 /**
  * Tuple of arguments passed to `emit` after the event name. When the
@@ -67,15 +67,15 @@ export type EmitArgs<K extends string> = K extends keyof MicraEvents
     : undefined extends MicraEvents[K]
       ? [payload?: MicraEvents[K]]
       : [payload: MicraEvents[K]]
-  : [payload?: unknown]
+  : [payload?: unknown];
 
 /** Options for `this.fetch()`. For GET/HEAD extra keys become query params. */
 export interface FetchOptions {
-  method?: string
-  headers?: Record<string, string>
+  method?: string;
+  headers?: Record<string, string>;
   /** POST/PUT/PATCH body — serialized as JSON. */
-  body?: unknown
-  [key: string]: unknown
+  body?: unknown;
+  [key: string]: unknown;
 }
 
 /**
@@ -88,7 +88,7 @@ export interface FetchOptions {
  * shape here just documents intent.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type ComponentMethods = Record<string, (...args: any[]) => any>
+export type ComponentMethods = Record<string, (...args: any[]) => any>;
 
 /**
  * Built-in slots every instance gets: state, refs, $el, and the methods Micra
@@ -97,43 +97,46 @@ export type ComponentMethods = Record<string, (...args: any[]) => any>
  */
 export interface ComponentBuiltins<S extends StateRecord = StateRecord> {
   /** The root DOM element this component is mounted on. */
-  readonly $el: HTMLElement
+  readonly $el: HTMLElement;
   /** Reactive state — any assignment triggers a batched re-render. */
-  state: S
+  state: S;
   /**
    * DOM refs: collect elements with `data-ref="name"` → `this.refs.name`.
    * @example <canvas data-ref="chart"> → this.refs.chart
    */
-  refs: Record<string, HTMLElement>
+  refs: Record<string, HTMLElement>;
   /** Force a synchronous re-render. Normally not needed — state mutations batch automatically. */
-  render(): void
+  render(): void;
   /**
    * Set a value by dot-path, reconstructing nested objects immutably and
    * reassigning the top-level key so the shallow proxy fires a render.
    * @example this.set('user.name', 'Ada')  // ≡ state.user = { ...state.user, name: 'Ada' }
    */
-  set(path: string, value: unknown): void
+  set(path: string, value: unknown): void;
   /** Unmount: clean up event bus subscriptions and call onDestroy. */
-  destroy(): void
+  destroy(): void;
   /**
    * Read a `data-*` attribute from the root element with auto-cast.
    * Casts "true"/"false" → boolean, numeric strings → number.
    * @example this.prop('perPage', 10) // data-per-page="20" → 20
    */
-  prop(name: string): string | undefined
-  prop<T>(name: string, defaultVal: T): T
+  prop(name: string): string | undefined;
+  prop<T>(name: string, defaultVal: T): T;
   /** Fetch helper: CSRF header, JSON body, query params, typed errors. */
-  fetch(url: string, options?: FetchOptions): Promise<unknown>
+  fetch(url: string, options?: FetchOptions): Promise<unknown>;
   /**
    * Publish an event on the global bus.
    * Payload is typed via the `MicraEvents` interface (augmentable).
    */
-  emit<K extends string>(event: K, ...args: EmitArgs<K>): void
+  emit<K extends string>(event: K, ...args: EmitArgs<K>): void;
   /**
    * Subscribe to the global bus. Subscription is auto-removed on destroy().
    * Handler payload is typed via the `MicraEvents` interface (augmentable).
    */
-  on<K extends string>(event: K, handler: (payload: EventPayload<K>) => void): UnsubFn
+  on<K extends string>(
+    event: K,
+    handler: (payload: EventPayload<K>) => void,
+  ): UnsubFn;
 }
 
 /**
@@ -156,7 +159,7 @@ export interface ComponentBuiltins<S extends StateRecord = StateRecord> {
 export type ComponentInstance<
   S extends StateRecord = StateRecord,
   M = ComponentMethods,
-> = ComponentBuiltins<S> & M
+> = ComponentBuiltins<S> & M;
 
 /**
  * Component definition passed to `Micra.define` or `Micra.mount`.
@@ -182,18 +185,19 @@ export type ComponentDefinition<
   M = ComponentMethods,
 > = {
   /** Initial flat state. Becomes reactive on mount. */
-  state?: S
+  state?: S;
   /**
    * Called once after mount in a microtask — safe for async data fetching.
    * @example async onCreate() { this.state.data = await this.fetch('/api/data') }
    */
-  onCreate?(): void | Promise<void>
+  onCreate?(): void | Promise<void>;
   /**
    * Called on destroy — clean up DOM listeners, timers, etc.
    * Event bus subscriptions added via `this.on()` are cleaned up automatically.
    */
-  onDestroy?(): void
-} & M & ThisType<ComponentInstance<S, M>>
+  onDestroy?(): void;
+} & M &
+  ThisType<ComponentInstance<S, M>>;
 
 // ── Internal types ────────────────────────────────────────────────────────────
 // These are NOT exported from src/index.ts.
@@ -202,40 +206,41 @@ export type ComponentDefinition<
  * @internal Extended HTMLElement with Micra bookkeeping slots.
  */
 export interface MicraElement extends HTMLElement {
-  __micraModel?: true       // data-model listener bound
-  __micraEvents?: true      // data-on listeners bound
-  __micraAtBound?: true     // @event shorthand bound (per-element)
-  __micraScan?: ScanIndex   // single-pass scan result (cached after 1st render)
-  __micraItem?: StateRecord  // keyed row: last-rendered item ref (for skip check)
-  __micraIndex?: number      // keyed row: last-rendered index (for skip check)
-  _itemState?: StateRecord  // keyed row: reused itemState (avoids Object.create per render)
+  __micraModel?: true; // data-model listener bound
+  __micraEvents?: true; // data-on listeners bound
+  __micraAtBound?: true; // @event shorthand bound (per-element)
+  __micraScan?: ScanIndex; // single-pass scan result (cached after 1st render)
+  __micraItem?: StateRecord; // keyed row: last-rendered item ref (for skip check)
+  __micraIndex?: number; // keyed row: last-rendered index (for skip check)
+  _itemState?: StateRecord; // keyed row: reused itemState (avoids Object.create per render)
 }
 
 /**
  * @internal A DOM listener tracked for cleanup on destroy().
  */
 export interface TrackedListener {
-  el: Element
-  type: string
-  fn: EventListener
+  el: Element;
+  type: string;
+  fn: EventListener;
 }
 
 /**
  * @internal Extended HTMLTemplateElement with keyed-diff state.
  */
 export interface MicraTemplate extends HTMLTemplateElement {
-  __micraMarker?: Comment
-  __micraNodes: Map<unknown, MicraElement>
-  __micraList: MicraElement[]
-  __micraNoKeyWarned?: true
+  __micraMarker?: Comment;
+  __micraNodes: Map<unknown, MicraElement>;
+  __micraList: MicraElement[];
+  __micraNoKeyWarned?: true;
 }
 
 /**
  * @internal Per-element directive binding (element + expression string).
  */
 export interface CachedBinding {
-  el: Element
-  expr: string
+  el: Element;
+  expr: string;
+  deps?: Set<string> | null;
 }
 
 /**
@@ -244,7 +249,7 @@ export interface CachedBinding {
  * element is detached (unmounted).
  */
 export interface CachedIfBinding extends CachedBinding {
-  placeholder?: Comment
+  placeholder?: Comment;
 }
 
 /**
@@ -253,9 +258,10 @@ export interface CachedIfBinding extends CachedBinding {
  * `name:expression[, name:expression…]` syntax.
  */
 export interface CachedPairBinding {
-  el: Element
-  expr: string
-  pairs: ReadonlyArray<readonly [string, string]>
+  el: Element;
+  expr: string;
+  pairs: ReadonlyArray<readonly [string, string]>;
+  deps?: Set<string> | null;
 }
 
 /**
@@ -269,20 +275,20 @@ export interface CachedPairBinding {
  */
 export interface ScanIndex {
   // Directives — applied on every render
-  text:  CachedBinding[]
-  html:  CachedBinding[]
-  if:    CachedIfBinding[]
-  show:  CachedBinding[]
-  bind:  CachedPairBinding[]
-  model: CachedBinding[]
-  class: CachedPairBinding[]
+  text: CachedBinding[];
+  html: CachedBinding[];
+  if: CachedIfBinding[];
+  show: CachedBinding[];
+  bind: CachedPairBinding[];
+  model: CachedBinding[];
+  class: CachedPairBinding[];
   // Lists — <template data-each>
-  each:  Element[]
+  each: Element[];
   // Events — bound once per element
-  on:    Element[]          // [data-on]
-  atEvents: Element[]       // any element with at least one @-prefixed attribute
+  on: Element[]; // [data-on]
+  atEvents: Element[]; // any element with at least one @-prefixed attribute
   // Refs — collected into instance.refs every render
-  refs:  Element[]          // [data-ref]
+  refs: Element[]; // [data-ref]
 }
 
 /**
@@ -295,11 +301,12 @@ export interface ScanIndex {
  * the index signature is for. The public `mount()` return value re-projects
  * to `ComponentInstance<S, M>` so callers get full type inference.
  */
-export interface InternalInstance<S extends StateRecord = StateRecord>
-  extends ComponentBuiltins<S> {
-  __micraSubs?: UnsubFn[]
-  __micraListeners?: TrackedListener[]
-  __micraDestroyed?: true
-  __micraExpr?: StateRecord  // expression scope (state + bound methods) for @event call args
-  [key: string]: unknown
+export interface InternalInstance<
+  S extends StateRecord = StateRecord,
+> extends ComponentBuiltins<S> {
+  __micraSubs?: UnsubFn[];
+  __micraListeners?: TrackedListener[];
+  __micraDestroyed?: true;
+  __micraExpr?: StateRecord; // expression scope (state + bound methods) for @event call args
+  [key: string]: unknown;
 }

@@ -37,14 +37,14 @@ import { scanComponent } from './scan'
  * @param state      - Expression state (proxy merging rawState + instance)
  * @param rawState   - Raw (non-proxy) state — used for model binding
  * @param instance   - Component instance (for event binding)
- * @param triggerKey - Which state key triggered this render (null = initial, 'MULTIPLE' = batch)
+ * @param dirty - State keys changed this cycle, or null for a full render.
  */
 export function renderList<S extends StateRecord>(
   templates: Element[],
   state: StateRecord,
   rawState: StateRecord,
   instance: InternalInstance<S>,
-  triggerKey: string | null | 'MULTIPLE',
+  dirty: Set<string> | null,
 ): void {
   for (const tmplEl of templates) {
     if (tmplEl.tagName !== 'TEMPLATE') continue
@@ -77,16 +77,15 @@ export function renderList<S extends StateRecord>(
       continue
     }
 
-    // canSkipUnchanged: true when only this list's state key changed — rows
-    // whose item reference and index are both unchanged can skip applyDirectives.
-    const canSkipUnchanged = triggerKey !== null &&
-                             triggerKey !== 'MULTIPLE' &&
-                             triggerKey === itemsExpr
+    // canSkipUnchanged: true when ONLY this list's own key changed — rows whose
+    // item reference and index are both unchanged can skip applyDirectives.
+    const canSkipUnchanged =
+      dirty !== null && dirty.size === 1 && dirty.has(itemsExpr)
 
     if (keyAttr) {
-      renderKeyed(tmpl, items as StateRecord[], keyAttr, marker, keyMap, state, rawState, instance, canSkipUnchanged)
+      renderKeyed(tmpl, items as StateRecord[], keyAttr, marker, keyMap, state, rawState, instance, canSkipUnchanged, dirty)
     } else {
-      renderNoKey(tmpl, items as StateRecord[], marker, state, rawState, instance, canSkipUnchanged)
+      renderNoKey(tmpl, items as StateRecord[], marker, state, rawState, instance, canSkipUnchanged, dirty)
     }
   }
 }
@@ -151,6 +150,7 @@ function renderKeyed<S extends StateRecord>(
   rawState: StateRecord,
   instance: InternalInstance<S>,
   canSkipUnchanged: boolean,
+  dirty: Set<string> | null,
 ): void {
   const nextKeys  = new Set<unknown>()
   const nextNodes: MicraElement[] = []
@@ -181,6 +181,11 @@ function renderKeyed<S extends StateRecord>(
       continue
     }
 
+    // Item ref + index unchanged → we're here only because some OTHER key
+    // changed, so dep-filter by `dirty`. If the item changed, re-apply fully.
+    const rowDirty =
+      node.__micraItem === item && node.__micraIndex === index ? dirty : null
+
     node.__micraItem  = item
     node.__micraIndex = index
 
@@ -193,7 +198,7 @@ function renderKeyed<S extends StateRecord>(
     // Use the cached scan if present (created above on first sight of this key);
     // older paths may pass a node we haven't scanned yet.
     const rowScan = node.__micraScan ?? (node.__micraScan = scanComponent(node))
-    applyDirectives(rowScan, itemState, rawState)
+    applyDirectives(rowScan, itemState, rawState, rowDirty)
     nextNodes.push(node)
   }
 
@@ -287,6 +292,7 @@ function renderNoKey<S extends StateRecord>(
   rawState: StateRecord,
   instance: InternalInstance<S>,
   canSkipUnchanged: boolean,
+  dirty: Set<string> | null,
 ): void {
   const prevList = tmpl.__micraList
   const prevLen = prevList.length
@@ -302,13 +308,15 @@ function renderNoKey<S extends StateRecord>(
       nextList[i] = node
       continue
     }
+    const rowDirty =
+      node.__micraItem === item && node.__micraIndex === i ? dirty : null
     node.__micraItem = item
     node.__micraIndex = i
     const itemState = node._itemState!
     itemState.item = item
     itemState.index = i
     itemState.$index = i
-    applyDirectives(node.__micraScan!, itemState, rawState)
+    applyDirectives(node.__micraScan!, itemState, rawState, rowDirty)
     nextList[i] = node
   }
 

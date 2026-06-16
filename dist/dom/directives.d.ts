@@ -22,8 +22,11 @@ import { warn } from "../utils/expr";
  * @param scan     - Pre-computed scan from scan.ts (cached per element)
  * @param state    - Expression state (may include item/index for each rows)
  * @param rawState - Raw (non-proxy) state for model sync
+ * @param dirty    - State keys changed this cycle, or null for a full apply.
+ *                   A binding whose deps don't intersect `dirty` is skipped —
+ *                   its value provably didn't change, so the DOM is current.
  */
-export declare function applyDirectives(scan: ScanIndex, state: StateRecord, rawState: StateRecord): void;
+export declare function applyDirectives(scan: ScanIndex, state: StateRecord, rawState: StateRecord, dirty?: Set<string> | null): void;
 /**
  * Validate directive usage and emit dev warnings.
  * Called once after the initial render of a component, with the already-built

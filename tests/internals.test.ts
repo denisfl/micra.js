@@ -23,7 +23,7 @@ function bindAtEvents(root: Element, inst: InternalInstance): void {
   _bindAtEventsRaw(scanComponent(root).atEvents, inst)
 }
 function renderList(root: Element, state: StateRecord, rawState: StateRecord, inst: InternalInstance): void {
-  _renderList(scanComponent(root).each, state, rawState, inst)
+  _renderList(scanComponent(root).each, state, rawState, inst, null)
 }
 
 function makeInstance(extra: Record<string, unknown> = {}): InternalInstance {
