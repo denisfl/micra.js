@@ -46,7 +46,7 @@ All notable changes to Micra.js will be documented in this file. Format follows
 ## [2.5.2] — 2026-06-15
 
 Security hardening. No API changes; behaviour changes only for clearly-unsafe
-inputs, so upgrading from 2.6.0 is recommended and should be transparent.
+inputs, so upgrading from 2.5.2 is recommended and should be transparent.
 
 ### Security
 
