@@ -4,9 +4,9 @@
 
 | Version | Supported |
 | ------- | --------- |
-| 2.3.x   | ✅ active |
-| 2.2.x   | ✅ critical fixes |
-| < 2.2   | ❌ |
+| 2.6.x   | ✅ active |
+| 2.5.x   | ✅ critical fixes |
+| < 2.5   | ❌ |
 
 Micra follows [SemVer](https://semver.org/): security fixes land as patch
 releases on the latest minor, and as backports to the previous minor when
