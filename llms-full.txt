@@ -738,9 +738,10 @@ Before returning generated Micra code, verify ALL of these:
 
 # Links
 
-- Full docs: https://denisfl.github.io/micra.js/
+- Full docs: https://micrajs.dev/docs
 - Source: https://github.com/denisfl/micra.js
 - npm: https://www.npmjs.com/package/micra.js
-- LLM short guide: https://github.com/denisfl/micra.js/blob/master/docs/llm-guide.md
-- Recipes directory: https://github.com/denisfl/micra.js/tree/master/docs/recipes
+- LLM short guide: https://micrajs.dev/docs/llm-guide
+- Recipes: https://micrajs.dev/docs/recipes/todo-app
+- Live example gallery: https://micrajs.dev/examples
 - Short llms.txt: https://github.com/denisfl/micra.js/blob/master/llms.txt

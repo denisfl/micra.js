@@ -29,10 +29,7 @@
     "dev": "node build.mjs --watch",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "docs:sync": "rm -rf site/dist && mkdir -p site/dist && cp -R dist/* site/dist/ && cp llms.txt llms-full.txt site/",
-    "docs:build": "npm run build && npm run docs:sync",
-    "docs:dev": "npm run docs:sync && npx serve -p 4321 site"
+    "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.7",

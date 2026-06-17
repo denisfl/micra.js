@@ -1,7 +1,7 @@
 /**
  * tests/recipe-resource.test.ts — the data `resource()` recipe.
  *
- * Loads the real recipe demo (site/recipes/data-resource.html) through the
+ * Loads the real recipe demo (tests/fixtures/recipes/data-resource.html) through the
  * bench harness and exercises the helper's lifecycle: loading → data → error,
  * plus refetch. The page ships its own `window.fetch` mock (a 120ms /api/users
  * stub), so this tests the exact artifact a user copies — no re-implementation.
@@ -15,7 +15,7 @@ import { loadPage } from '../bench-llm/lib/loadPage.mjs'
 import { normalizeMicraLoading } from '../bench-llm/lib/extract.mjs'
 
 async function load() {
-  const raw = readFileSync(join(process.cwd(), 'site', 'recipes', 'data-resource.html'), 'utf8')
+  const raw = readFileSync(join(process.cwd(), 'tests', 'fixtures', 'recipes', 'data-resource.html'), 'utf8')
   const { html } = normalizeMicraLoading(raw)
   return loadPage(html)
 }

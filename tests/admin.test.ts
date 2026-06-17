@@ -1,5 +1,5 @@
 /**
- * tests/admin.test.ts — the flagship admin demo (site/admin/index.html).
+ * tests/admin.test.ts — the flagship admin demo (tests/fixtures/admin/index.html).
  *
  * Loads the REAL admin page through the bench harness (against the built
  * bundle) and drives it like a user: filters, sorting, pagination, the
@@ -21,7 +21,7 @@ import { loadPage } from '../bench-llm/lib/loadPage.mjs'
 import { normalizeMicraLoading } from '../bench-llm/lib/extract.mjs'
 
 async function load() {
-  const raw = readFileSync(join(process.cwd(), 'site', 'admin', 'index.html'), 'utf8')
+  const raw = readFileSync(join(process.cwd(), 'tests', 'fixtures', 'admin', 'index.html'), 'utf8')
   const { html } = normalizeMicraLoading(raw)
   return loadPage(html)
 }

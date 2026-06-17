@@ -232,21 +232,23 @@ this.on(event, handler)
 
 ## Documentation
 
-- **AI / LLM code generation:** [`llms.txt`](./llms.txt) (overview) · [`llms-full.txt`](./llms-full.txt) (10 inline recipes + anti-pattern reference) · [`docs/llm-guide.md`](./docs/llm-guide.md) (full guide)
-- [Getting started](./docs/getting-started.md)
-- [Core concepts](./docs/concepts.md)
-- [Directives](./docs/directives.md)
-- [State](./docs/state.md)
-- [Lifecycle](./docs/lifecycle.md)
-- [SSR](./docs/ssr.md)
-- [Examples](./docs/examples.md)
-- [API reference](./docs/api-reference.md)
+Full documentation lives at **[micrajs.dev/docs](https://micrajs.dev/docs)**.
+
+- **AI / LLM code generation:** [`llms.txt`](./llms.txt) (overview) · [`llms-full.txt`](./llms-full.txt) (10 inline recipes + anti-pattern reference) · [LLM guide](https://micrajs.dev/docs/llm-guide)
+- [Getting started](https://micrajs.dev/docs/getting-started)
+- [Core concepts](https://micrajs.dev/docs/concepts)
+- [Directives](https://micrajs.dev/docs/directives)
+- [State](https://micrajs.dev/docs/state)
+- [Lifecycle](https://micrajs.dev/docs/lifecycle)
+- [SSR](https://micrajs.dev/docs/ssr)
+- [Examples](https://micrajs.dev/examples) · live source in [`examples/`](./examples)
+- [API reference](https://micrajs.dev/docs/api-reference)
 - Recipes:
-  - [Todo app](./docs/recipes/todo-app.md)
-  - [Server-sent events (SSE)](./docs/recipes/sse.md)
-  - [htmx bridge](./docs/recipes/htmx.md)
-  - [Rails + Micra](./docs/recipes/rails.md)
-  - [Data resource helper](./docs/recipes/data-resource.md)
+  - [Todo app](https://micrajs.dev/docs/recipes/todo-app)
+  - [Server-sent events (SSE)](https://micrajs.dev/docs/recipes/sse)
+  - [htmx bridge](https://micrajs.dev/docs/recipes/htmx)
+  - [Rails + Micra](https://micrajs.dev/docs/recipes/rails)
+  - [Data resource helper](https://micrajs.dev/docs/recipes/data-resource)
 
 ## Code generation with LLMs
 
@@ -261,4 +263,4 @@ Micra has a small surface area, but LLMs default to jQuery / vanilla-JS or React
 7. **No literals in directive expressions.** The CSP-safe evaluator doesn't parse object/array literals — `data-each="items || []"` and `@click="f({a:1})"` fail. `data-each` already renders nothing for `null`; pass object args from a method.
 8. **Use jsDelivr, not unpkg** — `cdn.jsdelivr.net` is in the CSP allowlist of Claude artifacts / ChatGPT canvas; `unpkg.com` is blocked there.
 
-Full anti-pattern reference with side-by-side examples: [`docs/llm-guide.md`](./docs/llm-guide.md) and [`llms-full.txt`](./llms-full.txt).
+Full anti-pattern reference with side-by-side examples: the [LLM guide](https://micrajs.dev/docs/llm-guide) and [`llms-full.txt`](./llms-full.txt).

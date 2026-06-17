@@ -113,5 +113,5 @@ this.render()
 
 ## References
 - Repository: https://github.com/denisfl/micra.js
-- Concepts (proxy, scheduler, directive cache, keyed diff): https://github.com/denisfl/micra.js/blob/master/docs/concepts.md
-- LLM guide + anti-patterns: https://github.com/denisfl/micra.js/blob/master/docs/llm-guide.md
+- Concepts (proxy, scheduler, directive cache, keyed diff): https://micrajs.dev/docs/concepts
+- LLM guide + anti-patterns: https://micrajs.dev/docs/llm-guide

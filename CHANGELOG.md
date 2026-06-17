@@ -267,8 +267,7 @@ overwrites aggregate results; the `@next` publish guard distinguishes
 
 ### Docs
 
-- New [Rails + Micra recipe](https://github.com/denisfl/micra.js/blob/master/docs/recipes/rails.md)
-  (`docs/recipes/rails.md` + a site page): manual importmap integration,
+- New [Rails + Micra recipe](https://micrajs.dev/docs/recipes/rails): manual importmap integration,
   the `micra-rails` gem with its caveats, a Tasks board demonstrating SSR
   props / CSRF-attached `this.fetch` / cross-component bus, and the Turbo
   Drive / Streams / Frames mount-and-cleanup story.

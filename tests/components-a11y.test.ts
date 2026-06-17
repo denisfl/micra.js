@@ -1,6 +1,6 @@
 /**
- * tests/components-a11y.test.ts — accessibility contract of the site component
- * catalog (site/components/*.html).
+ * tests/components-a11y.test.ts — accessibility contract of the component
+ * catalog (tests/fixtures/components/*.html).
  *
  * Loads each shipped component page through the bench harness: it strips the
  * `../dist/micra.js` <script> and injects the locally built dist bundle, then
@@ -19,7 +19,7 @@ import { loadPage } from '../bench-llm/lib/loadPage.mjs'
 // @ts-expect-error — plain ESM helpers from the bench harness, no .d.ts
 import { normalizeMicraLoading } from '../bench-llm/lib/extract.mjs'
 
-const COMPONENTS_DIR = join(process.cwd(), 'site', 'components')
+const COMPONENTS_DIR = join(process.cwd(), 'tests', 'fixtures', 'components')
 
 async function load(file: string) {
   const raw = readFileSync(join(COMPONENTS_DIR, file), 'utf8')

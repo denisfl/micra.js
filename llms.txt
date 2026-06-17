@@ -132,18 +132,18 @@ When generating Micra.js code, DO NOT:
 
 Supported (use freely): key modifiers `@keydown.enter` / `.escape` / `.ctrl` etc.; call expressions in `@event` (`@click="select(item.id)"`); dot-paths in `data-model="filters.search"` and `this.set('filters.search', x)`.
 
-Full anti-pattern list with side-by-side examples: [docs/llm-guide.md](https://github.com/denisfl/micra.js/blob/master/docs/llm-guide.md#anti-patterns-llms-gravitate-to-do-not)
+Full anti-pattern list with side-by-side examples: [LLM guide](https://micrajs.dev/docs/llm-guide)
 
 ## Docs
 
 - LLM expanded context (read first for code generation): https://github.com/denisfl/micra.js/blob/master/llms-full.txt
-- Full LLM guide: https://github.com/denisfl/micra.js/blob/master/docs/llm-guide.md
-- Recipes (canonical full-app examples): https://github.com/denisfl/micra.js/tree/master/docs/recipes
-- Live demo docs: https://denisfl.github.io/micra.js/
-- Getting started: https://github.com/denisfl/micra.js/blob/master/docs/getting-started.md
-- Directives: https://github.com/denisfl/micra.js/blob/master/docs/directives.md
-- API reference: https://github.com/denisfl/micra.js/blob/master/docs/api-reference.md
-- Examples: https://github.com/denisfl/micra.js/blob/master/docs/examples.md
-- SSR: https://github.com/denisfl/micra.js/blob/master/docs/ssr.md
+- Full LLM guide: https://micrajs.dev/docs/llm-guide
+- Recipes (canonical full-app patterns): https://micrajs.dev/docs/recipes/todo-app
+- Docs & live examples: https://micrajs.dev
+- Getting started: https://micrajs.dev/docs/getting-started
+- Directives: https://micrajs.dev/docs/directives
+- API reference: https://micrajs.dev/docs/api-reference
+- Examples (live demo gallery): https://micrajs.dev/examples
+- SSR: https://micrajs.dev/docs/ssr
 - npm: https://www.npmjs.com/package/micra.js
 - GitHub: https://github.com/denisfl/micra.js
