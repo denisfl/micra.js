@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Planner — Micra demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = { theme: { extend: { fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"] } } } };
+    </script>
+  </head>
+  <body class="h-full bg-fuchsia-50/50 font-sans text-zinc-900 antialiased">
+    <div data-component="planner" class="mx-auto max-w-6xl px-4 py-8">
+      <header class="flex flex-wrap items-center gap-4">
+        <span class="text-lg font-semibold tracking-tight">Planner<span class="text-fuchsia-600">.</span></span>
+        <div class="flex items-center gap-1">
+          <button @click="prevMonth" aria-label="Previous month" class="grid h-8 w-8 place-items-center rounded-md text-zinc-500 hover:bg-fuchsia-100">‹</button>
+          <span class="min-w-[9rem] text-center text-sm font-semibold" data-text="monthLabel()"></span>
+          <button @click="nextMonth" aria-label="Next month" class="grid h-8 w-8 place-items-center rounded-md text-zinc-500 hover:bg-fuchsia-100">›</button>
+          <button @click="goToday" class="ml-1 rounded-md px-2.5 py-1 text-sm font-medium text-fuchsia-700 ring-1 ring-inset ring-fuchsia-200 hover:bg-fuchsia-50">Today</button>
+        </div>
+        <div class="ml-auto flex flex-wrap gap-1.5">
+          <template data-each="cats" data-key="id">
+            <button @click="toggleCat" data-bind="data-id:item.id, class:catChip(item.id)">
+              <span data-bind="class:catDot(item.id)"></span>
+              <span data-text="item.name"></span>
+            </button>
+          </template>
+        </div>
+      </header>
+
+      <div class="mt-6 grid gap-5 lg:grid-cols-[1fr_18rem]">
+        <!-- Calendar -->
+        <div class="rounded-xl bg-white p-3 ring-1 ring-zinc-950/5">
+          <div class="grid grid-cols-7 gap-1 text-center text-xs font-medium text-zinc-400">
+            <template data-each="dows" data-key="d">
+              <span data-text="item.d"></span>
+            </template>
+          </div>
+          <div class="mt-1 grid grid-cols-7 gap-1">
+            <template data-each="days()" data-key="key">
+              <div @click="pickDay" data-bind="data-iso:item.iso, class:cellClass(item)">
+                <span data-bind="class:dayNumClass(item)" data-text="item.day"></span>
+                <template data-each="cappedEvents(item.iso)" data-key="id">
+                  <span data-bind="class:chipClass(item.cat)" data-text="item.time + ' ' + item.title"></span>
+                </template>
+                <span data-show="moreCount(item.iso) > 0" class="px-1 text-[10px] font-medium text-zinc-400" data-text="'+' + moreCount(item.iso) + ' more'"></span>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Agenda for selected day -->
+        <aside class="rounded-xl bg-white p-4 ring-1 ring-zinc-950/5">
+          <p class="text-xs font-medium uppercase tracking-wide text-fuchsia-600" data-text="selCount() + (selCount() === 1 ? ' event' : ' events')"></p>
+          <h2 class="mt-0.5 text-lg font-semibold" data-text="fmtLong(selected)"></h2>
+
+          <ul class="mt-4 space-y-2">
+            <template data-each="selEvents()" data-key="id">
+              <li class="flex items-start gap-2 rounded-lg bg-zinc-50 p-2.5">
+                <span data-bind="class:catDot(item.cat)" class="mt-1.5"></span>
+                <div class="flex-1">
+                  <p class="text-sm font-medium leading-snug" data-text="item.title"></p>
+                  <p class="text-xs text-zinc-400" data-text="item.time"></p>
+                </div>
+                <button @click="removeEvent" data-bind="data-id:item.id" aria-label="Delete event" class="text-zinc-300 hover:text-rose-500">&times;</button>
+              </li>
+            </template>
+            <li data-show="selCount() === 0" class="rounded-lg border border-dashed border-zinc-200 p-3 text-center text-sm text-zinc-400">
+              Nothing planned. Add something below.
+            </li>
+          </ul>
+
+          <div class="mt-4 space-y-2 border-t border-zinc-950/5 pt-4">
+            <input
+              data-model="draft.title"
+              @keydown.enter="addEvent"
+              placeholder="New event…"
+              class="w-full rounded-lg border-0 bg-zinc-50 px-3 py-2 text-sm ring-1 ring-inset ring-zinc-950/10 focus:ring-2 focus:ring-inset focus:ring-fuchsia-500"
+            />
+            <div class="flex gap-2">
+              <input type="time" data-model="draft.time" class="w-28 rounded-lg border-0 bg-zinc-50 px-2 py-2 text-sm ring-1 ring-inset ring-zinc-950/10 focus:ring-2 focus:ring-inset focus:ring-fuchsia-500" />
+              <select data-model="draft.cat" class="flex-1 rounded-lg border-0 bg-zinc-50 px-2 py-2 text-sm ring-1 ring-inset ring-zinc-950/10 focus:ring-2 focus:ring-inset focus:ring-fuchsia-500">
+                <option value="work">Work</option>
+                <option value="meeting">Meeting</option>
+                <option value="personal">Personal</option>
+                <option value="health">Health</option>
+              </select>
+            </div>
+            <button @click="addEvent" class="w-full rounded-lg bg-fuchsia-600 px-3 py-2 text-sm font-medium text-white hover:bg-fuchsia-700">Add to this day</button>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- Pinned to 2.6.0: this demo needs nested data-each (added in 2.6.0). -->
+    <script src="https://cdn.jsdelivr.net/npm/micra.js@2.6.0/dist/micra.min.js"></script>
+    <script>
+      Micra.define("planner", {
+        state: {
+          year: 2026,
+          month: 5, // June (0-indexed)
+          selected: "2026-06-17",
+          dows: [{ d: "Mo" }, { d: "Tu" }, { d: "We" }, { d: "Th" }, { d: "Fr" }, { d: "Sa" }, { d: "Su" }],
+          cats: [{ id: "work", name: "Work" }, { id: "meeting", name: "Meeting" }, { id: "personal", name: "Personal" }, { id: "health", name: "Health" }],
+          activeCats: ["work", "meeting", "personal", "health"],
+          draft: { title: "", time: "10:00", cat: "work" },
+          events: [
+            { id: 1, date: "2026-06-17", time: "09:30", title: "Standup", cat: "meeting" },
+            { id: 2, date: "2026-06-17", time: "13:00", title: "Lunch w/ Sam", cat: "personal" },
+            { id: 3, date: "2026-06-17", time: "15:00", title: "Design review", cat: "work" },
+            { id: 4, date: "2026-06-17", time: "18:30", title: "Gym", cat: "health" },
+            { id: 10, date: "2026-06-17", time: "20:00", title: "Call mom", cat: "personal" },
+            { id: 5, date: "2026-06-18", time: "10:00", title: "1:1 with Mia", cat: "meeting" },
+            { id: 6, date: "2026-06-19", time: "11:00", title: "Ship v2", cat: "work" },
+            { id: 7, date: "2026-06-12", time: "09:00", title: "Dentist", cat: "health" },
+            { id: 8, date: "2026-06-24", time: "14:00", title: "Roadmap planning", cat: "work" },
+            { id: 9, date: "2026-06-09", time: "16:00", title: "Coffee chat", cat: "personal" },
+          ],
+        },
+        today() {
+          return "2026-06-17";
+        },
+        iso(dt) {
+          return dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
+        },
+        monthLabel() {
+          const m = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+          return m[this.state.month] + " " + this.state.year;
+        },
+        days() {
+          const { year, month } = this.state;
+          const startDow = (new Date(year, month, 1).getDay() + 6) % 7; // Monday-first
+          const dim = new Date(year, month + 1, 0).getDate();
+          const cells = [];
+          const make = (y, m, d, inMonth) => {
+            const dt = new Date(y, m, d);
+            const iso = this.iso(dt);
+            return { key: iso, day: dt.getDate(), iso, inMonth, isToday: iso === this.today() };
+          };
+          const prevDim = new Date(year, month, 0).getDate();
+          for (let i = 0; i < startDow; i++) cells.push(make(year, month - 1, prevDim - startDow + 1 + i, false));
+          for (let d = 1; d <= dim; d++) cells.push(make(year, month, d, true));
+          let next = 1;
+          while (cells.length < 42) cells.push(make(year, month + 1, next++, false));
+          return cells;
+        },
+        dayEvents(iso) {
+          return this.state.events
+            .filter((e) => e.date === iso && this.state.activeCats.includes(e.cat))
+            .sort((a, b) => (a.time < b.time ? -1 : 1));
+        },
+        cappedEvents(iso) {
+          return this.dayEvents(iso).slice(0, 3);
+        },
+        moreCount(iso) {
+          return Math.max(0, this.dayEvents(iso).length - 3);
+        },
+        selEvents() {
+          return this.dayEvents(this.state.selected);
+        },
+        selCount() {
+          return this.selEvents().length;
+        },
+        cellClass(cell) {
+          let c = "flex min-h-[92px] cursor-pointer flex-col gap-0.5 overflow-hidden rounded-lg border p-1.5 ";
+          c += cell.iso === this.state.selected ? "border-fuchsia-400 ring-1 ring-fuchsia-400 " : "border-transparent hover:border-zinc-200 ";
+          c += cell.inMonth ? "bg-white " : "bg-zinc-50/60 ";
+          return c;
+        },
+        dayNumClass(cell) {
+          let c = "grid h-6 w-6 place-items-center rounded-full text-xs font-medium ";
+          if (cell.isToday) c += "bg-fuchsia-600 text-white ";
+          else c += cell.inMonth ? "text-zinc-700 " : "text-zinc-300 ";
+          return c;
+        },
+        chipClass(cat) {
+          const base = "block truncate rounded px-1 py-0.5 text-[11px] font-medium ";
+          const map = {
+            work: "bg-fuchsia-100 text-fuchsia-700",
+            meeting: "bg-blue-100 text-blue-700",
+            personal: "bg-amber-100 text-amber-700",
+            health: "bg-emerald-100 text-emerald-700",
+          };
+          return base + (map[cat] || "bg-zinc-100 text-zinc-600");
+        },
+        catDot(cat) {
+          const base = "inline-block h-2.5 w-2.5 shrink-0 rounded-full ";
+          const map = { work: "bg-fuchsia-500", meeting: "bg-blue-500", personal: "bg-amber-500", health: "bg-emerald-500" };
+          return base + (map[cat] || "bg-zinc-400");
+        },
+        catChip(id) {
+          const on = this.state.activeCats.includes(id);
+          const base = "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ";
+          return base + (on ? "bg-white text-zinc-700 ring-zinc-950/10" : "bg-zinc-100 text-zinc-400 ring-transparent line-through");
+        },
+        toggleCat(e) {
+          const id = e.currentTarget.dataset.id;
+          this.state.activeCats = this.state.activeCats.includes(id)
+            ? this.state.activeCats.filter((c) => c !== id)
+            : [...this.state.activeCats, id];
+        },
+        pickDay(e) {
+          this.state.selected = e.currentTarget.dataset.iso;
+        },
+        prevMonth() {
+          if (this.state.month === 0) { this.state.month = 11; this.state.year--; }
+          else this.state.month--;
+        },
+        nextMonth() {
+          if (this.state.month === 11) { this.state.month = 0; this.state.year++; }
+          else this.state.month++;
+        },
+        goToday() {
+          this.state.year = 2026;
+          this.state.month = 5;
+          this.state.selected = this.today();
+        },
+        addEvent() {
+          const t = this.state.draft.title.trim();
+          if (!t) return;
+          this._id = (this._id || 100) + 1;
+          this.state.events = [...this.state.events, { id: this._id, date: this.state.selected, time: this.state.draft.time, title: t, cat: this.state.draft.cat }];
+          this.state.draft = { title: "", time: this.state.draft.time, cat: this.state.draft.cat };
+        },
+        removeEvent(e) {
+          const id = Number(e.currentTarget.dataset.id);
+          this.state.events = this.state.events.filter((ev) => ev.id !== id);
+        },
+        fmtLong(iso) {
+          const [y, m, d] = iso.split("-").map(Number);
+          const dt = new Date(y, m - 1, d);
+          return dt.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+        },
+      });
+      Micra.start();
+    </script>
+  </body>
+</html>

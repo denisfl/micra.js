@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Micra.js — Performance Benchmarks</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f5f4f0; --surface: #fff; --border: #e2e1dc;
+      --text: #1a1a18; --muted: #888782;
+      --accent: #2563eb; --success: #16a34a; --warn: #d97706; --danger: #dc2626;
+      --radius: 6px;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           font-size: 14px; background: var(--bg); color: var(--text);
+           padding: 32px; min-height: 100vh; }
+    h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .subtitle { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+    .controls { display: flex; gap: 10px; align-items: center; margin-bottom: 24px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 8px 16px; border-radius: var(--radius);
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      border: 1px solid var(--border); background: var(--surface); color: var(--text);
+      font-family: inherit; transition: background .12s;
+    }
+    .btn:hover { background: var(--bg); }
+    .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-primary:hover { background: #1d4ed8; border-color: #1d4ed8; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    select { padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius);
+             font-size: 13px; font-family: inherit; background: var(--surface); }
+
+    .results {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      text-align: left; padding: 10px 16px;
+      font-size: 12px; font-weight: 500; color: var(--muted);
+      border-bottom: 1px solid var(--border); background: var(--bg);
+    }
+    tbody tr:not(:last-child) { border-bottom: 1px solid var(--border); }
+    tbody tr:hover { background: var(--bg); }
+    td { padding: 10px 16px; font-size: 13px; vertical-align: middle; }
+    td.name { font-weight: 500; }
+    td.ops { font-variant-numeric: tabular-nums; }
+    td.bar { width: 180px; }
+    .bar-track { background: var(--border); border-radius: 99px; height: 6px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 99px; transition: width .3s; }
+    .pill {
+      display: inline-flex; align-items: center;
+      padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600;
+    }
+    .pill-fast   { background: #dcfce7; color: #15803d; }
+    .pill-ok     { background: #fef9c3; color: #854d0e; }
+    .pill-slow   { background: #fee2e2; color: #b91c1c; }
+    .pill-running { background: #dbeafe; color: #1d4ed8; }
+    .section-header td {
+      background: var(--bg); font-size: 11px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .06em; padding: 6px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .status { font-size: 13px; color: var(--muted); }
+    #sandbox { position: absolute; left: -9999px; top: 0; width: 400px; }
+  </style>
+</head>
+<body>
+
+<!-- Heroicons sprite (inlined so it works under file:// too — canonical source: assets/icons.svg) -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="icon-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 0 1 0 1.971l-11.54 6.347a1.125 1.125 0 0 1-1.667-.985V5.653Z" /></symbol>
+</svg>
+
+<h1>Micra.js — Benchmarks</h1>
+<p class="subtitle">Measures raw JS + DOM patching time (no paint). Lower is better.</p>
+
+<div class="controls">
+  <button class="btn btn-primary" id="runBtn" onclick="runAll()">
+    <svg width="14" height="14" aria-hidden="true" style="vertical-align:middle">
+      <use href="#icon-play"></use>
+    </svg>
+    <span>Run all</span>
+  </button>
+  <label style="font-size:13px;color:var(--muted)">
+    Iterations:
+    <select id="iterSel">
+      <option value="50">50</option>
+      <option value="100" selected>100</option>
+      <option value="200">200</option>
+    </select>
+  </label>
+  <span class="status" id="status"></span>
+</div>
+
+<div class="results">
+  <table>
+    <thead>
+      <tr>
+        <th style="width:40%">Benchmark</th>
+        <th>Avg / op</th>
+        <th>Total</th>
+        <th>Ops/s</th>
+        <th>Bar</th>
+        <th>Grade</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<!-- Off-screen sandbox for DOM benchmarks -->
+<div id="sandbox"></div>
+
+<script src="dist/micra.js"></script>
+<script>
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function makeItems(n, offset = 0) {
+  return Array.from({ length: n }, (_, i) => ({
+    id:    i + 1 + offset,
+    name:  `User ${i + 1 + offset}`,
+    email: `user${i + 1 + offset}@example.com`,
+    value: (i * 37) % 1000,
+  }))
+}
+
+// Force a synchronous layout flush so the browser actually processes DOM mutations
+function flush(el) { return el.offsetHeight }
+
+// Run fn `iters` times, return { avg, total, opsPerSec }
+function measure(fn, iters, setup) {
+  // Warmup
+  for (let i = 0; i < Math.min(3, iters); i++) { setup?.(); fn() }
+
+  const t0 = performance.now()
+  for (let i = 0; i < iters; i++) { setup?.(); fn() }
+  const total = performance.now() - t0
+  const avg = total / iters
+  return { avg, total, opsPerSec: Math.round(1000 / avg) }
+}
+
+// ── Benchmark definitions ─────────────────────────────────────────────────────
+
+function makeBenches(iters) {
+  const sandbox = document.getElementById('sandbox')
+
+  function makeHost(html) {
+    const el = document.createElement('div')
+    el.innerHTML = html
+    sandbox.appendChild(el)
+    return el
+  }
+
+  function mountComponent(el, def) {
+    // Use Micra.mount directly (bypasses registry)
+    return Micra.mount(el, def)
+  }
+
+  return [
+
+    // ── Section: Mount ──────────────────────────────────────────────────────
+    { section: 'Mount' },
+
+    {
+      name: 'Mount empty component',
+      run() {
+        const el = makeHost('<div data-text="msg"></div>')
+        const inst = mountComponent(el, {
+          state: { msg: 'hello' }
+        })
+        inst.destroy()
+        el.remove()
+      },
+      iters,
+    },
+
+    {
+      name: 'Mount + 5 directives',
+      run() {
+        const el = makeHost(`
+          <div>
+            <span data-text="a"></span>
+            <span data-if="b"></span>
+            <span data-bind="class:cls"></span>
+            <input data-model="c">
+            <span data-html="d"></span>
+          </div>`)
+        const inst = mountComponent(el, {
+          state: { a: 'A', b: true, cls: 'x', c: 'val', d: '<b>bold</b>' }
+        })
+        inst.destroy()
+        el.remove()
+      },
+      iters,
+    },
+
+    // ── Section: Keyed list rendering ───────────────────────────────────────
+    { section: 'Keyed list — data-each + data-key' },
+
+    {
+      name: 'First render — 100 items',
+      setup() {
+        this._el = makeHost(`
+          <div>
+            <template data-each="items" data-key="id">
+              <div>
+                <span data-text="item.name"></span>
+                <span data-text="item.email"></span>
+                <span data-text="item.value"></span>
+              </div>
+            </template>
+          </div>`)
+        this._inst = mountComponent(this._el, { state: { items: [] } })
+      },
+      run() {
+        this._inst.state.items = makeItems(100)
+        this._inst.render()
+        flush(this._el)
+      },
+      teardown() { this._inst.destroy(); this._el.remove() },
+      iters,
+    },
+
+    {
+      name: 'First render — 500 items',
+      setup() {
+        this._el = makeHost(`
+          <div>
+            <template data-each="items" data-key="id">
+              <div>
+                <span data-text="item.name"></span>
+                <span data-text="item.email"></span>
+              </div>
+            </template>
+          </div>`)
+        this._inst = mountComponent(this._el, { state: { items: [] } })
+      },
+      run() {
+        this._inst.state.items = makeItems(500)
+        this._inst.render()
+        flush(this._el)
+      },
+      teardown() { this._inst.destroy(); this._el.remove() },
+      iters: Math.max(10, Math.floor(iters / 5)),
+    },
+
+    {
+      name: 'Patch — no changes (1000 items)',
+      setup() {
+        this._items = makeItems(1000)
+        this._el = makeHost(`
+          <div>
+            <template data-each="items" data-key="id">
+              <div><span data-text="item.name"></span></div>
+            </template>
+          </div>`)
+        this._inst = mountComponent(this._el, { state: { items: this._items } })
+        this._inst.render()
+      },
+      run() {
+        // Same array reference — keyed diff should find all existing keys, no moves
+        this._inst.state.items = this._items
+        this._inst.render()
+      },
+      teardown() { this._inst.destroy(); this._el.remove() },
+      iters,
+    },
+
+    {
+      name: 'Patch — prepend 1 item (1000 items)',
+      setup() {
+        this._base = makeItems(1000)
+        this._el = makeHost(`
+          <div>
+            <template data-each="items" data-key="id">
+              <div><span data-text="item.name"></span></div>
+            </template>
+          </div>`)
+        this._inst = mountComponent(this._el, { state: { items: this._base } })
+        this._inst.render()
+      },
+      run() {
+        // Alternate between adding and removing the prepended item
+        const extra = { id: 99999, name: 'New', email: 'new@x.com', value: 0 }
+        this._inst.state.items = [extra, ...this._base]
+        this._inst.render()
+        this._inst.state.items = this._base
+        this._inst.render()
+      },
+      teardown() { this._inst.destroy(); this._el.remove() },
+      iters: Math.max(10, Math.floor(iters / 2)),
+    },
+
+    {
+      name: 'Patch — remove 1 item (1000 items)',
+      setup() {
+        this._full = makeItems(1000)
+        this._trimmed = this._full.slice(1)
+        this._el = makeHost(`
+          <div>
+            <template data-each="items" data-key="id">
+              <div><span data-text="item.name"></span></div>
+            </template>
+          </div>`)
+        this._inst = mountComponent(this._el, { state: { items: this._full } })
+        this._inst.render()
+      },
+      run() {
+        this._inst.state.items = this._trimmed
+        this._inst.render()
+        this._inst.state.items = this._full
+        this._inst.render()
+      },
+      teardown() { this._inst.destroy(); this._el.remove() },
+      iters: Math.max(10, Math.floor(iters / 2)),
+    },
+
+    {
+      name: 'Patch — reverse 200 items',
+      setup() {
+        this._fwd = makeItems(200)
+        this._rev = [...this._fwd].reverse()
+        this._el = makeHost(`
+          <div>
+            <template data-each="items" data-key="id">
+              <div><span data-text="item.name"></span></div>
+            </template>
+          </div>`)
+        this._inst = mountComponent(this._el, { state: { items: this._fwd } })
+        this._inst.render()
+      },
+      run() {
+        this._inst.state.items = this._rev
+        this._inst.render()
+        this._inst.state.items = this._fwd
+        this._inst.render()
+      },
+      teardown() { this._inst.destroy(); this._el.remove() },
+      iters: Math.max(10, Math.floor(iters / 2)),
+    },
+
+    // ── Section: Non-keyed list ─────────────────────────────────────────────
+    { section: 'Non-keyed list (full re-render)' },
+
+    {
+      name: 'Re-render 100 items (no key)',
+      setup() {
+        this._items = makeItems(100)
+        this._el = makeHost(`
+          <div>
+            <template data-each="items">
+              <div><span data-text="item.name"></span></div>
+            </template>
+          </div>`)
+        this._inst = mountComponent(this._el, { state: { items: this._items } })
+        this._inst.render()
+      },
+      run() {
+        this._inst.state.items = this._items
+        this._inst.render()
+      },
+      teardown() { this._inst.destroy(); this._el.remove() },
+      iters,
+    },
+
+    // ── Section: State & scheduling ─────────────────────────────────────────
+    { section: 'State & scheduler' },
+
+    {
+      name: 'State update + render (10 mutations, batched)',
+      setup() {
+        this._el = makeHost(`
+          <div>
+            <span data-text="a"></span><span data-text="b"></span>
+            <span data-text="c"></span><span data-text="d"></span>
+            <span data-text="e"></span>
+          </div>`)
+        this._inst = mountComponent(this._el, {
+          state: { a: 0, b: 0, c: 0, d: 0, e: 0 }
+        })
+      },
+      run() {
+        const s = this._inst.state
+        // 10 mutations → scheduler batches → single render
+        s.a++; s.b++; s.c++; s.d++; s.e++
+        s.a++; s.b++; s.c++; s.d++; s.e++
+        this._inst.render() // force sync render
+      },
+      teardown() { this._inst.destroy(); this._el.remove() },
+      iters,
+    },
+
+    // ── Section: Expression evaluator ───────────────────────────────────────
+    { section: 'Expression evaluator' },
+
+    {
+      name: 'Cold eval (cache miss) — 20 unique exprs',
+      run() {
+        // Each call generates a unique expression to bypass cache
+        const uid = Math.random().toString(36).slice(2)
+        const state = { x: 1, y: 2, name: 'test' }
+        // Access internal evalExpr via a mounted component's render
+        const el = makeHost(`
+          <div>
+            <span data-text="x + y + '${uid}'"></span>
+            <span data-if="x > 0 && '${uid}'"></span>
+          </div>`)
+        const inst = mountComponent(el, { state })
+        inst.render()
+        inst.destroy()
+        el.remove()
+      },
+      iters: Math.max(10, Math.floor(iters / 5)),
+    },
+
+    {
+      name: 'Warm eval (cache hit) — render 20 exprs',
+      setup() {
+        this._el = makeHost(`
+          <div>
+            <span data-text="a + b"></span>
+            <span data-text="name.toUpperCase()"></span>
+            <span data-if="count > 0"></span>
+            <span data-if="!loading && count > 0"></span>
+            <span data-bind="class: active ? 'on' : 'off'"></span>
+          </div>`)
+        this._inst = mountComponent(this._el, {
+          state: { a: 1, b: 2, name: 'hello', count: 5, loading: false, active: true }
+        })
+        this._inst.render() // warm cache
+      },
+      run() {
+        this._inst.state.a++
+        this._inst.render()
+      },
+      teardown() { this._inst.destroy(); this._el.remove() },
+      iters,
+    },
+
+    // ── Section: Data-bind variety ──────────────────────────────────────────
+    { section: 'Directives' },
+
+    {
+      name: 'applyBind — class, style, attr, bool (10 elements)',
+      setup() {
+        this._el = makeHost(`
+          <div>
+            <div data-bind="class:cls"></div>
+            <div data-bind="style:styleObj"></div>
+            <div data-bind="href:url, title:tip, aria-hidden:hidden"></div>
+            <input data-bind="disabled:dis, readonly:ro">
+            <div data-bind="class:cls"></div>
+            <div data-bind="style:styleObj"></div>
+            <div data-bind="href:url"></div>
+            <div data-bind="class:cls"></div>
+            <div data-bind="disabled:dis"></div>
+            <div data-bind="class:cls, title:tip"></div>
+          </div>`)
+        this._inst = mountComponent(this._el, {
+          state: {
+            cls: 'foo bar', styleObj: { color: 'red', fontWeight: 'bold' },
+            url: '/page', tip: 'hint', hidden: false, dis: false, ro: true
+          }
+        })
+        this._inst.render()
+      },
+      run() {
+        this._inst.state.cls = this._inst.state.cls === 'foo bar' ? 'baz' : 'foo bar'
+        this._inst.render()
+      },
+      teardown() { this._inst.destroy(); this._el.remove() },
+      iters,
+    },
+
+  ]
+}
+
+// ── Runner ────────────────────────────────────────────────────────────────────
+
+let running = false
+
+async function runAll() {
+  if (running) return
+  running = true
+
+  const btn    = document.getElementById('runBtn')
+  const status = document.getElementById('status')
+  const tbody  = document.getElementById('tbody')
+  const iters  = parseInt(document.getElementById('iterSel').value)
+
+  btn.disabled = true
+  tbody.innerHTML = ''
+
+  const benches = makeBenches(iters)
+  const timings = []
+
+  for (const bench of benches) {
+    if (bench.section) {
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr><td class="section-header" colspan="6">${bench.section}</td></tr>`)
+      continue
+    }
+
+    status.textContent = `Running: ${bench.name}…`
+
+    // Give the browser a moment to paint before each bench
+    await new Promise(r => setTimeout(r, 10))
+
+    // Setup
+    bench.setup?.()
+
+    let result
+    try {
+      result = measure(() => bench.run.call(bench), bench.iters ?? iters)
+    } catch(e) {
+      result = { avg: -1, total: -1, opsPerSec: 0, error: e.message }
+    }
+
+    bench.teardown?.()
+
+    timings.push(result.avg)
+    renderRow(bench.name, result, bench.iters ?? iters)
+
+    // Brief yield between benches
+    await new Promise(r => setTimeout(r, 0))
+  }
+
+  // Update bar widths relative to slowest
+  const maxAvg = Math.max(...timings.filter(t => t > 0))
+  document.querySelectorAll('.bar-fill').forEach((el, i) => {
+    const pct = timings[i] > 0 ? (timings[i] / maxAvg * 100).toFixed(1) : 0
+    el.style.width = pct + '%'
+    el.style.background = gradeColor(timings[i])
+  })
+
+  status.textContent = `Done — ${timings.length} benchmarks`
+  btn.disabled = false
+  running = false
+}
+
+function gradeColor(avgMs) {
+  if (avgMs < 0)    return '#9ca3af'
+  if (avgMs < 1)    return '#16a34a'
+  if (avgMs < 5)    return '#d97706'
+  return '#dc2626'
+}
+
+function grade(avgMs) {
+  if (avgMs < 0)   return ['pill-ok',   'error']
+  if (avgMs < 1)   return ['pill-fast', '< 1 ms ✓']
+  if (avgMs < 5)   return ['pill-ok',   '< 5 ms']
+  return ['pill-slow', '> 5 ms']
+}
+
+let _rowIndex = 0
+function renderRow(name, r, iters) {
+  const tbody = document.getElementById('tbody')
+  const [cls, label] = grade(r.avg)
+  const avg  = r.avg  < 0 ? 'err'   : r.avg  < 0.1 ? r.avg.toFixed(3) + ' ms' : r.avg.toFixed(2) + ' ms'
+  const tot  = r.total < 0 ? '—'    : r.total.toFixed(1) + ' ms'
+  const ops  = r.opsPerSec > 0 ? r.opsPerSec.toLocaleString() : '—'
+  const idx  = _rowIndex++
+
+  tbody.insertAdjacentHTML('beforeend', `
+    <tr>
+      <td class="name">${name} <span style="font-size:11px;color:var(--muted);font-weight:400">×${iters}</span></td>
+      <td class="ops">${avg}</td>
+      <td class="ops" style="color:var(--muted)">${tot}</td>
+      <td class="ops">${ops}</td>
+      <td class="bar">
+        <div class="bar-track">
+          <div class="bar-fill" data-idx="${idx}" style="width:0%;background:#16a34a"></div>
+        </div>
+      </td>
+      <td><span class="pill ${cls}">${label}</span></td>
+    </tr>`)
+}
+</script>
+</body>
+</html>

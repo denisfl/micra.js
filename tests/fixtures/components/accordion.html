@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../assets/styles.css" />
+    <title>Accordion — Micra.js Components</title>
+  </head>
+  <body>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      style="display: none"
+      aria-hidden="true"
+    >
+      <symbol
+        id="icon-bars-3"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
+      </symbol>
+      <symbol
+        id="icon-x-mark"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M6 18 18 6M6 6l12 12" />
+      </symbol>
+      <symbol
+        id="icon-chevron-down"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+      </symbol>
+      <symbol
+        id="icon-arrow-left"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      </symbol>
+    </svg>
+
+    <div class="app">
+      <aside class="sidebar" data-component="sidebar-menu">
+        <div class="sidebar-logo" data-class="open:open">
+          <strong>Micra<span>.js</span></strong>
+          <button class="menu-toggle" aria-label="Toggle menu" @click="toggle">
+            <svg class="icon" aria-hidden="true" data-if="!open">
+              <use href="#icon-bars-3"></use>
+            </svg>
+            <svg class="icon" aria-hidden="true" data-if="open">
+              <use href="#icon-x-mark"></use>
+            </svg>
+          </button>
+        </div>
+        <nav class="sidebar-nav" data-class="open:open">
+          <a
+            href="https://denisfl.github.io/micra.js/"
+            class="sidebar-section-link"
+          >
+            <svg class="icon icon-sm" aria-hidden="true">
+              <use href="#icon-arrow-left"></use>
+            </svg>
+            Back to docs
+          </a>
+          <span class="sidebar-group">Overlays</span>
+          <a href="./modal.html"><span class="dot"></span>Modal</a>
+          <a href="./dropdown.html"><span class="dot"></span>Dropdown</a>
+          <a href="./tooltip.html"><span class="dot"></span>Tooltip</a>
+          <a href="./toast.html"><span class="dot"></span>Toast</a>
+          <a href="./command-palette.html"
+            ><span class="dot"></span>Command palette</a
+          >
+          <span class="sidebar-group">Navigation</span>
+          <a href="./tabs.html"><span class="dot"></span>Tabs</a>
+          <a href="./accordion.html" class="active"
+            ><span class="dot"></span>Accordion</a
+          >
+          <a href="./breadcrumb.html"><span class="dot"></span>Breadcrumb</a>
+          <span class="sidebar-group">Forms</span>
+          <a href="./combobox.html"><span class="dot"></span>Combobox</a>
+          <a href="./toggle.html"><span class="dot"></span>Toggle</a>
+          <a href="./tag-input.html"><span class="dot"></span>Tag input</a>
+          <a href="./date-picker.html"><span class="dot"></span>Date picker</a>
+          <a href="./slider.html"><span class="dot"></span>Slider</a>
+          <span class="sidebar-group">Data</span>
+          <a href="./table.html"><span class="dot"></span>Table</a>
+        </nav>
+      </aside>
+
+      <div class="main">
+        <main class="content">
+          <section class="hero">
+            <h2>Accordion</h2>
+            <p>
+              Expand / collapse sections rendered from data. The expanded set
+              lives in an array of ids — switching between single-expand and
+              multi-expand is a one-line change in
+              <span class="inline-code">toggle()</span>.
+              <span class="inline-code">isOpen()</span> is a method, never a
+              state mirror.
+            </p>
+          </section>
+
+          <section class="component-section">
+            <h3>Live preview</h3>
+            <div class="component-preview preview-left">
+              <div data-component="accordion-demo" class="accordion">
+                <template data-each="items" data-key="id">
+                  <div class="accordion-item">
+                    <button
+                      class="accordion-trigger"
+                      @click="toggle"
+                      data-bind="data-id:item.id, id:'acc-h-' + item.id, aria-controls:'acc-p-' + item.id, aria-expanded:isOpen(item.id) ? 'true' : 'false'"
+                    >
+                      <span data-text="item.title"></span>
+                      <svg
+                        class="icon icon-chev"
+                        aria-hidden="true"
+                        data-class="open:isOpen(item.id)"
+                      >
+                        <use href="#icon-chevron-down"></use>
+                      </svg>
+                    </button>
+                    <div
+                      class="accordion-body"
+                      role="region"
+                      data-if="isOpen(item.id)"
+                      data-text="item.body"
+                      data-bind="id:'acc-p-' + item.id, aria-labelledby:'acc-h-' + item.id"
+                    ></div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </section>
+
+          <section class="component-section">
+            <h3>Markup</h3>
+            <pre><code>&lt;div data-component="accordion-demo" class="accordion"&gt;
+  &lt;template data-each="items" data-key="id"&gt;
+    &lt;div class="accordion-item"&gt;
+      &lt;button class="accordion-trigger"
+        @click="toggle"
+        data-bind="data-id:item.id, id:'acc-h-' + item.id, aria-controls:'acc-p-' + item.id,
+                   aria-expanded:isOpen(item.id) ? 'true' : 'false'"&gt;
+        &lt;span data-text="item.title"&gt;&lt;/span&gt;
+        &lt;svg data-class="open:isOpen(item.id)"&gt;…chevron…&lt;/svg&gt;
+      &lt;/button&gt;
+      &lt;div class="accordion-body" role="region"
+           data-if="isOpen(item.id)" data-text="item.body"
+           data-bind="id:'acc-p-' + item.id, aria-labelledby:'acc-h-' + item.id"&gt;&lt;/div&gt;
+    &lt;/div&gt;
+  &lt;/template&gt;
+&lt;/div&gt;</code></pre>
+          </section>
+
+          <section class="component-section">
+            <h3>Definition</h3>
+            <pre><code>Micra.define('accordion-demo', {
+  state: {
+    multi: false,           // flip to true for multi-expand
+    open:  ['shipping'],    // ids of currently expanded items
+    items: [
+      { id: 'shipping', title: 'When will my order ship?',     body: 'Within 24h on business days.'        },
+      { id: 'returns',  title: 'What is your returns policy?', body: '30 days, free return shipping.'      },
+      { id: 'support',  title: 'How do I contact support?',    body: 'Reply to your order confirmation email.' },
+    ],
+  },
+
+  // derived — never store this in state
+  isOpen(id) {
+    return this.state.open.includes(id)
+  },
+
+  toggle(e) {
+    const id = e.currentTarget.dataset.id
+    const wasOpen = this.isOpen(id)
+
+    if (this.state.multi) {
+      this.state.open = wasOpen
+        ? this.state.open.filter(x =&gt; x !== id)
+        : [...this.state.open, id]
+    } else {
+      this.state.open = wasOpen ? [] : [id]
+    }
+  },
+})</code></pre>
+          </section>
+
+          <section class="component-section">
+            <h3>Integration</h3>
+            <ul>
+              <li>
+                <strong>Items come from data.</strong> Drive the accordion with
+                an array of <span class="inline-code">{ id, title, body }</span>
+                objects — render server-side, or load via
+                <span class="inline-code">this.fetch()</span> in
+                <span class="inline-code">onCreate</span>.
+              </li>
+              <li>
+                <strong>Multi vs single</strong> is one state field. Default is
+                single-expand (clicking another closes the first). Set
+                <span class="inline-code">multi: true</span> and clicking
+                another adds it to the open set instead.
+              </li>
+              <li>
+                <strong>Chevron animation</strong> is CSS: the
+                <span class="inline-code">.icon-chev.open</span> rule rotates
+                180°. <span class="inline-code">data-class</span> toggles the
+                class additively — the icon's other classes are preserved.
+              </li>
+              <li>
+                <strong>ARIA.</strong>
+                <span class="inline-code">aria-expanded</span> on each trigger
+                is bound to <span class="inline-code">isOpen(item.id)</span>
+                so screen readers stay in sync.
+              </li>
+            </ul>
+          </section>
+
+          <section class="component-section">
+            <h3>Pitfalls</h3>
+            <ul>
+              <li>
+                Don't store an
+                <span class="inline-code">openMap: { [id]: bool }</span> object
+                — nested writes (<span class="inline-code"
+                  >openMap.shipping = true</span
+                >) are invisible to the proxy. The array-of-ids pattern is
+                replace-only and stays reactive.
+              </li>
+              <li>
+                Don't compute
+                <span class="inline-code">openCount</span> /
+                <span class="inline-code">expanded</span> as a state field —
+                derive with a method (<span class="inline-code"
+                  >openCount() { return this.state.open.length }</span
+                >) so it can't drift.
+              </li>
+              <li>
+                Don't use <span class="inline-code">data-show</span> for bodies
+                if they're large — content stays in the DOM and the page grows.
+                Use <span class="inline-code">data-if</span> so only expanded
+                bodies are rendered.
+              </li>
+            </ul>
+          </section>
+        </main>
+
+        <footer class="doc-footer">
+          <div class="footer-left">
+            <a href="./" class="btn">
+              <svg class="icon" aria-hidden="true">
+                <use href="#icon-arrow-left"></use>
+              </svg>
+              <span>All components</span>
+            </a>
+          </div>
+        </footer>
+      </div>
+    </div>
+
+    <script src="../dist/micra.js"></script>
+    <script>
+      Micra.define("sidebar-menu", {
+        state: { open: false },
+        toggle() {
+          this.state.open = !this.state.open;
+        },
+        close() {
+          this.state.open = false;
+        },
+      });
+
+      Micra.define("accordion-demo", {
+        state: {
+          multi: false,
+          open: ["shipping"],
+          items: [
+            {
+              id: "shipping",
+              title: "When will my order ship?",
+              body: "Within 24h on business days.",
+            },
+            {
+              id: "returns",
+              title: "What is your returns policy?",
+              body: "30 days, free return shipping.",
+            },
+            {
+              id: "support",
+              title: "How do I contact support?",
+              body: "Reply to your order confirmation email.",
+            },
+          ],
+        },
+        isOpen(id) {
+          return this.state.open.includes(id);
+        },
+        toggle(e) {
+          const id = e.currentTarget.dataset.id;
+          const wasOpen = this.isOpen(id);
+          if (this.state.multi) {
+            this.state.open = wasOpen
+              ? this.state.open.filter((x) => x !== id)
+              : [...this.state.open, id];
+          } else {
+            this.state.open = wasOpen ? [] : [id];
+          }
+        },
+      });
+
+      Micra.start();
+    </script>
+      <script src="../assets/highlight.js"></script>
+  </body>
+</html>

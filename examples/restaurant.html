@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trattoria — Micra demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = { theme: { extend: { fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"] } } } };
+    </script>
+  </head>
+  <body class="h-full bg-rose-50/60 font-sans text-zinc-900 antialiased">
+    <div data-component="menu" class="mx-auto max-w-4xl px-4 py-8">
+      <header class="flex flex-wrap items-center gap-4">
+        <span class="text-lg font-semibold tracking-tight">Trattoria<span class="text-rose-600">.</span></span>
+        <div class="ml-auto flex items-center gap-2 rounded-lg bg-rose-600 px-3 py-2 text-sm font-medium text-white">
+          <span data-text="count()"></span>
+          <span>in order</span>
+          <span class="text-rose-200">/</span>
+          <span data-text="money(total())"></span>
+        </div>
+      </header>
+
+      <div class="mt-6 flex flex-wrap gap-2">
+        <template data-each="cats" data-key="name">
+          <button
+            @click="setCat"
+            data-bind="data-cat:item.name, class:catClass(item.name)"
+            data-text="item.name"
+          ></button>
+        </template>
+      </div>
+
+      <div class="mt-5 grid gap-3 sm:grid-cols-2">
+        <template data-each="filtered()" data-key="id">
+          <div class="flex items-start gap-3 rounded-xl bg-white p-4 ring-1 ring-zinc-950/5">
+            <div class="flex-1">
+              <p class="font-medium leading-snug" data-text="item.name"></p>
+              <p class="mt-0.5 text-sm text-zinc-500" data-text="item.note"></p>
+              <p class="mt-2 font-semibold text-rose-700" data-text="money(item.price)"></p>
+            </div>
+            <button
+              @click="add"
+              data-bind="data-id:item.id"
+              class="rounded-lg bg-rose-100 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-200"
+            >
+              Add
+            </button>
+          </div>
+        </template>
+      </div>
+
+      <div class="mt-8 rounded-xl bg-white p-5 ring-1 ring-zinc-950/5">
+        <h2 class="text-sm font-semibold uppercase tracking-wide text-zinc-500">Your order</h2>
+        <p data-show="order.length === 0" class="mt-3 text-sm text-zinc-400">Nothing yet — add a dish above.</p>
+        <ul data-show="order.length > 0" class="mt-3 divide-y divide-zinc-950/5">
+          <template data-each="order" data-key="id">
+            <li class="flex items-center gap-3 py-2">
+              <span class="flex-1 text-sm" data-text="item.name"></span>
+              <div class="flex items-center gap-2">
+                <button @click="dec" data-bind="data-id:item.id" class="grid h-7 w-7 place-items-center rounded-md ring-1 ring-inset ring-zinc-950/10 hover:bg-zinc-50">−</button>
+                <span class="w-6 text-center text-sm tabular-nums" data-text="item.qty"></span>
+                <button @click="inc" data-bind="data-id:item.id" class="grid h-7 w-7 place-items-center rounded-md ring-1 ring-inset ring-zinc-950/10 hover:bg-zinc-50">+</button>
+              </div>
+              <span class="w-16 text-right text-sm font-medium tabular-nums" data-text="money(item.price * item.qty)"></span>
+            </li>
+          </template>
+        </ul>
+        <div data-show="order.length > 0" class="mt-4 flex items-center justify-between border-t border-zinc-950/5 pt-4">
+          <span class="text-sm font-medium">Total</span>
+          <span class="text-lg font-semibold text-rose-700" data-text="money(total())"></span>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/micra.js/dist/micra.min.js"></script>
+    <script>
+      Micra.define("menu", {
+        state: {
+          cat: "All",
+          cats: [{ name: "All" }, { name: "Starters" }, { name: "Mains" }, { name: "Desserts" }, { name: "Drinks" }],
+          menu: [
+            { id: 1, name: "Bruschetta al Pomodoro", cat: "Starters", price: 8.5, note: "Tomato, basil, garlic" },
+            { id: 2, name: "Calamari Fritti", cat: "Starters", price: 11, note: "Lemon aioli" },
+            { id: 3, name: "Tagliatelle al Ragù", cat: "Mains", price: 17, note: "Slow-cooked beef ragù" },
+            { id: 4, name: "Margherita Pizza", cat: "Mains", price: 14, note: "San Marzano, fior di latte" },
+            { id: 5, name: "Risotto ai Funghi", cat: "Mains", price: 16.5, note: "Porcini, parmesan" },
+            { id: 6, name: "Tiramisù", cat: "Desserts", price: 7.5, note: "Mascarpone, espresso" },
+            { id: 7, name: "Panna Cotta", cat: "Desserts", price: 7, note: "Vanilla, berry coulis" },
+            { id: 8, name: "Espresso", cat: "Drinks", price: 3, note: "Single origin" },
+            { id: 9, name: "Aperol Spritz", cat: "Drinks", price: 9, note: "Prosecco, soda" },
+          ],
+          order: [],
+        },
+        filtered() {
+          const c = this.state.cat;
+          return c === "All" ? this.state.menu : this.state.menu.filter((m) => m.cat === c);
+        },
+        catClass(name) {
+          const base = "rounded-full px-3 py-1.5 text-sm font-medium ";
+          return base + (name === this.state.cat ? "bg-rose-600 text-white" : "bg-white text-zinc-600 ring-1 ring-inset ring-zinc-950/10 hover:bg-rose-50");
+        },
+        setCat(e) {
+          this.state.cat = e.currentTarget.dataset.cat;
+        },
+        add(e) {
+          const id = Number(e.currentTarget.dataset.id);
+          const existing = this.state.order.find((o) => o.id === id);
+          if (existing) {
+            this.state.order = this.state.order.map((o) => (o.id === id ? { ...o, qty: o.qty + 1 } : o));
+          } else {
+            const dish = this.state.menu.find((m) => m.id === id);
+            this.state.order = [...this.state.order, { id, name: dish.name, price: dish.price, qty: 1 }];
+          }
+        },
+        inc(e) {
+          const id = Number(e.currentTarget.dataset.id);
+          this.state.order = this.state.order.map((o) => (o.id === id ? { ...o, qty: o.qty + 1 } : o));
+        },
+        dec(e) {
+          const id = Number(e.currentTarget.dataset.id);
+          this.state.order = this.state.order
+            .map((o) => (o.id === id ? { ...o, qty: o.qty - 1 } : o))
+            .filter((o) => o.qty > 0);
+        },
+        count() {
+          return this.state.order.reduce((n, o) => n + o.qty, 0);
+        },
+        total() {
+          return this.state.order.reduce((n, o) => n + o.price * o.qty, 0);
+        },
+        money(n) {
+          return "$" + n.toFixed(2);
+        },
+      });
+      Micra.start();
+    </script>
+  </body>
+</html>

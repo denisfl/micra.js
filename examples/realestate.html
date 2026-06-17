@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Harbor Homes — Micra demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = { theme: { extend: { fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"] } } } };
+    </script>
+  </head>
+  <body class="h-full bg-sky-50/60 font-sans text-zinc-900 antialiased">
+    <div data-component="listings" class="mx-auto max-w-5xl px-4 py-8">
+      <header class="flex flex-wrap items-center gap-3">
+        <span class="text-lg font-semibold tracking-tight">Harbor<span class="text-sky-600">Homes</span></span>
+        <span class="ml-auto text-sm text-zinc-500">
+          <span class="font-medium text-zinc-800" data-text="count()"></span> homes ·
+          <span data-text="favs.length"></span> saved
+        </span>
+      </header>
+
+      <div class="mt-6 flex flex-wrap items-end gap-6 rounded-xl bg-white p-4 ring-1 ring-zinc-950/5">
+        <div class="min-w-[16rem] flex-1">
+          <label class="text-sm font-medium">
+            Max price: <span class="text-sky-700" data-text="money(maxPrice)"></span>
+          </label>
+          <input type="range" min="300000" max="2000000" step="50000" data-model="maxPrice" class="mt-2 w-full accent-sky-600" />
+        </div>
+        <div>
+          <span class="block text-sm font-medium">Bedrooms</span>
+          <div class="mt-2 flex gap-1.5">
+            <template data-each="bedOpts" data-key="v">
+              <button @click="setBeds" data-bind="data-v:item.v, class:bedClass(item.v)" data-text="item.v"></button>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <template data-each="filtered()" data-key="id">
+          <div class="overflow-hidden rounded-xl bg-white ring-1 ring-zinc-950/5">
+            <div data-bind="class:swatch(item.tint)"></div>
+            <div class="p-4">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <p class="font-medium leading-snug" data-text="item.title"></p>
+                  <p class="text-sm text-zinc-500" data-text="item.city"></p>
+                </div>
+                <button
+                  @click="toggleFav"
+                  data-bind="data-id:item.id, class:favClass(item.id)"
+                  data-text="isFav(item.id) ? 'Saved' : 'Save'"
+                ></button>
+              </div>
+              <p class="mt-2 font-semibold text-sky-700" data-text="money(item.price)"></p>
+              <p class="mt-1 text-sm text-zinc-500">
+                <span data-text="item.beds"></span> bd ·
+                <span data-text="item.baths"></span> ba ·
+                <span data-text="item.sqft"></span> sqft
+              </p>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <p data-show="count() === 0" class="mt-10 text-center text-sm text-zinc-400">
+        No homes match these filters. Raise the price or lower the bedrooms.
+      </p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/micra.js/dist/micra.min.js"></script>
+    <script>
+      Micra.define("listings", {
+        state: {
+          maxPrice: 1200000,
+          beds: "Any",
+          bedOpts: [{ v: "Any" }, { v: "1+" }, { v: "2+" }, { v: "3+" }, { v: "4+" }],
+          favs: [],
+          props: [
+            { id: 1, title: "Cedar Loft", city: "Portland, OR", price: 540000, beds: 1, baths: 1, sqft: 720, tint: "sky" },
+            { id: 2, title: "Maple Row Townhouse", city: "Austin, TX", price: 815000, beds: 3, baths: 2, sqft: 1640, tint: "teal" },
+            { id: 3, title: "Harbor View Condo", city: "Seattle, WA", price: 1150000, beds: 2, baths: 2, sqft: 1180, tint: "stone" },
+            { id: 4, title: "Birchwood Bungalow", city: "Denver, CO", price: 690000, beds: 2, baths: 1, sqft: 980, tint: "amber" },
+            { id: 5, title: "Slate Hill House", city: "Raleigh, NC", price: 1480000, beds: 4, baths: 3, sqft: 2600, tint: "rose" },
+            { id: 6, title: "Garden Court Flat", city: "Chicago, IL", price: 430000, beds: 1, baths: 1, sqft: 640, tint: "teal" },
+            { id: 7, title: "Riverside Villa", city: "Sacramento, CA", price: 1750000, beds: 5, baths: 4, sqft: 3200, tint: "sky" },
+            { id: 8, title: "Quarry Lane Cottage", city: "Boise, ID", price: 525000, beds: 2, baths: 1, sqft: 910, tint: "stone" },
+            { id: 9, title: "Linden Square Duplex", city: "Columbus, OH", price: 760000, beds: 3, baths: 2, sqft: 1520, tint: "amber" },
+          ],
+        },
+        filtered() {
+          const min = this.state.beds === "Any" ? 0 : parseInt(this.state.beds, 10);
+          return this.state.props.filter((p) => p.price <= this.state.maxPrice && p.beds >= min);
+        },
+        count() {
+          return this.filtered().length;
+        },
+        setBeds(e) {
+          this.state.beds = e.currentTarget.dataset.v;
+        },
+        bedClass(v) {
+          const base = "rounded-md px-3 py-1.5 text-sm font-medium ";
+          return base + (v === this.state.beds ? "bg-sky-600 text-white" : "bg-white text-zinc-600 ring-1 ring-inset ring-zinc-950/10 hover:bg-sky-50");
+        },
+        toggleFav(e) {
+          const id = Number(e.currentTarget.dataset.id);
+          this.state.favs = this.state.favs.includes(id)
+            ? this.state.favs.filter((f) => f !== id)
+            : [...this.state.favs, id];
+        },
+        isFav(id) {
+          return this.state.favs.includes(id);
+        },
+        favClass(id) {
+          const base = "shrink-0 rounded-md px-2.5 py-1 text-xs font-medium ";
+          return base + (this.isFav(id) ? "bg-sky-600 text-white" : "text-sky-700 ring-1 ring-inset ring-sky-200 hover:bg-sky-50");
+        },
+        swatch(tint) {
+          const map = {
+            sky: "from-sky-100 to-sky-300",
+            teal: "from-teal-100 to-teal-300",
+            stone: "from-stone-100 to-stone-300",
+            amber: "from-amber-100 to-amber-200",
+            rose: "from-rose-100 to-rose-200",
+          };
+          return "h-28 bg-gradient-to-br " + (map[tint] || map.sky);
+        },
+        money(n) {
+          return "$" + Number(n).toLocaleString("en-US");
+        },
+      });
+      Micra.start();
+    </script>
+  </body>
+</html>

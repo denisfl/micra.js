@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Forge Sales — Micra demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = { theme: { extend: { fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"] } } } };
+    </script>
+  </head>
+  <body class="h-full bg-teal-50/60 font-sans text-zinc-900 antialiased">
+    <div data-component="sales" class="mx-auto max-w-6xl px-4 py-8">
+      <!-- Top bar -->
+      <header class="flex flex-wrap items-center gap-3">
+        <span class="text-lg font-semibold tracking-tight">Forge<span class="text-teal-600"> Sales</span></span>
+        <div class="ml-auto flex flex-wrap items-center gap-4 text-sm">
+          <span class="text-zinc-500">Open <span class="font-semibold text-zinc-800" data-text="money(openTotal())"></span></span>
+          <span class="text-zinc-500">Forecast <span class="font-semibold text-teal-700" data-text="money(forecast())"></span></span>
+          <span class="text-zinc-500">Won <span class="font-semibold text-emerald-600" data-text="money(wonTotal())"></span></span>
+        </div>
+      </header>
+
+      <!-- Controls -->
+      <div class="mt-5 flex flex-wrap items-center gap-3">
+        <input
+          data-model="query"
+          placeholder="Search deals..."
+          class="w-full max-w-xs rounded-lg border-0 bg-white px-3 py-2 text-sm ring-1 ring-inset ring-zinc-950/10 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-teal-500"
+        />
+        <div class="flex flex-wrap gap-1.5">
+          <template data-each="owners" data-key="name">
+            <button @click="setOwner" data-bind="data-owner:item.name, class:ownerClass(item.name)" data-text="item.name"></button>
+          </template>
+        </div>
+        <button @click="toggleAdd" class="ml-auto rounded-lg bg-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-teal-700">
+          <span data-text="adding ? 'Close' : '+ New deal'"></span>
+        </button>
+      </div>
+
+      <!-- New deal form -->
+      <div data-show="adding" class="mt-3 flex flex-wrap items-end gap-3 rounded-xl bg-white p-4 ring-1 ring-zinc-950/5">
+        <div>
+          <label class="block text-xs font-medium text-zinc-500">Company</label>
+          <input data-model="draft.company" @keydown.enter="addDeal" class="mt-1 rounded-lg border-0 bg-zinc-50 px-3 py-2 text-sm ring-1 ring-inset ring-zinc-950/10 focus:ring-2 focus:ring-inset focus:ring-teal-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-zinc-500">Amount</label>
+          <input type="number" data-model="draft.amount" @keydown.enter="addDeal" class="mt-1 w-32 rounded-lg border-0 bg-zinc-50 px-3 py-2 text-sm ring-1 ring-inset ring-zinc-950/10 focus:ring-2 focus:ring-inset focus:ring-teal-500" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-zinc-500">Owner</label>
+          <select data-model="draft.owner" class="mt-1 rounded-lg border-0 bg-zinc-50 px-3 py-2 text-sm ring-1 ring-inset ring-zinc-950/10 focus:ring-2 focus:ring-inset focus:ring-teal-500">
+            <option>Mia</option><option>Jon</option><option>Lena</option>
+          </select>
+        </div>
+        <button @click="addDeal" class="rounded-lg bg-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-teal-700">Add deal</button>
+      </div>
+
+      <!-- Kanban board (nested data-each: stages → deals) -->
+      <div class="mt-5 flex gap-4 overflow-x-auto pb-2">
+        <template data-each="stages" data-key="name">
+          <div class="flex min-w-[15rem] flex-1 flex-col rounded-xl bg-zinc-100/70 p-2">
+            <div class="flex items-center justify-between px-2 py-1.5">
+              <span class="text-sm font-semibold" data-text="item.name"></span>
+              <span class="text-xs text-zinc-500">
+                <span data-text="stageCount(item.name)"></span> ·
+                <span data-text="money(stageSum(item.name))"></span>
+              </span>
+            </div>
+            <div class="mt-1 flex flex-col gap-2">
+              <template data-each="dealsIn(item.name)" data-key="id">
+                <div
+                  @click="select"
+                  data-bind="data-id:item.id"
+                  class="cursor-pointer rounded-lg bg-white p-3 ring-1 ring-zinc-950/5 hover:ring-teal-300"
+                >
+                  <div class="flex items-start justify-between gap-2">
+                    <p class="text-sm font-medium leading-snug" data-text="item.company"></p>
+                    <span data-bind="class:tagClass(item.tag)" data-text="item.tag"></span>
+                  </div>
+                  <p class="mt-1 text-sm font-semibold text-teal-700" data-text="money(item.amount)"></p>
+                  <div class="mt-2 flex items-center justify-between">
+                    <span class="inline-flex items-center gap-1.5 text-xs text-zinc-500">
+                      <span class="grid h-5 w-5 place-items-center rounded-full bg-teal-100 text-[10px] font-semibold text-teal-700" data-text="initials(item.owner)"></span>
+                      <span data-text="item.owner"></span>
+                    </span>
+                    <span class="text-xs text-zinc-400" data-text="item.days + 'd'"></span>
+                  </div>
+                  <div class="mt-2 flex justify-end gap-1">
+                    <button @click.stop="moveLeft" data-bind="data-id:item.id, disabled:item.stage === 'Inbox'" class="grid h-6 w-6 place-items-center rounded-md text-zinc-500 ring-1 ring-inset ring-zinc-950/10 hover:bg-zinc-50 disabled:opacity-30">←</button>
+                    <button @click.stop="moveRight" data-bind="data-id:item.id, disabled:item.stage === 'Won'" class="grid h-6 w-6 place-items-center rounded-md text-zinc-500 ring-1 ring-inset ring-zinc-950/10 hover:bg-zinc-50 disabled:opacity-30">→</button>
+                  </div>
+                </div>
+              </template>
+              <p data-show="stageCount(item.name) === 0" class="px-2 py-3 text-xs text-zinc-400">No deals</p>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Deal detail drawer -->
+      <div data-show="selectedId" class="fixed inset-0 z-20 bg-zinc-950/20" @click="closeDetail"></div>
+      <aside data-if="selectedId" class="fixed right-0 top-0 z-30 flex h-full w-80 flex-col overflow-y-auto bg-white p-5 shadow-2xl">
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-xs uppercase tracking-wide text-zinc-400" data-text="sel().stage"></p>
+            <h2 class="text-lg font-semibold leading-snug" data-text="sel().company"></h2>
+          </div>
+          <button @click="closeDetail" class="text-sm text-zinc-400 hover:text-zinc-700">Close</button>
+        </div>
+        <p class="mt-2 text-2xl font-semibold text-teal-700" data-text="money(sel().amount)"></p>
+        <p class="mt-1 text-sm text-zinc-500">Owner: <span data-text="sel().owner"></span></p>
+
+        <h3 class="mt-6 text-xs font-semibold uppercase tracking-wide text-zinc-500">Activity</h3>
+        <ul class="mt-2 space-y-2">
+          <template data-each="sel().notes" data-key="id">
+            <li class="rounded-lg bg-zinc-50 p-2.5 text-sm">
+              <span data-text="item.text"></span>
+              <span class="mt-0.5 block text-xs text-zinc-400" data-text="item.when"></span>
+            </li>
+          </template>
+          <li data-show="sel().notes.length === 0" class="text-sm text-zinc-400">No activity yet.</li>
+        </ul>
+        <div class="mt-3 flex gap-2">
+          <input
+            data-model="noteText"
+            @keydown.enter="addNote"
+            placeholder="Add a note..."
+            class="flex-1 rounded-lg border-0 bg-zinc-50 px-3 py-2 text-sm ring-1 ring-inset ring-zinc-950/10 focus:ring-2 focus:ring-inset focus:ring-teal-500"
+          />
+          <button @click="addNote" class="rounded-lg bg-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-teal-700">Add</button>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Pinned to 2.6.0: this demo needs nested data-each (added in 2.6.0). -->
+    <script src="https://cdn.jsdelivr.net/npm/micra.js@2.6.0/dist/micra.min.js"></script>
+    <script>
+      Micra.define("sales", {
+        state: {
+          query: "",
+          owner: "All",
+          owners: [{ name: "All" }, { name: "Mia" }, { name: "Jon" }, { name: "Lena" }],
+          stages: [{ name: "Inbox" }, { name: "Contacted" }, { name: "Negotiation" }, { name: "Won" }],
+          adding: false,
+          draft: { company: "", amount: "", owner: "Mia" },
+          selectedId: 0,
+          noteText: "",
+          deals: [
+            { id: 1, company: "Northwind Traders", amount: 24000, owner: "Mia", tag: "Hot", days: 3, stage: "Inbox", notes: [{ id: 1, text: "Inbound from the pricing page", when: "3d ago" }] },
+            { id: 2, company: "Acme Robotics", amount: 56000, owner: "Jon", tag: "Enterprise", days: 6, stage: "Contacted", notes: [{ id: 1, text: "Sent the deck", when: "5d ago" }, { id: 2, text: "Discovery call booked", when: "2d ago" }] },
+            { id: 3, company: "Bluebird Media", amount: 12000, owner: "Lena", tag: "SMB", days: 1, stage: "Inbox", notes: [] },
+            { id: 4, company: "Summit Dental", amount: 8000, owner: "Mia", tag: "New", days: 9, stage: "Contacted", notes: [{ id: 1, text: "Left a voicemail", when: "1w ago" }] },
+            { id: 5, company: "Orbit Studios", amount: 31000, owner: "Jon", tag: "Hot", days: 4, stage: "Negotiation", notes: [{ id: 1, text: "Negotiating seat count", when: "4d ago" }] },
+            { id: 6, company: "Granite Bank", amount: 92000, owner: "Lena", tag: "Enterprise", days: 12, stage: "Negotiation", notes: [{ id: 1, text: "Security review in progress", when: "1w ago" }] },
+            { id: 7, company: "Harvest Foods", amount: 41000, owner: "Mia", tag: "Renewal", days: 2, stage: "Won", notes: [{ id: 1, text: "Signed — annual contract", when: "2d ago" }] },
+            { id: 8, company: "Pine & Co", amount: 15000, owner: "Jon", tag: "SMB", days: 5, stage: "Contacted", notes: [] },
+          ],
+        },
+        visible() {
+          const q = this.state.query.trim().toLowerCase();
+          const o = this.state.owner;
+          return this.state.deals.filter(
+            (d) => (!q || d.company.toLowerCase().includes(q)) && (o === "All" || d.owner === o),
+          );
+        },
+        dealsIn(stage) {
+          return this.visible().filter((d) => d.stage === stage);
+        },
+        stageCount(stage) {
+          return this.dealsIn(stage).length;
+        },
+        stageSum(stage) {
+          return this.dealsIn(stage).reduce((n, d) => n + d.amount, 0);
+        },
+        openTotal() {
+          return this.state.deals.filter((d) => d.stage !== "Won").reduce((n, d) => n + d.amount, 0);
+        },
+        wonTotal() {
+          return this.state.deals.filter((d) => d.stage === "Won").reduce((n, d) => n + d.amount, 0);
+        },
+        forecast() {
+          const w = { Inbox: 0.1, Contacted: 0.3, Negotiation: 0.6, Won: 1 };
+          return Math.round(this.state.deals.reduce((n, d) => n + d.amount * (w[d.stage] || 0), 0));
+        },
+        setOwner(e) {
+          this.state.owner = e.currentTarget.dataset.owner;
+        },
+        ownerClass(name) {
+          const base = "rounded-full px-3 py-1.5 text-sm font-medium ";
+          return base + (name === this.state.owner ? "bg-teal-600 text-white" : "bg-white text-zinc-600 ring-1 ring-inset ring-zinc-950/10 hover:bg-teal-50");
+        },
+        move(id, dir) {
+          const order = this.state.stages.map((s) => s.name);
+          this.state.deals = this.state.deals.map((d) => {
+            if (d.id !== id) return d;
+            const i = Math.min(Math.max(order.indexOf(d.stage) + dir, 0), order.length - 1);
+            return { ...d, stage: order[i], days: 0 };
+          });
+        },
+        moveRight(e) {
+          this.move(Number(e.currentTarget.dataset.id), 1);
+        },
+        moveLeft(e) {
+          this.move(Number(e.currentTarget.dataset.id), -1);
+        },
+        toggleAdd() {
+          this.state.adding = !this.state.adding;
+        },
+        addDeal() {
+          const c = this.state.draft.company.trim();
+          const a = Number(this.state.draft.amount);
+          if (!c || !a) return;
+          this._id = (this._id || 100) + 1;
+          this.state.deals = [...this.state.deals, { id: this._id, company: c, amount: a, owner: this.state.draft.owner, tag: "New", days: 0, stage: "Inbox", notes: [] }];
+          this.state.draft = { company: "", amount: "", owner: this.state.draft.owner };
+          this.state.adding = false;
+        },
+        select(e) {
+          this.state.selectedId = Number(e.currentTarget.dataset.id);
+        },
+        sel() {
+          return this.state.deals.find((d) => d.id === this.state.selectedId) || { company: "", amount: 0, owner: "", stage: "", notes: [] };
+        },
+        closeDetail() {
+          this.state.selectedId = 0;
+        },
+        addNote() {
+          const t = this.state.noteText.trim();
+          if (!t || !this.state.selectedId) return;
+          this._nid = (this._nid || 100) + 1;
+          const nid = this._nid;
+          this.state.deals = this.state.deals.map((d) =>
+            d.id === this.state.selectedId ? { ...d, notes: [...d.notes, { id: nid, text: t, when: "just now" }] } : d,
+          );
+          this.state.noteText = "";
+        },
+        initials(name) {
+          return name ? name[0] : "";
+        },
+        tagClass(tag) {
+          const base = "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ";
+          const map = {
+            Hot: "bg-rose-100 text-rose-700",
+            Enterprise: "bg-violet-100 text-violet-700",
+            SMB: "bg-sky-100 text-sky-700",
+            New: "bg-teal-100 text-teal-700",
+            Renewal: "bg-amber-100 text-amber-700",
+          };
+          return base + (map[tag] || "bg-zinc-100 text-zinc-600");
+        },
+        money(n) {
+          return "$" + Number(n).toLocaleString("en-US");
+        },
+      });
+      Micra.start();
+    </script>
+  </body>
+</html>

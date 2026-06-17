@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Stacklane — Micra demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = { theme: { extend: { fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"] } } } };
+    </script>
+  </head>
+  <body class="h-full bg-cyan-50/60 font-sans text-zinc-900 antialiased">
+    <div data-component="pricing" class="mx-auto max-w-5xl px-4 py-8">
+      <header class="flex flex-wrap items-center gap-3">
+        <span class="text-lg font-semibold tracking-tight">Stack<span class="text-cyan-600">lane</span></span>
+        <div class="ml-auto inline-flex rounded-lg bg-white p-1 ring-1 ring-inset ring-zinc-950/10">
+          <button @click="setBilling" data-bind="data-v:'monthly', class:billBtn('monthly')">Monthly</button>
+          <button @click="setBilling" data-bind="data-v:'annual', class:billBtn('annual')">Annual <span class="opacity-70">−20%</span></button>
+        </div>
+      </header>
+
+      <div class="mt-6 grid gap-5 lg:grid-cols-[1fr_19rem]">
+        <div class="space-y-5">
+          <!-- Plans -->
+          <div class="grid gap-3 sm:grid-cols-3">
+            <div @click="setPlan" data-plan="starter" data-bind="class:planCard('starter')">
+              <p class="font-semibold">Starter</p>
+              <p class="mt-1"><span class="text-2xl font-semibold tracking-tight" data-text="money(perSeat('starter'))"></span><span class="text-sm text-zinc-400"> /seat/mo</span></p>
+              <ul class="mt-3 space-y-1.5 text-sm text-zinc-600">
+                <li>Up to 3 projects</li><li>Community support</li><li>1 GB storage</li>
+              </ul>
+              <p class="mt-3 text-xs font-medium" data-text="plan === 'starter' ? 'Selected' : 'Choose plan'" data-bind="class:planTag('starter')"></p>
+            </div>
+            <div @click="setPlan" data-plan="pro" data-bind="class:planCard('pro')">
+              <p class="font-semibold">Pro</p>
+              <p class="mt-1"><span class="text-2xl font-semibold tracking-tight" data-text="money(perSeat('pro'))"></span><span class="text-sm text-zinc-400"> /seat/mo</span></p>
+              <ul class="mt-3 space-y-1.5 text-sm text-zinc-600">
+                <li>Unlimited projects</li><li>Email support</li><li>50 GB storage</li>
+              </ul>
+              <p class="mt-3 text-xs font-medium" data-text="plan === 'pro' ? 'Selected' : 'Choose plan'" data-bind="class:planTag('pro')"></p>
+            </div>
+            <div @click="setPlan" data-plan="business" data-bind="class:planCard('business')">
+              <p class="font-semibold">Business</p>
+              <p class="mt-1"><span class="text-2xl font-semibold tracking-tight" data-text="money(perSeat('business'))"></span><span class="text-sm text-zinc-400"> /seat/mo</span></p>
+              <ul class="mt-3 space-y-1.5 text-sm text-zinc-600">
+                <li>SLA &amp; audit log</li><li>Priority support</li><li>1 TB storage</li>
+              </ul>
+              <p class="mt-3 text-xs font-medium" data-text="plan === 'business' ? 'Selected' : 'Choose plan'" data-bind="class:planTag('business')"></p>
+            </div>
+          </div>
+
+          <!-- Seats -->
+          <div class="rounded-xl bg-white p-4 ring-1 ring-zinc-950/5">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium">Seats</span>
+              <span class="text-sm font-semibold text-cyan-700" data-text="seats"></span>
+            </div>
+            <input type="range" min="1" max="100" data-model="seats" class="mt-2 w-full accent-cyan-600" />
+          </div>
+
+          <!-- Add-ons -->
+          <div class="rounded-xl bg-white p-4 ring-1 ring-zinc-950/5">
+            <span class="text-sm font-medium">Add-ons</span>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <template data-each="addons" data-key="id">
+                <button @click="toggleAddon" data-bind="data-id:item.id, class:addonChip(item.id)">
+                  <span data-text="item.name"></span>
+                  <span class="opacity-70" data-text="'+' + money(item.price) + '/mo'"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quote -->
+        <aside class="h-fit rounded-xl bg-white p-5 ring-1 ring-zinc-950/5">
+          <h2 class="text-sm font-semibold uppercase tracking-wide text-zinc-500">Your quote</h2>
+          <p class="mt-3 text-3xl font-semibold tracking-tight text-cyan-700">
+            <span data-text="money(monthlyTotal())"></span><span class="text-base font-normal text-zinc-400">/mo</span>
+          </p>
+          <p class="text-sm text-zinc-500" data-text="planName() + ' · ' + seats + (seats === 1 ? ' seat' : ' seats') + ' · ' + billing"></p>
+
+          <dl class="mt-4 space-y-1.5 border-t border-zinc-950/5 pt-4 text-sm">
+            <div class="flex justify-between"><dt class="text-zinc-500" data-text="seats + ' × ' + money(perSeat(plan))"></dt><dd class="tabular-nums" data-text="money(seatCost())"></dd></div>
+            <div class="flex justify-between" data-show="addonCost() > 0"><dt class="text-zinc-500">Add-ons</dt><dd class="tabular-nums" data-text="money(addonCost())"></dd></div>
+            <div class="flex justify-between border-t border-zinc-950/5 pt-1.5 font-semibold"><dt data-text="billing === 'annual' ? 'Billed yearly' : 'Billed monthly'"></dt><dd class="text-cyan-700 tabular-nums" data-text="money(billedNow())"></dd></div>
+          </dl>
+          <p data-show="billing === 'annual'" class="mt-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700" data-text="'You save ' + money(savings()) + ' a year'"></p>
+
+          <button class="mt-4 w-full rounded-lg bg-cyan-600 px-3 py-2 text-sm font-medium text-white hover:bg-cyan-700">Start free trial</button>
+        </aside>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/micra.js/dist/micra.min.js"></script>
+    <script>
+      Micra.define("pricing", {
+        state: {
+          billing: "monthly",
+          plan: "pro",
+          seats: 10,
+          plans: [
+            { id: "starter", name: "Starter", base: 9 },
+            { id: "pro", name: "Pro", base: 19 },
+            { id: "business", name: "Business", base: 39 },
+          ],
+          addons: [
+            { id: "support", name: "Priority support", price: 49 },
+            { id: "sso", name: "SSO / SAML", price: 99 },
+            { id: "storage", name: "Extra storage", price: 29 },
+            { id: "onboard", name: "Onboarding", price: 199 },
+          ],
+          chosenAddons: [],
+        },
+        factor() {
+          return this.state.billing === "annual" ? 0.8 : 1;
+        },
+        planObj(id) {
+          return this.state.plans.find((p) => p.id === id);
+        },
+        perSeat(id) {
+          return this.planObj(id).base * this.factor();
+        },
+        planName() {
+          return this.planObj(this.state.plan).name;
+        },
+        seatCost() {
+          return this.state.seats * this.perSeat(this.state.plan);
+        },
+        addonCost() {
+          return this.state.addons.filter((a) => this.state.chosenAddons.includes(a.id)).reduce((n, a) => n + a.price, 0);
+        },
+        monthlyTotal() {
+          return this.seatCost() + this.addonCost();
+        },
+        billedNow() {
+          return this.state.billing === "annual" ? this.monthlyTotal() * 12 : this.monthlyTotal();
+        },
+        savings() {
+          return this.state.billing === "annual" ? this.state.seats * this.planObj(this.state.plan).base * 0.2 * 12 : 0;
+        },
+        setBilling(e) {
+          this.state.billing = e.currentTarget.dataset.v;
+        },
+        billBtn(v) {
+          const base = "rounded-md px-3 py-1 text-sm font-medium ";
+          return base + (v === this.state.billing ? "bg-cyan-600 text-white" : "text-zinc-600 hover:bg-cyan-50");
+        },
+        setPlan(e) {
+          this.state.plan = e.currentTarget.dataset.plan;
+        },
+        planCard(id) {
+          const base = "cursor-pointer rounded-xl bg-white p-4 ring-1 ring-inset ";
+          return base + (id === this.state.plan ? "ring-cyan-500 ring-2" : "ring-zinc-950/10 hover:ring-cyan-200");
+        },
+        planTag(id) {
+          return id === this.state.plan ? "mt-3 text-xs font-medium text-cyan-700" : "mt-3 text-xs font-medium text-zinc-400";
+        },
+        toggleAddon(e) {
+          const id = e.currentTarget.dataset.id;
+          this.state.chosenAddons = this.state.chosenAddons.includes(id)
+            ? this.state.chosenAddons.filter((a) => a !== id)
+            : [...this.state.chosenAddons, id];
+        },
+        addonChip(id) {
+          const on = this.state.chosenAddons.includes(id);
+          const base = "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ring-1 ring-inset ";
+          return base + (on ? "bg-cyan-600 text-white ring-cyan-600" : "bg-white text-zinc-700 ring-zinc-950/10 hover:bg-cyan-50");
+        },
+        money(n) {
+          return "$" + (Math.round(n * 100) / 100).toLocaleString("en-US");
+        },
+      });
+      Micra.start();
+    </script>
+  </body>
+</html>

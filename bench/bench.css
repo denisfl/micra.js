@@ -1,0 +1,320 @@
+/* Benchmark page styles — extends ../assets/styles.css */
+
+.bench-host {
+  margin-top: var(--sp-7);
+}
+
+.bench-disclaimer {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-left: 3px solid #d97706;
+  border-radius: var(--radius-lg);
+  padding: var(--sp-5);
+  margin-bottom: var(--sp-6);
+  font-size: var(--text-sm);
+  color: var(--muted);
+  line-height: var(--leading-body);
+}
+
+.bench-disclaimer > strong:first-child {
+  color: #d97706;
+  display: block;
+  font-size: var(--text-ui);
+  margin-bottom: var(--sp-2);
+  text-shadow: var(--letterpress);
+}
+
+.bench-disclaimer h3 {
+  font-size: var(--text-ui);
+  font-weight: 600;
+  color: var(--text);
+  margin: var(--sp-5) 0 var(--sp-2);
+  text-shadow: var(--letterpress);
+}
+
+.bench-disclaimer p {
+  margin-bottom: var(--sp-3);
+}
+.bench-disclaimer p:last-child {
+  margin-bottom: 0;
+}
+
+.bench-disclaimer a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.bench-disclaimer a:hover {
+  text-decoration: underline;
+}
+
+.bench-disclaimer code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.125rem 0.375rem;
+}
+
+.bench-disclaimer .cell-err {
+  font-family: var(--font-mono);
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.bench-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-4);
+}
+
+.bench-progress {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.bench-env {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-5);
+}
+
+.env-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem var(--sp-3);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+/* ── Results table ──────────────────────────────────────────── */
+
+.bench-grid {
+  margin: var(--sp-4) 0 var(--sp-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+  background: var(--surface);
+  box-shadow: var(--tile-edge);
+}
+
+.bench-table {
+  width: 100%;
+  min-width: 56rem;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  background: var(--surface);
+}
+
+.bench-table thead th {
+  background: var(--surface-alt);
+  padding: var(--sp-3);
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.bench-table thead .lib-col {
+  text-align: center;
+  font-family: var(--font-mono);
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text);
+  font-size: var(--text-sm);
+}
+
+.bench-table thead .lib-col small {
+  display: block;
+  color: var(--muted);
+  font-weight: normal;
+  font-size: var(--text-xs);
+  margin-top: 2px;
+}
+
+.bench-table tbody th.scenario-label {
+  text-align: left;
+  padding: var(--sp-3);
+  border-bottom: 1px solid var(--border);
+  font-weight: 500;
+  color: var(--text);
+  vertical-align: top;
+  max-width: 18rem;
+}
+
+.bench-table tbody th.scenario-label strong {
+  display: block;
+  text-shadow: var(--letterpress);
+}
+
+.bench-table tbody th.scenario-label .scenario-desc {
+  display: block;
+  font-weight: 400;
+  font-size: var(--text-xs);
+  color: var(--muted);
+  margin-top: 2px;
+  line-height: var(--leading-ui);
+  white-space: normal;
+}
+
+.bench-table .cell {
+  text-align: center;
+  padding: var(--sp-3);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  min-width: 6.5rem;
+}
+
+.cell-value strong {
+  font-weight: 600;
+  font-size: var(--text-ui);
+}
+
+.cell-range {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.cell-pending { color: var(--muted); font-style: italic; }
+.cell-na      { color: var(--muted); }
+.cell-err     { color: var(--danger); font-weight: 600; }
+
+/* Absolute UX-tier coloring of results (reactive frameworks only):
+   < 5 ms = instant (deep green), < 50 ms = fast (light green),
+   < 500 ms = noticeable (orange), ≥ 500 ms = slow (red).
+   Reference frameworks (vanilla, Stimulus) get a neutral grey background
+   instead — they're not on the same axis. */
+.cell-best  { background: rgba(22, 163, 74, 0.10); }
+.cell-best  .cell-value strong { color: #16a34a; }
+.cell-good  { background: rgba(22, 163, 74, 0.04); }
+.cell-good  .cell-value strong { color: #16a34a; }
+.cell-mid   { background: rgba(217, 119, 6, 0.06); }
+.cell-mid   .cell-value strong { color: #c2620e; }
+.cell-slow  { background: rgba(220, 38, 38, 0.06); }
+.cell-slow  .cell-value strong { color: #dc2626; }
+.cell-reference { background: var(--surface-alt); }
+.cell-reference .cell-value strong { color: var(--muted); font-weight: 500; }
+.cell-reference .cell-range { color: var(--muted); }
+
+/* Header tag — reactive vs reference */
+.lib-tag {
+  display: block;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 4px;
+  opacity: 0.7;
+}
+.lib-reactive .lib-tag {
+  color: var(--accent);
+  opacity: 1;
+}
+.lib-reference .lib-tag {
+  color: var(--muted);
+}
+
+/* Legend block above the table */
+.bench-legend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: var(--sp-3) 0 var(--sp-5);
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+.legend-title {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  min-width: 8rem;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-family: var(--font-mono);
+}
+
+.swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+}
+.sw-best { background: rgba(22, 163, 74, 0.20); }
+.sw-good { background: rgba(22, 163, 74, 0.08); }
+.sw-mid  { background: rgba(217, 119, 6, 0.15); }
+.sw-slow { background: rgba(220, 38, 38, 0.15); }
+
+.legend-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--sp-2);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  border: 1px solid var(--border);
+}
+.legend-tag.lib-reactive {
+  color: var(--accent);
+  background: var(--accent-light);
+  border-color: var(--accent-ring);
+  font-weight: 600;
+}
+.legend-tag.lib-reference {
+  color: var(--muted);
+  background: var(--surface-alt);
+}
+
+/* ── Methodology disclosure ─────────────────────────────────── */
+
+.bench-method {
+  margin-top: var(--sp-6);
+  padding: var(--sp-4) var(--sp-5);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.bench-method summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text);
+  font-size: var(--text-ui);
+}
+
+.bench-method-body {
+  margin-top: var(--sp-3);
+  color: var(--muted);
+  line-height: var(--leading-body);
+}
+
+.bench-method-body p { margin-bottom: var(--sp-3); }
+.bench-method-body p:last-child { margin-bottom: 0; }

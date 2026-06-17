@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sweet Crumb — Micra demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = { theme: { extend: { fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"] } } } };
+    </script>
+  </head>
+  <body class="h-full bg-pink-50/60 font-sans text-zinc-900 antialiased">
+    <div data-component="bakery" class="mx-auto max-w-5xl px-4 py-8">
+      <header class="flex flex-wrap items-center gap-3">
+        <span class="text-lg font-semibold tracking-tight">Sweet Crumb<span class="text-pink-600">.</span></span>
+        <span class="ml-auto flex items-center gap-2 rounded-lg bg-pink-600 px-3 py-2 text-sm font-medium text-white">
+          <span data-text="orderCount()"></span>
+          <span>in box</span>
+          <span class="text-pink-200">/</span>
+          <span data-text="money(orderTotal())"></span>
+        </span>
+      </header>
+
+      <div class="mt-6 grid gap-5 lg:grid-cols-[1fr_18rem]">
+        <div class="space-y-5">
+          <!-- Ready-made -->
+          <section>
+            <h2 class="text-sm font-semibold uppercase tracking-wide text-zinc-500">From the case</h2>
+            <div class="mt-3 grid gap-3 sm:grid-cols-3">
+              <template data-each="products" data-key="id">
+                <div class="overflow-hidden rounded-xl bg-white ring-1 ring-zinc-950/5">
+                  <div data-bind="class:swatch(item.tint)"></div>
+                  <div class="p-3">
+                    <p class="text-sm font-medium leading-snug" data-text="item.name"></p>
+                    <div class="mt-2 flex items-center justify-between">
+                      <span class="font-semibold text-pink-700" data-text="money(item.price)"></span>
+                      <button @click="addProduct" data-bind="data-id:item.id" class="rounded-lg bg-pink-100 px-2.5 py-1 text-xs font-medium text-pink-700 hover:bg-pink-200">Add</button>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </section>
+
+          <!-- Custom cake builder -->
+          <section class="rounded-xl bg-white p-5 ring-1 ring-zinc-950/5">
+            <h2 class="text-sm font-semibold uppercase tracking-wide text-zinc-500">Build a custom cake</h2>
+
+            <p class="mt-4 text-sm font-medium">Size</p>
+            <div class="mt-1.5 flex gap-2">
+              <template data-each="sizes" data-key="v">
+                <button @click="setSize" data-bind="data-v:item.v, class:sizeBtn(item.v)">
+                  <span data-text="item.v"></span>
+                  <span class="block text-xs opacity-70" data-text="money(item.price)"></span>
+                </button>
+              </template>
+            </div>
+
+            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+              <label class="block">
+                <span class="text-sm font-medium">Sponge</span>
+                <select data-model="flavor" class="mt-1 w-full rounded-lg border-0 bg-zinc-50 px-3 py-2 text-sm ring-1 ring-inset ring-zinc-950/10 focus:ring-2 focus:ring-inset focus:ring-pink-500">
+                  <option>Vanilla</option><option>Chocolate</option><option>Red velvet</option><option>Lemon</option>
+                </select>
+              </label>
+              <label class="block">
+                <span class="text-sm font-medium">Filling</span>
+                <select data-model="filling" class="mt-1 w-full rounded-lg border-0 bg-zinc-50 px-3 py-2 text-sm ring-1 ring-inset ring-zinc-950/10 focus:ring-2 focus:ring-inset focus:ring-pink-500">
+                  <option>Strawberry</option><option>Chocolate ganache</option><option>Salted caramel</option><option>Vanilla cream</option>
+                </select>
+              </label>
+            </div>
+
+            <p class="mt-4 text-sm font-medium">Extras</p>
+            <div class="mt-1.5 flex flex-wrap gap-2">
+              <template data-each="extras" data-key="id">
+                <button @click="toggleExtra" data-bind="data-id:item.id, class:extraBtn(item.id)">
+                  <span data-text="item.name"></span>
+                  <span class="opacity-70" data-text="'+' + money(item.price)"></span>
+                </button>
+              </template>
+            </div>
+
+            <label class="mt-4 block">
+              <span class="text-sm font-medium">Inscription <span class="text-zinc-400">(+$3)</span></span>
+              <input data-model="message" maxlength="40" placeholder="Happy Birthday, Sam!" class="mt-1 w-full rounded-lg border-0 bg-zinc-50 px-3 py-2 text-sm ring-1 ring-inset ring-zinc-950/10 focus:ring-2 focus:ring-inset focus:ring-pink-500" />
+            </label>
+
+            <div class="mt-5 flex items-center justify-between border-t border-zinc-950/5 pt-4">
+              <div class="flex items-center gap-2">
+                <button @click="dec" class="grid h-8 w-8 place-items-center rounded-md ring-1 ring-inset ring-zinc-950/10 hover:bg-zinc-50">−</button>
+                <span class="w-6 text-center tabular-nums" data-text="qty"></span>
+                <button @click="inc" class="grid h-8 w-8 place-items-center rounded-md ring-1 ring-inset ring-zinc-950/10 hover:bg-zinc-50">+</button>
+              </div>
+              <button @click="addCake" class="rounded-lg bg-pink-600 px-4 py-2 text-sm font-medium text-white hover:bg-pink-700">
+                Add cake — <span data-text="money(cakePrice() * qty)"></span>
+              </button>
+            </div>
+          </section>
+        </div>
+
+        <!-- Order -->
+        <aside class="h-fit rounded-xl bg-white p-4 ring-1 ring-zinc-950/5">
+          <h2 class="text-sm font-semibold uppercase tracking-wide text-zinc-500">Your box</h2>
+          <p data-show="order.length === 0" class="mt-3 text-sm text-zinc-400">Empty. Add something sweet.</p>
+          <ul data-show="order.length > 0" class="mt-3 space-y-3">
+            <template data-each="order" data-key="id">
+              <li class="border-b border-zinc-950/5 pb-3 last:border-0">
+                <div class="flex items-start justify-between gap-2">
+                  <p class="text-sm font-medium leading-snug" data-text="item.name"></p>
+                  <button @click="removeLine" data-bind="data-id:item.id" aria-label="Remove" class="text-zinc-300 hover:text-rose-500">&times;</button>
+                </div>
+                <p data-show="item.note" class="text-xs text-zinc-400" data-text="item.note"></p>
+                <div class="mt-1.5 flex items-center justify-between">
+                  <div class="flex items-center gap-1.5">
+                    <button @click="decLine" data-bind="data-id:item.id" class="grid h-6 w-6 place-items-center rounded-md ring-1 ring-inset ring-zinc-950/10 hover:bg-zinc-50">−</button>
+                    <span class="w-5 text-center text-sm tabular-nums" data-text="item.qty"></span>
+                    <button @click="incLine" data-bind="data-id:item.id" class="grid h-6 w-6 place-items-center rounded-md ring-1 ring-inset ring-zinc-950/10 hover:bg-zinc-50">+</button>
+                  </div>
+                  <span class="text-sm font-medium tabular-nums" data-text="money(item.price * item.qty)"></span>
+                </div>
+              </li>
+            </template>
+          </ul>
+          <div data-show="order.length > 0" class="mt-4 flex items-center justify-between border-t border-zinc-950/5 pt-4">
+            <span class="text-sm font-medium">Total</span>
+            <span class="text-lg font-semibold text-pink-700" data-text="money(orderTotal())"></span>
+          </div>
+          <button data-show="order.length > 0" class="mt-3 w-full rounded-lg bg-pink-600 px-3 py-2 text-sm font-medium text-white hover:bg-pink-700">Place order</button>
+        </aside>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/micra.js/dist/micra.min.js"></script>
+    <script>
+      Micra.define("bakery", {
+        state: {
+          size: '8"',
+          sizes: [{ v: '6"', price: 28 }, { v: '8"', price: 40 }, { v: '10"', price: 56 }],
+          flavor: "Vanilla",
+          filling: "Strawberry",
+          extras: [
+            { id: "berries", name: "Fresh berries", price: 6 },
+            { id: "gold", name: "Gold leaf", price: 8 },
+            { id: "tier", name: "Extra tier", price: 20 },
+            { id: "topper", name: "Custom topper", price: 10 },
+          ],
+          chosenExtras: [],
+          message: "",
+          qty: 1,
+          order: [],
+          products: [
+            { id: 1, name: "Butter croissant", price: 4.5, tint: "amber" },
+            { id: 2, name: "Macaron box (6)", price: 18, tint: "pink" },
+            { id: 3, name: "Chocolate eclair", price: 5.5, tint: "stone" },
+            { id: 4, name: "Cupcake (4-pack)", price: 14, tint: "rose" },
+            { id: 5, name: "Cheesecake slice", price: 6, tint: "amber" },
+            { id: 6, name: "Cinnamon roll", price: 5, tint: "stone" },
+          ],
+        },
+        cakePrice() {
+          const base = this.state.sizes.find((s) => s.v === this.state.size).price;
+          const extra = this.state.extras.filter((x) => this.state.chosenExtras.includes(x.id)).reduce((n, x) => n + x.price, 0);
+          const msg = this.state.message.trim() ? 3 : 0;
+          return base + extra + msg;
+        },
+        setSize(e) {
+          this.state.size = e.currentTarget.dataset.v;
+        },
+        sizeBtn(v) {
+          const base = "rounded-lg px-3 py-2 text-center text-sm font-medium ";
+          return base + (v === this.state.size ? "bg-pink-600 text-white" : "bg-zinc-50 text-zinc-700 ring-1 ring-inset ring-zinc-950/10 hover:bg-pink-50");
+        },
+        toggleExtra(e) {
+          const id = e.currentTarget.dataset.id;
+          this.state.chosenExtras = this.state.chosenExtras.includes(id)
+            ? this.state.chosenExtras.filter((x) => x !== id)
+            : [...this.state.chosenExtras, id];
+        },
+        extraBtn(id) {
+          const on = this.state.chosenExtras.includes(id);
+          const base = "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ring-1 ring-inset ";
+          return base + (on ? "bg-pink-600 text-white ring-pink-600" : "bg-white text-zinc-700 ring-zinc-950/10 hover:bg-pink-50");
+        },
+        inc() {
+          this.state.qty++;
+        },
+        dec() {
+          if (this.state.qty > 1) this.state.qty--;
+        },
+        addCake() {
+          const extraNames = this.state.extras.filter((x) => this.state.chosenExtras.includes(x.id)).map((x) => x.name);
+          const noteBits = [this.state.filling];
+          if (extraNames.length) noteBits.push(extraNames.join(", "));
+          if (this.state.message.trim()) noteBits.push('"' + this.state.message.trim() + '"');
+          this._id = (this._id || 1000) + 1;
+          this.state.order = [...this.state.order, {
+            id: this._id,
+            name: this.state.size + " " + this.state.flavor + " cake",
+            note: noteBits.join(" · "),
+            price: this.cakePrice(),
+            qty: this.state.qty,
+          }];
+          this.state.qty = 1;
+          this.state.chosenExtras = [];
+          this.state.message = "";
+        },
+        addProduct(e) {
+          const id = Number(e.currentTarget.dataset.id);
+          const existing = this.state.order.find((o) => o.pid === id);
+          if (existing) {
+            this.state.order = this.state.order.map((o) => (o.pid === id ? { ...o, qty: o.qty + 1 } : o));
+          } else {
+            const p = this.state.products.find((x) => x.id === id);
+            this._id = (this._id || 1000) + 1;
+            this.state.order = [...this.state.order, { id: this._id, pid: id, name: p.name, note: "", price: p.price, qty: 1 }];
+          }
+        },
+        incLine(e) {
+          const id = Number(e.currentTarget.dataset.id);
+          this.state.order = this.state.order.map((o) => (o.id === id ? { ...o, qty: o.qty + 1 } : o));
+        },
+        decLine(e) {
+          const id = Number(e.currentTarget.dataset.id);
+          this.state.order = this.state.order.map((o) => (o.id === id ? { ...o, qty: o.qty - 1 } : o)).filter((o) => o.qty > 0);
+        },
+        removeLine(e) {
+          const id = Number(e.currentTarget.dataset.id);
+          this.state.order = this.state.order.filter((o) => o.id !== id);
+        },
+        orderCount() {
+          return this.state.order.reduce((n, o) => n + o.qty, 0);
+        },
+        orderTotal() {
+          return this.state.order.reduce((n, o) => n + o.price * o.qty, 0);
+        },
+        swatch(tint) {
+          const map = {
+            pink: "from-pink-100 to-pink-200",
+            rose: "from-rose-100 to-rose-200",
+            amber: "from-amber-100 to-amber-200",
+            stone: "from-stone-100 to-stone-200",
+          };
+          return "h-20 bg-gradient-to-br " + (map[tint] || map.pink);
+        },
+        money(n) {
+          return "$" + n.toFixed(2);
+        },
+      });
+      Micra.start();
+    </script>
+  </body>
+</html>

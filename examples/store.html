@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Storefront — Micra demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"] },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="h-full bg-emerald-50/50 font-sans text-zinc-900 antialiased">
+    <div data-component="store" class="mx-auto max-w-5xl px-4 py-8">
+      <header class="flex flex-wrap items-center gap-4">
+        <span class="text-lg font-semibold tracking-tight">Greenleaf<span class="text-emerald-600">.</span></span>
+        <div class="relative ml-auto w-full max-w-xs sm:w-auto">
+          <input
+            data-model="query"
+            placeholder="Search products..."
+            class="w-full rounded-lg border-0 bg-white px-3 py-2 text-sm ring-1 ring-inset ring-zinc-950/10 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-emerald-500"
+          />
+        </div>
+        <button @click="toggleCart" class="flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500">
+          <span data-text="cartCount()"></span>
+          <span data-text="cartCount() === 1 ? 'item' : 'items'"></span>
+          <span class="text-emerald-200">/</span>
+          <span data-text="money(cartTotal())"></span>
+        </button>
+      </header>
+
+      <div class="mt-6 flex flex-wrap gap-2">
+        <template data-each="cats" data-key="name">
+          <button
+            data-bind="data-cat:item.name, class:catClass(item.name)"
+            @click="setCat"
+            data-text="item.name"
+          ></button>
+        </template>
+      </div>
+
+      <div class="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <template data-each="filtered()" data-key="id">
+          <div class="flex flex-col overflow-hidden rounded-xl bg-white ring-1 ring-zinc-950/5">
+            <div data-bind="class:swatch(item.tint)" data-text="initial(item.name)"></div>
+            <div class="flex flex-1 flex-col p-4">
+              <p class="text-xs uppercase tracking-wide text-zinc-400" data-text="item.cat"></p>
+              <p class="mt-1 font-medium leading-snug" data-text="item.name"></p>
+              <div class="mt-3 flex items-center justify-between">
+                <span class="font-semibold" data-text="money(item.price)"></span>
+                <button
+                  class="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-500"
+                  @click="add"
+                  data-bind="data-id:item.id"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <div class="mt-8 rounded-xl bg-white px-6 py-12 text-center ring-1 ring-zinc-950/5" data-if="filtered().length === 0">
+        <p class="text-sm font-medium">Nothing matches your search</p>
+      </div>
+
+      <!-- Cart drawer -->
+      <div data-show="cartOpen" class="fixed inset-0 z-20 bg-zinc-950/30" @click="toggleCart"></div>
+      <aside data-show="cartOpen" class="fixed right-0 top-0 z-30 flex h-full w-80 flex-col bg-white shadow-2xl">
+        <div class="flex items-center justify-between border-b border-zinc-950/5 px-5 py-4">
+          <h2 class="font-semibold">Your cart</h2>
+          <button @click="toggleCart" class="text-sm text-zinc-400 hover:text-zinc-700">Close</button>
+        </div>
+        <div class="flex-1 overflow-y-auto px-5 py-4">
+          <p data-show="cartCount() === 0" class="text-sm text-zinc-400">Your cart is empty.</p>
+          <ul class="space-y-4">
+            <template data-each="cartLines()" data-key="id">
+              <li class="flex gap-3">
+                <div data-bind="class:swatch2(item.tint)" data-text="initial(item.name)"></div>
+                <div class="flex-1">
+                  <div class="flex items-start justify-between gap-2">
+                    <p class="text-sm font-medium leading-snug" data-text="item.name"></p>
+                    <button @click="remove" data-bind="data-id:item.id" aria-label="Remove" class="text-zinc-300 hover:text-rose-500">&times;</button>
+                  </div>
+                  <p class="text-xs text-zinc-400" data-text="money(item.price)"></p>
+                  <div class="mt-1.5 flex items-center justify-between">
+                    <div class="flex items-center gap-1.5">
+                      <button @click="dec" data-bind="data-id:item.id" class="grid h-6 w-6 place-items-center rounded-md ring-1 ring-inset ring-zinc-950/10 hover:bg-zinc-50">−</button>
+                      <span class="w-5 text-center text-sm tabular-nums" data-text="item.qty"></span>
+                      <button @click="add" data-bind="data-id:item.id" class="grid h-6 w-6 place-items-center rounded-md ring-1 ring-inset ring-zinc-950/10 hover:bg-zinc-50">+</button>
+                    </div>
+                    <span class="text-sm font-medium tabular-nums" data-text="money(item.price * item.qty)"></span>
+                  </div>
+                </div>
+              </li>
+            </template>
+          </ul>
+        </div>
+        <div data-show="cartCount() > 0" class="border-t border-zinc-950/5 px-5 py-4">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-medium">Subtotal</span>
+            <span class="text-lg font-semibold" data-text="money(cartTotal())"></span>
+          </div>
+          <button class="mt-3 w-full rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500">Checkout</button>
+        </div>
+      </aside>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/micra.js/dist/micra.min.js"></script>
+    <script>
+      Micra.define("store", {
+        state: {
+          query: "",
+          cat: "All",
+          cart: {},
+          cartOpen: false,
+          cats: [
+            { name: "All" },
+            { name: "Apparel" },
+            { name: "Home" },
+            { name: "Tech" },
+          ],
+          products: [
+            { id: 1, name: "Linen shirt", price: 49, cat: "Apparel", tint: "bg-amber-100 text-amber-700" },
+            { id: 2, name: "Wool throw", price: 79, cat: "Home", tint: "bg-rose-100 text-rose-700" },
+            { id: 3, name: "Desk lamp", price: 64, cat: "Home", tint: "bg-sky-100 text-sky-700" },
+            { id: 4, name: "Canvas tote", price: 28, cat: "Apparel", tint: "bg-emerald-100 text-emerald-700" },
+            { id: 5, name: "Wireless buds", price: 119, cat: "Tech", tint: "bg-violet-100 text-violet-700" },
+            { id: 6, name: "Ceramic mug", price: 18, cat: "Home", tint: "bg-orange-100 text-orange-700" },
+            { id: 7, name: "Mechanical keyboard", price: 139, cat: "Tech", tint: "bg-zinc-200 text-zinc-700" },
+            { id: 8, name: "Knit beanie", price: 24, cat: "Apparel", tint: "bg-teal-100 text-teal-700" },
+          ],
+        },
+        filtered() {
+          const { products, query, cat } = this.state;
+          const q = query.trim().toLowerCase();
+          return products.filter(
+            (p) =>
+              (cat === "All" || p.cat === cat) &&
+              (!q || p.name.toLowerCase().includes(q)),
+          );
+        },
+        cartCount() {
+          return Object.values(this.state.cart).reduce((a, b) => a + b, 0);
+        },
+        cartTotal() {
+          return this.state.products.reduce(
+            (sum, p) => sum + p.price * (this.state.cart[p.id] || 0),
+            0,
+          );
+        },
+        money(n) {
+          return "$" + n.toFixed(2);
+        },
+        initial(name) {
+          return name[0].toUpperCase();
+        },
+        swatch(tint) {
+          return "grid h-28 place-items-center text-2xl font-bold " + tint;
+        },
+        catClass(name) {
+          const base = "rounded-lg px-3 py-1.5 text-sm font-medium ";
+          return base + (this.state.cat === name
+            ? "bg-zinc-900 text-white"
+            : "bg-white text-zinc-600 ring-1 ring-inset ring-zinc-950/10 hover:bg-zinc-50");
+        },
+        setCat(e) {
+          this.state.cat = e.currentTarget.dataset.cat;
+        },
+        add(e) {
+          const id = Number(e.currentTarget.dataset.id);
+          this.state.cart = { ...this.state.cart, [id]: (this.state.cart[id] || 0) + 1 };
+        },
+        toggleCart() {
+          this.state.cartOpen = !this.state.cartOpen;
+        },
+        cartLines() {
+          return this.state.products
+            .filter((p) => this.state.cart[p.id])
+            .map((p) => ({ ...p, qty: this.state.cart[p.id] }));
+        },
+        dec(e) {
+          const id = Number(e.currentTarget.dataset.id);
+          const q = (this.state.cart[id] || 0) - 1;
+          const next = { ...this.state.cart };
+          if (q <= 0) delete next[id];
+          else next[id] = q;
+          this.state.cart = next;
+        },
+        remove(e) {
+          const id = Number(e.currentTarget.dataset.id);
+          const next = { ...this.state.cart };
+          delete next[id];
+          this.state.cart = next;
+        },
+        swatch2(tint) {
+          return "grid h-12 w-12 shrink-0 place-items-center rounded-lg text-sm font-bold " + tint;
+        },
+      });
+      Micra.start();
+    </script>
+  </body>
+</html>

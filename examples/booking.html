@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Booking — Micra demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"] },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="h-full bg-amber-50/50 font-sans text-zinc-900 antialiased">
+    <div data-component="booking" class="mx-auto max-w-2xl px-4 py-8">
+      <header>
+        <p class="text-xs uppercase tracking-wide text-amber-700">Aurora Studio</p>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight">Book an appointment</h1>
+      </header>
+
+      <!-- Form -->
+      <div data-if="!booked" class="mt-6 space-y-6">
+        <section>
+          <p class="text-sm font-medium text-zinc-500">Service</p>
+          <div class="mt-2 grid gap-2 sm:grid-cols-3">
+            <template data-each="services" data-key="id">
+              <button
+                @click="pickService"
+                data-bind="data-id:item.id, class:svcClass(item.id)"
+              >
+                <span class="block font-medium" data-text="item.name"></span>
+                <span class="block text-xs opacity-70" data-text="item.mins + ' min · $' + item.price"></span>
+              </button>
+            </template>
+          </div>
+        </section>
+
+        <section>
+          <p class="text-sm font-medium text-zinc-500">Stylist</p>
+          <div class="mt-2 grid gap-2 sm:grid-cols-3">
+            <template data-each="stylists" data-key="id">
+              <button @click="pickStylist" data-bind="data-id:item.id, class:stylistClass(item.id)">
+                <span class="block font-medium" data-text="item.name"></span>
+                <span class="block text-xs opacity-70" data-text="item.role"></span>
+              </button>
+            </template>
+          </div>
+        </section>
+
+        <section>
+          <p class="text-sm font-medium text-zinc-500">Date</p>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <template data-each="dates" data-key="id">
+              <button
+                @click="pickDate"
+                data-bind="data-id:item.id, class:dateClass(item.id)"
+              >
+                <span class="block text-xs opacity-70" data-text="item.day"></span>
+                <span class="block font-medium" data-text="item.date"></span>
+              </button>
+            </template>
+          </div>
+        </section>
+
+        <section>
+          <p class="text-sm font-medium text-zinc-500">Time</p>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <template data-each="slots" data-key="id">
+              <button
+                @click="pickSlot"
+                data-bind="data-id:item.id, class:slotClass(item), disabled:item.taken"
+                data-text="item.label"
+              ></button>
+            </template>
+          </div>
+        </section>
+
+        <section>
+          <p class="text-sm font-medium text-zinc-500">Add-ons <span class="text-zinc-400">(optional)</span></p>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <template data-each="addons" data-key="id">
+              <button @click="toggleAddon" data-bind="data-id:item.id, class:addonChip(item.id)">
+                <span data-text="item.name"></span>
+                <span class="opacity-70" data-text="'+$' + item.price"></span>
+              </button>
+            </template>
+          </div>
+        </section>
+
+        <section class="grid gap-3 sm:grid-cols-2">
+          <input
+            data-model="name"
+            placeholder="Your name"
+            class="rounded-lg border-0 bg-white px-3 py-2 text-sm ring-1 ring-inset ring-zinc-950/10 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-amber-500"
+          />
+          <div>
+            <input
+              data-model="email"
+              placeholder="you@example.com"
+              class="w-full rounded-lg border-0 bg-white px-3 py-2 text-sm ring-1 ring-inset ring-zinc-950/10 placeholder:text-zinc-400 focus:ring-2 focus:ring-inset focus:ring-amber-500"
+            />
+            <p data-show="email && !validEmail()" class="mt-1 text-xs text-rose-600">Enter a valid email address.</p>
+          </div>
+        </section>
+
+        <div class="flex items-center justify-between gap-4 border-t border-zinc-950/10 pt-4">
+          <p class="text-sm text-zinc-500" data-text="summary()"></p>
+          <button
+            @click="confirm"
+            data-bind="disabled:!canConfirm()"
+            class="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-500 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Confirm booking
+          </button>
+        </div>
+      </div>
+
+      <!-- Success -->
+      <div data-if="booked" class="mt-6 rounded-xl bg-white p-8 text-center ring-1 ring-zinc-950/5">
+        <div class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-amber-100 text-xl font-bold text-amber-700">A</div>
+        <h2 class="mt-4 text-xl font-semibold">You are booked</h2>
+        <p class="mt-2 text-sm text-zinc-500" data-text="summary()"></p>
+        <p class="mt-1 text-sm text-zinc-500">A confirmation was sent to <span class="font-medium text-zinc-700" data-text="email"></span>.</p>
+        <button
+          @click="reset"
+          class="mt-6 rounded-lg px-4 py-2 text-sm font-medium text-zinc-700 ring-1 ring-inset ring-zinc-950/10 hover:bg-zinc-50"
+        >
+          Book another
+        </button>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/micra.js/dist/micra.min.js"></script>
+    <script>
+      Micra.define("booking", {
+        state: {
+          serviceId: 0,
+          dateId: 0,
+          slotId: 0,
+          name: "",
+          email: "",
+          booked: false,
+          stylistId: 0,
+          chosenAddons: [],
+          stylists: [
+            { id: 1, name: "Maya", role: "Senior stylist" },
+            { id: 2, name: "Theo", role: "Color specialist" },
+            { id: 3, name: "Ivy", role: "Stylist" },
+          ],
+          addons: [
+            { id: 1, name: "Scalp treatment", price: 20, mins: 15 },
+            { id: 2, name: "Deep conditioning", price: 15, mins: 10 },
+            { id: 3, name: "Blow-dry", price: 12, mins: 15 },
+          ],
+          services: [
+            { id: 1, name: "Haircut", mins: 45, price: 40 },
+            { id: 2, name: "Color", mins: 90, price: 95 },
+            { id: 3, name: "Styling", mins: 30, price: 30 },
+          ],
+          dates: [
+            { id: 1, day: "Mon", date: "Jun 16" },
+            { id: 2, day: "Tue", date: "Jun 17" },
+            { id: 3, day: "Wed", date: "Jun 18" },
+            { id: 4, day: "Thu", date: "Jun 19" },
+            { id: 5, day: "Fri", date: "Jun 20" },
+          ],
+          slots: [
+            { id: 1, label: "9:00", taken: false },
+            { id: 2, label: "10:00", taken: true },
+            { id: 3, label: "11:30", taken: false },
+            { id: 4, label: "13:00", taken: false },
+            { id: 5, label: "14:30", taken: true },
+            { id: 6, label: "16:00", taken: false },
+          ],
+        },
+        find(list, id) {
+          return this.state[list].find((x) => x.id === id) || null;
+        },
+        validEmail() {
+          return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(this.state.email);
+        },
+        canConfirm() {
+          return (
+            this.state.serviceId > 0 &&
+            this.state.stylistId > 0 &&
+            this.state.dateId > 0 &&
+            this.state.slotId > 0 &&
+            this.state.name.trim().length > 0 &&
+            this.validEmail()
+          );
+        },
+        chosenAddonList() {
+          return this.state.addons.filter((a) => this.state.chosenAddons.includes(a.id));
+        },
+        total() {
+          const s = this.find("services", this.state.serviceId);
+          return (s ? s.price : 0) + this.chosenAddonList().reduce((n, a) => n + a.price, 0);
+        },
+        totalMins() {
+          const s = this.find("services", this.state.serviceId);
+          return (s ? s.mins : 0) + this.chosenAddonList().reduce((n, a) => n + a.mins, 0);
+        },
+        summary() {
+          const s = this.find("services", this.state.serviceId);
+          const d = this.find("dates", this.state.dateId);
+          const t = this.find("slots", this.state.slotId);
+          const st = this.find("stylists", this.state.stylistId);
+          if (!s || !st || !d || !t) return "Pick a service, stylist, date and time.";
+          return s.name + " with " + st.name + " · " + d.day + " " + d.date + " · " + t.label + " · " + this.totalMins() + " min · $" + this.total();
+        },
+        chip(active) {
+          const base = "rounded-lg px-3 py-2 text-left text-sm transition-colors ";
+          return base + (active
+            ? "bg-amber-600 text-white"
+            : "bg-white text-zinc-700 ring-1 ring-inset ring-zinc-950/10 hover:bg-amber-50");
+        },
+        svcClass(id) {
+          return this.chip(this.state.serviceId === id);
+        },
+        dateClass(id) {
+          return this.chip(this.state.dateId === id);
+        },
+        slotClass(slot) {
+          if (slot.taken) {
+            return "rounded-lg px-3 py-2 text-sm bg-zinc-100 text-zinc-300 line-through cursor-not-allowed";
+          }
+          return this.chip(this.state.slotId === slot.id);
+        },
+        pickService(e) {
+          this.state.serviceId = Number(e.currentTarget.dataset.id);
+        },
+        pickDate(e) {
+          this.state.dateId = Number(e.currentTarget.dataset.id);
+        },
+        pickSlot(e) {
+          this.state.slotId = Number(e.currentTarget.dataset.id);
+        },
+        pickStylist(e) {
+          this.state.stylistId = Number(e.currentTarget.dataset.id);
+        },
+        stylistClass(id) {
+          return this.chip(this.state.stylistId === id);
+        },
+        toggleAddon(e) {
+          const id = Number(e.currentTarget.dataset.id);
+          this.state.chosenAddons = this.state.chosenAddons.includes(id)
+            ? this.state.chosenAddons.filter((a) => a !== id)
+            : [...this.state.chosenAddons, id];
+        },
+        addonChip(id) {
+          const on = this.state.chosenAddons.includes(id);
+          const base = "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium ring-1 ring-inset ";
+          return base + (on ? "bg-amber-600 text-white ring-amber-600" : "bg-white text-zinc-700 ring-zinc-950/10 hover:bg-amber-50");
+        },
+        confirm() {
+          if (this.canConfirm()) this.state.booked = true;
+        },
+        reset() {
+          this.state.booked = false;
+          this.state.slotId = 0;
+        },
+      });
+      Micra.start();
+    </script>
+  </body>
+</html>

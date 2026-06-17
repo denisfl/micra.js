@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pulse Analytics — Micra demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = { theme: { extend: { fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"] } } } };
+    </script>
+  </head>
+  <body class="h-full bg-violet-50/60 font-sans text-zinc-900 antialiased">
+    <div data-component="dashboard" class="mx-auto max-w-5xl px-4 py-8">
+      <header class="flex flex-wrap items-center gap-4">
+        <span class="text-lg font-semibold tracking-tight">Pulse<span class="text-violet-600">.</span></span>
+        <div class="ml-auto inline-flex rounded-lg bg-white p-1 ring-1 ring-inset ring-zinc-950/10">
+          <template data-each="periods" data-key="v">
+            <button @click="setPeriod" data-bind="data-v:item.v, class:periodClass(item.v)" data-text="item.v"></button>
+          </template>
+        </div>
+      </header>
+
+      <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <template data-each="kpis()" data-key="id">
+          <div class="rounded-xl bg-white p-5 ring-1 ring-zinc-950/5">
+            <p class="text-sm text-zinc-500" data-text="item.label"></p>
+            <p class="mt-2 text-2xl font-semibold tracking-tight" data-text="item.value"></p>
+            <p class="mt-1 text-sm font-medium" data-bind="class:deltaClass(item.up)">
+              <span data-text="item.delta"></span>
+              <span class="font-normal text-zinc-400">vs prev</span>
+            </p>
+          </div>
+        </template>
+      </div>
+
+      <div class="mt-4 grid gap-4 lg:grid-cols-3">
+        <div class="rounded-xl bg-white p-5 ring-1 ring-zinc-950/5 lg:col-span-2">
+          <h2 class="text-sm font-semibold uppercase tracking-wide text-zinc-500">Revenue trend</h2>
+          <div class="mt-5 flex h-40 items-end gap-1.5">
+            <template data-each="bars()" data-key="id">
+              <div class="flex-1 rounded-t bg-violet-500/80 transition-all" data-bind="style:item.style"></div>
+            </template>
+          </div>
+        </div>
+
+        <div class="rounded-xl bg-white p-5 ring-1 ring-zinc-950/5">
+          <h2 class="text-sm font-semibold uppercase tracking-wide text-zinc-500">Recent activity</h2>
+          <ul class="mt-3 divide-y divide-zinc-950/5">
+            <template data-each="activity" data-key="id">
+              <li class="py-2.5">
+                <p class="text-sm"><span class="font-medium" data-text="item.who"></span> <span class="text-zinc-500" data-text="item.action"></span></p>
+                <p class="text-xs text-zinc-400" data-text="item.when"></p>
+              </li>
+            </template>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/micra.js/dist/micra.min.js"></script>
+    <script>
+      Micra.define("dashboard", {
+        state: {
+          period: "30d",
+          periods: [{ v: "7d" }, { v: "30d" }, { v: "90d" }],
+          datasets: {
+            "7d": {
+              cards: [
+                { id: "rev", label: "Revenue", value: "$19,240", delta: "+6.2%", up: true },
+                { id: "usr", label: "Active users", value: "1,486", delta: "+3.4%", up: true },
+                { id: "ord", label: "Orders", value: "274", delta: "-1.1%", up: false },
+                { id: "cnv", label: "Conversion", value: "2.8%", delta: "+0.2%", up: true },
+              ],
+              bars: [42, 55, 48, 63, 58, 71, 66],
+            },
+            "30d": {
+              cards: [
+                { id: "rev", label: "Revenue", value: "$84,920", delta: "+12.4%", up: true },
+                { id: "usr", label: "Active users", value: "5,318", delta: "+4.1%", up: true },
+                { id: "ord", label: "Orders", value: "1,204", delta: "-2.3%", up: false },
+                { id: "cnv", label: "Conversion", value: "3.1%", delta: "+0.5%", up: true },
+              ],
+              bars: [52, 61, 58, 70, 66, 78, 74, 82, 76, 88, 84, 92],
+            },
+            "90d": {
+              cards: [
+                { id: "rev", label: "Revenue", value: "$246,500", delta: "+18.9%", up: true },
+                { id: "usr", label: "Active users", value: "14,902", delta: "+9.7%", up: true },
+                { id: "ord", label: "Orders", value: "3,611", delta: "+5.2%", up: true },
+                { id: "cnv", label: "Conversion", value: "3.4%", delta: "-0.3%", up: false },
+              ],
+              bars: [38, 44, 51, 49, 60, 57, 66, 72, 69, 78, 81, 90],
+            },
+          },
+          activity: [
+            { id: 1, who: "Ada L.", action: "upgraded to Pro", when: "2 min ago" },
+            { id: 2, who: "Bob S.", action: "started a trial", when: "18 min ago" },
+            { id: 3, who: "Carol W.", action: "left a review", when: "1 hour ago" },
+            { id: 4, who: "Diego H.", action: "churned", when: "3 hours ago" },
+          ],
+        },
+        kpis() {
+          return this.state.datasets[this.state.period].cards;
+        },
+        bars() {
+          const vals = this.state.datasets[this.state.period].bars;
+          const max = Math.max(...vals);
+          return vals.map((v, i) => ({ id: i, style: "height:" + Math.round((v / max) * 100) + "%" }));
+        },
+        setPeriod(e) {
+          this.state.period = e.currentTarget.dataset.v;
+        },
+        periodClass(v) {
+          const base = "rounded-md px-3 py-1 text-sm font-medium ";
+          return base + (v === this.state.period ? "bg-violet-600 text-white" : "text-zinc-600 hover:bg-violet-50");
+        },
+        deltaClass(up) {
+          return up ? "mt-1 text-sm font-medium text-emerald-600" : "mt-1 text-sm font-medium text-rose-600";
+        },
+      });
+      Micra.start();
+    </script>
+  </body>
+</html>

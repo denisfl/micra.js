@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Vanilla bench frame</title>
+    <style>
+      body { margin: 0; font-family: system-ui, sans-serif; font-size: 12px; padding: 8px; color: #666; }
+    </style>
+  </head>
+  <body>
+    <small>Isolated benchmark frame: <strong>vanilla JS</strong></small>
+    <script type="module">
+      import { adapter } from '../../adapters/vanilla.adapter.js'
+      import { setupFrame } from '../frame.js'
+      setupFrame(adapter)
+    </script>
+  </body>
+</html>

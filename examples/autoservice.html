@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AutoCare — Micra demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = { theme: { extend: { fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"] } } } };
+    </script>
+  </head>
+  <body class="h-full bg-blue-50/60 font-sans text-zinc-900 antialiased">
+    <div data-component="autocare" class="mx-auto max-w-5xl px-4 py-8">
+      <header class="flex flex-wrap items-center gap-3">
+        <span class="text-lg font-semibold tracking-tight">Auto<span class="text-blue-600">Care</span></span>
+        <span class="ml-auto text-sm text-zinc-500">
+          Estimate <span class="font-semibold text-blue-700" data-text="money(total())"></span>
+        </span>
+      </header>
+
+      <div class="mt-6 grid gap-5 lg:grid-cols-[1fr_18rem]">
+        <div class="space-y-5">
+          <!-- Vehicle -->
+          <section class="rounded-xl bg-white p-4 ring-1 ring-zinc-950/5">
+            <h2 class="text-sm font-semibold uppercase tracking-wide text-zinc-500">Vehicle</h2>
+            <div class="mt-3 grid grid-cols-3 gap-3">
+              <label class="block"><span class="text-xs font-medium text-zinc-500">Make</span>
+                <input data-model="vehicle.make" class="mt-1 w-full rounded-lg border-0 bg-zinc-50 px-3 py-2 text-sm ring-1 ring-inset ring-zinc-950/10 focus:ring-2 focus:ring-inset focus:ring-blue-500" /></label>
+              <label class="block"><span class="text-xs font-medium text-zinc-500">Model</span>
+                <input data-model="vehicle.model" class="mt-1 w-full rounded-lg border-0 bg-zinc-50 px-3 py-2 text-sm ring-1 ring-inset ring-zinc-950/10 focus:ring-2 focus:ring-inset focus:ring-blue-500" /></label>
+              <label class="block"><span class="text-xs font-medium text-zinc-500">Year</span>
+                <input type="number" data-model="vehicle.year" class="mt-1 w-full rounded-lg border-0 bg-zinc-50 px-3 py-2 text-sm ring-1 ring-inset ring-zinc-950/10 focus:ring-2 focus:ring-inset focus:ring-blue-500" /></label>
+            </div>
+          </section>
+
+          <!-- Services -->
+          <section>
+            <h2 class="text-sm font-semibold uppercase tracking-wide text-zinc-500">Services</h2>
+            <div class="mt-3 grid gap-2 sm:grid-cols-2">
+              <template data-each="services" data-key="id">
+                <button @click="toggle" data-bind="data-id:item.id, class:svcCard(item.id)">
+                  <div class="flex items-start justify-between gap-2">
+                    <div>
+                      <p class="text-sm font-medium leading-snug" data-text="item.name"></p>
+                      <p class="text-xs text-zinc-400" data-text="item.cat"></p>
+                    </div>
+                    <span data-bind="class:check(item.id)" data-text="isChosen(item.id) ? '✓' : ''"></span>
+                  </div>
+                  <div class="mt-2 flex items-center gap-3 text-xs text-zinc-500">
+                    <span data-text="'Parts ' + money(item.parts)"></span>
+                    <span data-text="item.hours + 'h labor'"></span>
+                  </div>
+                </button>
+              </template>
+            </div>
+          </section>
+        </div>
+
+        <!-- Estimate -->
+        <aside class="h-fit rounded-xl bg-white p-4 ring-1 ring-zinc-950/5">
+          <h2 class="text-sm font-semibold uppercase tracking-wide text-zinc-500">Estimate</h2>
+          <p class="mt-1 text-xs text-zinc-400">
+            <span data-text="vehicle.year"></span>
+            <span data-text="vehicle.make"></span>
+            <span data-text="vehicle.model"></span>
+          </p>
+
+          <p data-show="chosen.length === 0" class="mt-3 text-sm text-zinc-400">Select services to see an estimate.</p>
+
+          <ul data-show="chosen.length > 0" class="mt-3 space-y-2">
+            <template data-each="chosenList()" data-key="id">
+              <li class="flex items-center justify-between gap-2 text-sm">
+                <button @click="toggle" data-bind="data-id:item.id" aria-label="Remove" class="text-zinc-300 hover:text-rose-500">&times;</button>
+                <span class="flex-1 truncate" data-text="item.name"></span>
+                <span class="tabular-nums" data-text="money(item.parts + item.hours * rate())"></span>
+              </li>
+            </template>
+          </ul>
+
+          <dl data-show="chosen.length > 0" class="mt-4 space-y-1.5 border-t border-zinc-950/5 pt-4 text-sm">
+            <div class="flex justify-between"><dt class="text-zinc-500">Parts</dt><dd class="tabular-nums" data-text="money(partsTotal())"></dd></div>
+            <div class="flex justify-between"><dt class="text-zinc-500" data-text="'Labor (' + laborHours() + 'h × ' + money(rate()) + ')'"></dt><dd class="tabular-nums" data-text="money(laborTotal())"></dd></div>
+            <div class="flex justify-between"><dt class="text-zinc-500">Tax</dt><dd class="tabular-nums" data-text="money(tax())"></dd></div>
+            <div class="flex justify-between border-t border-zinc-950/5 pt-1.5 font-semibold"><dt>Total</dt><dd class="text-blue-700 tabular-nums" data-text="money(total())"></dd></div>
+            <p class="pt-1 text-xs text-zinc-400" data-text="'Est. time in shop: ' + laborHours() + 'h'"></p>
+          </dl>
+
+          <button data-show="chosen.length > 0" class="mt-4 w-full rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700">Book appointment</button>
+        </aside>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/micra.js/dist/micra.min.js"></script>
+    <script>
+      Micra.define("autocare", {
+        state: {
+          vehicle: { make: "Toyota", model: "Corolla", year: 2019 },
+          chosen: ["oil", "rotate"],
+          services: [
+            { id: "oil", name: "Oil & filter change", cat: "Maintenance", parts: 32, hours: 0.5 },
+            { id: "brakes", name: "Brake pads — front", cat: "Brakes", parts: 95, hours: 1.5 },
+            { id: "rotate", name: "Tire rotation", cat: "Tires", parts: 0, hours: 0.5 },
+            { id: "align", name: "Wheel alignment", cat: "Tires", parts: 0, hours: 1 },
+            { id: "diag", name: "Diagnostics scan", cat: "Electrical", parts: 0, hours: 0.75 },
+            { id: "ac", name: "A/C recharge", cat: "Climate", parts: 70, hours: 1 },
+            { id: "battery", name: "Battery replacement", cat: "Electrical", parts: 145, hours: 0.5 },
+            { id: "coolant", name: "Coolant flush", cat: "Maintenance", parts: 40, hours: 1 },
+          ],
+        },
+        rate() {
+          return 110;
+        },
+        isChosen(id) {
+          return this.state.chosen.includes(id);
+        },
+        toggle(e) {
+          const id = e.currentTarget.dataset.id;
+          this.state.chosen = this.state.chosen.includes(id)
+            ? this.state.chosen.filter((s) => s !== id)
+            : [...this.state.chosen, id];
+        },
+        chosenList() {
+          return this.state.services.filter((s) => this.state.chosen.includes(s.id));
+        },
+        partsTotal() {
+          return this.chosenList().reduce((n, s) => n + s.parts, 0);
+        },
+        laborHours() {
+          return this.chosenList().reduce((n, s) => n + s.hours, 0);
+        },
+        laborTotal() {
+          return this.laborHours() * this.rate();
+        },
+        tax() {
+          return (this.partsTotal() + this.laborTotal()) * 0.0825;
+        },
+        total() {
+          return this.partsTotal() + this.laborTotal() + this.tax();
+        },
+        svcCard(id) {
+          const base = "rounded-xl p-3 text-left ring-1 ring-inset ";
+          return base + (this.isChosen(id) ? "bg-blue-50 ring-blue-400" : "bg-white ring-zinc-950/10 hover:ring-blue-200");
+        },
+        check(id) {
+          const base = "grid h-5 w-5 shrink-0 place-items-center rounded-full text-xs font-bold ";
+          return base + (this.isChosen(id) ? "bg-blue-600 text-white" : "ring-1 ring-inset ring-zinc-300 text-transparent");
+        },
+        money(n) {
+          return "$" + n.toFixed(2);
+        },
+      });
+      Micra.start();
+    </script>
+  </body>
+</html>
