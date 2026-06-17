@@ -506,3 +506,50 @@ describe('5.3 Row root detection', () => {
     expect(wrapper!.textContent).toContain('A')
   })
 })
+
+// ── 6. Nested data-each (a list inside each row) ──────────────────────────────
+
+describe('6. Nested data-each', () => {
+  function makeNestedRoot(groups: StateRecord[]) {
+    const root = document.createElement('div')
+    const tmpl = document.createElement('template')
+    tmpl.setAttribute('data-each', 'groups')
+    tmpl.setAttribute('data-key', 'id')
+    tmpl.innerHTML =
+      `<section><h3 data-text="item.name"></h3>` +
+      `<template data-each="item.children" data-key="id">` +
+      `<span class="child" data-text="item.label"></span>` +
+      `</template></section>`
+    root.appendChild(tmpl)
+    return { root, state: { groups } as StateRecord }
+  }
+
+  const childTexts = (root: HTMLElement) =>
+    Array.from(root.querySelectorAll('.child')).map(e => e.textContent)
+
+  it('renders the inner list for every outer row', () => {
+    const { root, state } = makeNestedRoot([
+      { id: 1, name: 'A', children: [{ id: 11, label: 'a1' }, { id: 12, label: 'a2' }] },
+      { id: 2, name: 'B', children: [{ id: 21, label: 'b1' }] },
+    ])
+    render(root, state)
+    expect(Array.from(root.querySelectorAll('h3')).map(e => e.textContent)).toEqual(['A', 'B'])
+    expect(childTexts(root)).toEqual(['a1', 'a2', 'b1'])
+  })
+
+  it('updates the inner list when an outer row gains a child', () => {
+    const { root, state } = makeNestedRoot([
+      { id: 1, name: 'A', children: [{ id: 11, label: 'a1' }] },
+    ])
+    // Scan the top-level templates ONCE and reuse across renders — this mirrors
+    // production (mount caches the component scan; the nested template lives in
+    // the row's own __micraScan, not the top-level list).
+    const inst = makeInstance()
+    const top = scanComponent(root).each
+    _renderList(top, state, state, inst, null)
+    expect(childTexts(root)).toEqual(['a1'])
+    state.groups = [{ id: 1, name: 'A', children: [{ id: 11, label: 'a1' }, { id: 13, label: 'a3' }] }]
+    _renderList(top, state, state, inst, null)
+    expect(childTexts(root)).toEqual(['a1', 'a3'])
+  })
+})

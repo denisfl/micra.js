@@ -4,10 +4,49 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] — 2026-06-17
+
+### Added — nested `data-each`
+
+- **`<template data-each>` now renders when nested inside another `data-each`
+  row.** Previously a nested template was scanned but never rendered — its list
+  silently stayed empty, because the per-row directive pass (`applyDirectives`)
+  did not recurse into the row's own nested templates. Each row now renders its
+  nested `data-each` against its own row scope (`itemState`), so the inner
+  list's source expression sees the outer `item`:
+
+  ```html
+  <template data-each="columns" data-key="id">
+    <section>
+      <h3 data-text="item.name"></h3>
+      <template data-each="cardsIn(item.id)" data-key="id">
+        <article data-text="item.title"></article>
+      </template>
+    </section>
+  </template>
+  ```
+
+  Inside the inner template `item` is the inner row; the outer `item` is in
+  scope where the inner `data-each` expression itself is evaluated — the same
+  shadowing rule a top-level `data-each` already follows. This unlocks kanban
+  boards (columns → cards), calendars (cells → events), grouped tables, and
+  trees without flattening or master/detail workarounds.
+
+### Changed
+
+- Bundle: **~7.2 → ~7.3 KB gzip** (the recursion adds a few lines; the size
+  guard stays at 7.5 KB).
+
+### Migration
+
+- No breaking changes. Single-level `data-each` is unaffected, and any
+  flatten / master-detail workaround you used to avoid nesting keeps working —
+  you can now nest `<template data-each>` directly instead.
+
 ## [2.5.2] — 2026-06-15
 
 Security hardening. No API changes; behaviour changes only for clearly-unsafe
-inputs, so upgrading from 2.5.2 is recommended and should be transparent.
+inputs, so upgrading from 2.6.0 is recommended and should be transparent.
 
 ### Security
 
@@ -41,7 +80,7 @@ injection). Never interpolate untrusted input into directive attributes or
 expressions; render user data via `data-text` / state only. Treat directive
 markup as trusted code.
 
-## [2.5.2] — 2026-06-14
+## [2.5.1] — 2026-06-14
 
 Ergonomics & safety release — three things the audience kept reaching for.
 

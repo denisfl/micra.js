@@ -199,6 +199,9 @@ function renderKeyed<S extends StateRecord>(
     // older paths may pass a node we haven't scanned yet.
     const rowScan = node.__micraScan ?? (node.__micraScan = scanComponent(node))
     applyDirectives(rowScan, itemState, rawState, rowDirty)
+    // Nested data-each: render templates inside this row against its itemState,
+    // so `<template data-each>` works inside another (boards, calendars, trees).
+    if (rowScan.each.length) renderList(rowScan.each, itemState, rawState, instance, rowDirty)
     nextNodes.push(node)
   }
 
@@ -317,6 +320,7 @@ function renderNoKey<S extends StateRecord>(
     itemState.index = i
     itemState.$index = i
     applyDirectives(node.__micraScan!, itemState, rawState, rowDirty)
+    if (node.__micraScan!.each.length) renderList(node.__micraScan!.each, itemState, rawState, instance, rowDirty)
     nextList[i] = node
   }
 
@@ -338,6 +342,7 @@ function renderNoKey<S extends StateRecord>(
       node.__micraItem = item
       node.__micraIndex = i
       applyDirectives(node.__micraScan!, itemState, rawState)
+      if (node.__micraScan!.each.length) renderList(node.__micraScan!.each, itemState, rawState, instance, null)
       nextList[i] = node
       frag.append(node)
     }

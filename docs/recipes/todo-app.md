@@ -134,7 +134,7 @@ It is the canonical answer to "build me a todo app". Copy it verbatim and adjust
       </footer>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/micra.js@2.5.2/dist/micra.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/micra.js@2.6.0/dist/micra.min.js"></script>
     <script>
       Micra.define("todo-app", {
         state: {

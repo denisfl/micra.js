@@ -9,7 +9,7 @@ import { Runner, browserInfo } from "./runner.js";
 
 // Display metadata — populated as frames report ready.
 const LIB_META = {
-  Micra: { version: "2.5.2" },
+  Micra: { version: "2.6.0" },
   "Alpine.js": { version: "3.14.1" },
   "petite-vue": { version: "0.4.1" },
   Stimulus: {
