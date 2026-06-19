@@ -73,7 +73,7 @@ this.state         // reactive proxy — top-level writes trigger re-render
 this.refs          // { [name]: HTMLElement } — populated from data-ref
 this.render()      // force synchronous re-render (rarely needed)
 this.destroy()     // unmount, auto-unsub, call onDestroy
-this.prop(name, default?)  // read data-* from root element, auto-casts bool/number
+this.prop(name, default?)  // read data-* (camelCase) from root; casts "true"/"false"->bool, numeric->number, else string; absent->default. A bare attr (no value) is "" (falsy), NOT true
 this.fetch(url, options?)  // fetch wrapper with CSRF, JSON, query params
 this.emit(event, payload?) // shortcut to Micra.emit()
 this.on(event, handler)    // shortcut to Micra.on() — auto-cleaned on destroy

@@ -145,15 +145,26 @@ This ensures directives only affect their own component subtree, not children th
 
 ## `prop()` auto-cast rules
 
+Reads `root.dataset[name]`. Casting happens **independent of the default** —
+the default is returned only when the attribute is absent:
+
 ```
-data-per-page="20"     → this.prop('perPage') → "20" (string, no default)
-data-per-page="20"     → this.prop('perPage', 10) → 20 (number, default typed as T=number)
-data-active="true"     → this.prop('active', false) → true (boolean)
-data-active="false"    → this.prop('active', true) → false (boolean)
-data-label="Sort by"   → this.prop('label', '') → "Sort by" (string)
+(attribute absent)     → this.prop('perPage', 10) → 10   (the default; undefined if none given)
+data-per-page="20"     → this.prop('perPage')     → 20   (number — cast applies even with no default)
+data-per-page="20"     → this.prop('perPage', 10) → 20   (number)
+data-active="true"     → this.prop('active', false) → true   (boolean)
+data-active="false"    → this.prop('active', true)  → false  (boolean)
+data-label="Sort by"   → this.prop('label', '')   → "Sort by" (string)
+data-flag  (bare, no value) → this.prop('flag', false) → "" (empty string — FALSY, NOT true)
 ```
 
-Note: dataset keys are camelCase (`perPage` for `data-per-page`).
+The exact rule (`src/core/mount.ts`): absent → default; `"true"`/`"false"` →
+boolean; non-empty numeric string → `Number`; everything else → the raw string.
+
+Note: dataset keys are camelCase (`perPage` for `data-per-page`). A **bare**
+boolean attribute (`data-flag` with no `=value`) reads back as `""`, which is
+falsy — so for flags write `data-flag="true"`, or coerce with
+`this.prop('flag', false) !== false`.
 
 ---
 
