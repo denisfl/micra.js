@@ -25,7 +25,7 @@ import * as Micra from 'micra.js'
 Or via CDN (no build step):
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/micra.js@2.6.0/dist/micra.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@2.7.0/dist/micra.min.js"></script>
 ```
 
 This exposes a global `Micra` object.
@@ -76,6 +76,10 @@ Micra.start()
 Micra.define(name, definition)
 Micra.mount(selector, definition)
 Micra.start(root?)          // scans DOM for [data-component] and mounts all
+
+// Teardown (server-driven / swap pages: htmx, Turbo, Astro)
+Micra.destroy(root?)        // tear down a component + nested ones (mirror of start)
+Micra.autoCleanup()         // auto-destroy components when their DOM is swapped out
 
 // Event bus
 Micra.on(event, handler)

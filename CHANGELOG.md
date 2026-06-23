@@ -4,7 +4,7 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
-## [2.6.0] — 2026-06-17
+## [2.7.0] — 2026-06-17
 
 ### Added — nested `data-each`
 

@@ -1,4 +1,4 @@
-/* Micra.js v2.6.0 — https://github.com/micra-js/micra — MIT */
+/* Micra.js v2.7.0 — https://github.com/micra-js/micra — MIT */
 "use strict";
 var Micra = (() => {
   var __defProp = Object.defineProperty;
@@ -23,10 +23,12 @@ var Micra = (() => {
   var index_exports = {};
   __export(index_exports, {
     FetchError: () => FetchError,
+    autoCleanup: () => autoCleanup,
     config: () => config,
     debug: () => debug,
     define: () => define,
     defineComponent: () => defineComponent,
+    destroy: () => destroy,
     emit: () => emit,
     instances: () => instances,
     mount: () => mount,
@@ -1259,6 +1261,34 @@ var Micra = (() => {
       }
       mount(el, def);
     });
+  }
+
+  // src/core/destroy.ts
+  function destroy(root = document) {
+    var _a;
+    root.querySelectorAll("[data-component]").forEach(
+      (el) => {
+        var _a2;
+        return (_a2 = _instances.get(el)) == null ? void 0 : _a2.destroy();
+      }
+    );
+    if (root instanceof HTMLElement) (_a = _instances.get(root)) == null ? void 0 : _a.destroy();
+  }
+  var _observer = null;
+  function autoCleanup() {
+    if (_observer) return stopAutoCleanup;
+    _observer = new MutationObserver((records) => {
+      for (const rec of records)
+        rec.removedNodes.forEach((n) => {
+          if (n instanceof HTMLElement && !n.isConnected) destroy(n);
+        });
+    });
+    _observer.observe(document.documentElement, { childList: true, subtree: true });
+    return stopAutoCleanup;
+  }
+  function stopAutoCleanup() {
+    _observer == null ? void 0 : _observer.disconnect();
+    _observer = null;
   }
   return __toCommonJS(index_exports);
 })();
