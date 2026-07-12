@@ -12,7 +12,6 @@
 import type {
   ComponentDefinition,
   ComponentInstance,
-  ComponentMethods,
   InternalInstance,
   StateRecord,
 } from '../types'

@@ -12,9 +12,9 @@ Micra.js is a lightweight reactive TypeScript framework for small sites and SaaS
 
 - **Stable, SemVer-disciplined.** Breaking changes only in majors; every
   release documented in [CHANGELOG.md](./CHANGELOG.md) with migration notes.
-- **Tested.** 277 tests across 15 suites run on every push and before every
-  npm publish; the build fails if the bundle exceeds **7 KB gzip** or if
-  `eval` / `new Function` ever reappears (CSP guard).
+- **Tested.** 364 tests across 22 suites run on every push and before every
+  npm publish; the build fails if the bundle exceeds **8 KB gzip** (currently
+  ~7.9) or if `eval` / `new Function` ever reappears (CSP guard).
 - **CSP-safe.** Runs under a strict `default-src 'self'` Content-Security-Policy —
   directive expressions are parsed and interpreted, never `eval`'d.
 - **Typed.** Ships its own `.d.ts` — state, methods, and event-bus payloads

@@ -126,9 +126,17 @@ export function bindDataOn<S extends StateRecord>(
     mEl.__micraEvents = true
 
     const spec = mEl.dataset['on'] ?? ''
-    for (const part of spec.split(',')) {
-      const [evSpec, method] = part.trim().split(':') as [string, string]
-      if (!evSpec || !method) continue
+    // Split on top-level commas only — a comma inside quotes belongs to a
+    // call argument: data-on="click:go('a,b'), focus:mark".
+    const parts = spec.split(/,(?=(?:[^'"]|'[^']*'|"[^"]*")*$)/)
+    for (const part of parts) {
+      // First colon separates event from handler; later colons belong to the
+      // handler expression (string args, ternaries).
+      const cut = part.indexOf(':')
+      if (cut === -1) continue
+      const evSpec = part.slice(0, cut).trim()
+      const method = part.slice(cut + 1)
+      if (!evSpec || !method.trim()) continue
 
       const [evName, ...mods] = evSpec.split('.')
       const handler = method.trim()

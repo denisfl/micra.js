@@ -117,10 +117,11 @@ export interface ComponentBuiltins<S extends StateRecord = StateRecord> {
   destroy(): void;
   /**
    * Read a `data-*` attribute from the root element with auto-cast.
-   * Casts "true"/"false" → boolean, numeric strings → number.
+   * Casts "true"/"false" → boolean, numeric strings → number. A string
+   * `defaultVal` opts out of auto-cast (data-zip="01234" stays "01234").
    * @example this.prop('perPage', 10) // data-per-page="20" → 20
    */
-  prop(name: string): string | undefined;
+  prop(name: string): string | number | boolean | undefined;
   prop<T>(name: string, defaultVal: T): T;
   /** Fetch helper: CSRF header, JSON body, query params, typed errors. */
   fetch(url: string, options?: FetchOptions): Promise<unknown>;
@@ -206,6 +207,10 @@ export type ComponentDefinition<
  * @internal Extended HTMLElement with Micra bookkeeping slots.
  */
 export interface MicraElement extends HTMLElement {
+  /** @internal Set while a data-if binding holds this element out of the DOM. */
+  __micraIfDetached?: true;
+  /** @internal Last data-html string written (innerHTML read-back is normalized). */
+  __micraHtml?: string;
   __micraModel?: true; // data-model listener bound
   __micraEvents?: true; // data-on listeners bound
   __micraAtBound?: true; // @event shorthand bound (per-element)

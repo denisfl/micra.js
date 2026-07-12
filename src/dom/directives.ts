@@ -12,7 +12,7 @@
  * Important: this module does NOT handle data-each — see dom/each.ts.
  */
 
-import type { CachedIfBinding, ScanIndex, StateRecord } from "../types";
+import type { CachedIfBinding, MicraElement, ScanIndex, StateRecord } from "../types";
 import { evalExpr, warn } from "../utils/expr";
 import { _config } from "../core/config";
 
@@ -35,7 +35,13 @@ function applyText(el: Element, expr: string, state: StateRecord): void {
 function applyHtml(el: Element, expr: string, state: StateRecord): void {
   const raw = String(evalExpr(expr, state) ?? "");
   const html = _config.sanitize ? _config.sanitize(raw) : raw;
-  if (el.innerHTML !== html) el.innerHTML = html;
+  // Compare against the last WRITTEN string, not el.innerHTML — the browser
+  // normalizes markup on read, so reading back can be permanently unequal and
+  // would reset the subtree (and any user selection) on every render.
+  const m = el as MicraElement;
+  if (m.__micraHtml === html) return;
+  m.__micraHtml = html;
+  el.innerHTML = html;
 }
 
 /**
@@ -56,6 +62,7 @@ function applyIf(binding: CachedIfBinding, state: StateRecord): void {
     // If a placeholder is currently in the DOM in the element's slot, swap back.
     const ph = binding.placeholder;
     if (ph && ph.parentNode) ph.parentNode.replaceChild(el, ph);
+    delete (el as MicraElement).__micraIfDetached;
   } else {
     // Only detach if currently attached somewhere. Standalone elements
     // (no parent — common in unit tests) are a no-op.
@@ -63,6 +70,9 @@ function applyIf(binding: CachedIfBinding, state: StateRecord): void {
     if (parent) {
       if (!binding.placeholder)
         binding.placeholder = document.createComment("if");
+      // Mark the detach as Micra's own so autoCleanup() doesn't destroy
+      // components inside a temporarily-hidden subtree.
+      (el as MicraElement).__micraIfDetached = true;
       parent.replaceChild(binding.placeholder, el);
     }
   }
@@ -87,13 +97,17 @@ function applyBind(
 
     // Security: a binding must never install an inline event handler — that's
     // a direct XSS sink. Use @event for handlers.
-    if (attr[0] === "o" && attr[1] === "n") {
+    if (/^on[a-z]+$/.test(attr)) {
       warn(`data-bind refused event-handler attribute "${attr}" — use @${attr.slice(2)}`);
       continue;
     }
 
     if (attr === "class") {
       (el as HTMLElement).className = String(val ?? "");
+    } else if (attr === "checked") {
+      // Property, not attribute: the checked ATTRIBUTE is only the default and
+      // stops reflecting once the user has interacted with the control.
+      (el as HTMLInputElement).checked = Boolean(val) && val !== "false";
     } else if (attr === "value") {
       if (document.activeElement !== el)
         (el as HTMLInputElement).value = String(val ?? "");
@@ -107,7 +121,7 @@ function applyBind(
       val ? el.setAttribute(attr, "") : el.removeAttribute(attr);
     } else if (val == null) {
       el.removeAttribute(attr);
-    } else if (/^\s*javascript:/i.test(String(val))) {
+    } else if (/^javascript:/i.test(String(val).replace(/[\u0000-\u0020]/g, ""))) {
       // Security: drop javascript: URLs (XSS via href/src/…)
       warn(`data-bind dropped unsafe javascript: URL from "${attr}"`);
       el.removeAttribute(attr);
@@ -136,6 +150,17 @@ function applyModel(el: Element, key: string, rawState: StateRecord): void {
   const html = el as HTMLInputElement;
   // evalExpr resolves both flat keys ("search") and dot-paths ("filters.query")
   const stateVal = evalExpr(key, rawState);
+  // Checkboxes and radios sync the `checked` PROPERTY, never `value`: writing
+  // value would corrupt a radio group's option values and can't uncheck a
+  // checkbox (the checked attribute is only a default).
+  if (html.type === "checkbox" || html.type === "radio") {
+    const want =
+      html.type === "checkbox"
+        ? Boolean(stateVal)
+        : html.value === (stateVal == null ? "" : String(stateVal));
+    if (html.checked !== want) html.checked = want;
+    return;
+  }
   const desired = stateVal == null ? "" : String(stateVal);
   // Only write when out of sync. This is a no-op during live typing (the input
   // event already drove state to match el.value) but still propagates
@@ -205,6 +230,10 @@ export function validateDirectives(scan: ScanIndex): void {
         `data-each="${el.getAttribute("data-each")}" has no data-key — ` +
           `keyed diff disabled. Add data-key="id" for better performance.`,
       );
+    }
+    // data-if on the template itself is inert — rows are managed by the each renderer.
+    if (el.hasAttribute("data-if")) {
+      warn(`data-if on a data-each template is ignored — put it on a wrapper element`);
     }
   }
 

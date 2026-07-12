@@ -15,12 +15,11 @@
 import type {
   ComponentDefinition,
   ComponentInstance,
-  ComponentMethods,
   EventHandler,
   EventPayload,
   InternalInstance,
   MicraElement,
-
+  MicraTemplate,
   StateRecord,
   UnsubFn,
 } from "../types";
@@ -87,6 +86,8 @@ export function mount<S extends StateRecord, M>(
   instance.prop = function <T>(name: string, defaultVal?: T): T | undefined {
     const val = root.dataset[name];
     if (val === undefined) return defaultVal;
+    // A string default opts out of auto-cast: data-zip="01234" stays "01234".
+    if (typeof defaultVal === "string") return val as unknown as T;
     if (val === "true") return true as unknown as T;
     if (val === "false") return false as unknown as T;
     if (val !== "" && !isNaN(Number(val))) return Number(val) as unknown as T;
@@ -120,7 +121,25 @@ export function mount<S extends StateRecord, M>(
   // directives whose dependencies didn't change this cycle.
   const _dirty = new Set<string>();
   const schedule = createScheduler(() => instance.render());
-  instance.state = createReactiveState(rawState, schedule, (key) => {
+  // A state write from INSIDE a render (a directive expression calling a method
+  // that mutates state) must not schedule another render: schedule → render →
+  // same write → schedule … starves the microtask queue and freezes the tab.
+  // The write itself lands (and marks the key dirty for the next real render);
+  // only the re-schedule is dropped.
+  let warnedRenderWrite = false;
+  const scheduleSafe = () => {
+    if (isRendering) {
+      if (!warnedRenderWrite) {
+        warn(
+          "state write during render is kept but not re-rendered — move writes out of directive expressions",
+        );
+        warnedRenderWrite = true;
+      }
+      return;
+    }
+    schedule();
+  };
+  instance.state = createReactiveState(rawState, scheduleSafe, (key) => {
     _dirty.add(key);
   }) as S;
 
@@ -208,6 +227,23 @@ export function mount<S extends StateRecord, M>(
       el.removeEventListener(type, fn),
     );
     instance.__micraListeners = [];
+
+    // Return the DOM to its pre-mount shape so a future re-mount of the same
+    // DOM works: put back data-if-detached elements and remove rendered
+    // each-rows + markers (a remount re-renders them from the template).
+    const scan = (root as MicraElement).__micraScan;
+    for (const b of scan?.if ?? []) {
+      const ph = b.placeholder;
+      if (ph?.parentNode) ph.parentNode.replaceChild(b.el, ph);
+      delete (b.el as MicraElement).__micraIfDetached;
+    }
+    for (const t of (scan?.each ?? []) as MicraTemplate[]) {
+      t.__micraList?.forEach((n) => n.remove());
+      t.__micraList = [];
+      t.__micraNodes?.clear();
+      t.__micraMarker?.remove();
+      delete t.__micraMarker;
+    }
 
     // Clear per-element flags & cached scan so a future re-mount of the same DOM works.
     const clearFlags = (el: Element) => {

@@ -22,12 +22,49 @@ import type {
   InternalInstance,
   MicraElement,
   MicraTemplate,
+  ScanIndex,
   StateRecord,
 } from '../types'
 import { evalExpr, warn } from '../utils/expr'
 import { applyDirectives } from './directives'
 import { bindDataOn, bindAtEvents, bindModels } from './events'
 import { scanComponent } from './scan'
+
+/**
+ * True when a row scan contains any binding whose deps are unknown (method
+ * calls — deps === null), including a nested data-each source expression.
+ * Such rows can NOT take the whole-row skip: a method may read state beyond
+ * the item, so "item ref + index unchanged" doesn't prove the DOM is current.
+ * Cached on the scan (computed once per template shape).
+ */
+function scanHasOpaqueBindings(scan: ScanIndex): boolean {
+  const c = (scan as ScanIndex & { __opaque?: boolean }).__opaque
+  if (c !== undefined) return c
+  type D = { deps: Set<string> | null }
+  const o =
+    scan.each.length > 0 ||
+    [scan.text, scan.html, scan.if, scan.show, scan.bind, scan.class].some(
+      (g) => (g as D[]).some((b) => b.deps === null),
+    )
+  ;(scan as ScanIndex & { __opaque?: boolean }).__opaque = o
+  return o
+}
+
+// Templates that already warned about unsupported row bindings (once each).
+const warnedRowBindings = new WeakSet<Element>()
+
+/**
+ * Drop tracked listener records belonging to removed row subtrees so a
+ * long-lived list doesn't retain every row ever rendered (detached nodes +
+ * handler closures) until destroy().
+ */
+function releaseRowListeners(instance: InternalInstance<StateRecord>, removed: readonly Element[]): void {
+  const t = instance.__micraListeners
+  if (!t?.length || !removed.length) return
+  instance.__micraListeners = t.filter(
+    (r) => !removed.some((n) => n === r.el || n.contains(r.el)),
+  )
+}
 
 /**
  * Process all `<template data-each>` elements found by the scanner.
@@ -71,7 +108,10 @@ export function renderList<S extends StateRecord>(
 
     // Empty / non-array: clear all rendered rows
     if (!Array.isArray(items)) {
-      tmpl.__micraList.forEach(n => n.remove())
+      if (tmpl.__micraList.length) {
+        tmpl.__micraList.forEach(n => n.remove())
+        releaseRowListeners(instance as InternalInstance<StateRecord>, tmpl.__micraList)
+      }
       tmpl.__micraList = []
       keyMap.clear()
       continue
@@ -132,6 +172,18 @@ function createRowNode<S extends StateRecord>(
   const rowScan = scanComponent(node)
   node.__micraScan = rowScan
   node._itemState = Object.create(state) as StateRecord
+  // Unsupported row bindings — warn once per template, not per row.
+  if (!warnedRowBindings.has(tmpl)) {
+    const m = rowScan.model.find((b) => /^(item|index|\$index)\b/.test(b.expr))
+    if (m || rowScan.refs.length) {
+      warnedRowBindings.add(tmpl)
+      warn(
+        m
+          ? `data-model="${m.expr}" in data-each is not row-scoped — use @input + a method`
+          : `data-ref in data-each rows is not collected — query the row element`,
+      )
+    }
+  }
   bindDataOn(rowScan.on, instance)
   bindAtEvents(rowScan.atEvents, instance)
   bindModels(rowScan.model, instance)
@@ -174,9 +226,14 @@ function renderKeyed<S extends StateRecord>(
     if (!node) {
       node = createRowNode(tmpl, state, instance)
       keyMap.set(key, node)
-    } else if (canSkipUnchanged && node.__micraItem === item && node.__micraIndex === index) {
-      // Item reference and index are unchanged, and no other state key changed
-      // this cycle — the DOM already reflects the latest values. Skip re-render.
+    } else if (
+      canSkipUnchanged && node.__micraItem === item && node.__micraIndex === index &&
+      node.__micraScan && !scanHasOpaqueBindings(node.__micraScan)
+    ) {
+      // Item reference and index are unchanged, no other state key changed this
+      // cycle, and every binding's deps are known — the DOM provably reflects
+      // the latest values. Rows with method-call bindings never skip (a method
+      // may read anything). Skip re-render.
       nextNodes.push(node)
       continue
     }
@@ -205,10 +262,12 @@ function renderKeyed<S extends StateRecord>(
     nextNodes.push(node)
   }
 
-  // Remove stale nodes
+  // Remove stale nodes (and release their tracked listeners — see M3)
+  const removedNodes: Element[] = []
   for (const [key, node] of keyMap) {
-    if (!nextKeys.has(key)) { node.remove(); keyMap.delete(key) }
+    if (!nextKeys.has(key)) { node.remove(); keyMap.delete(key); removedNodes.push(node) }
   }
+  releaseRowListeners(instance as InternalInstance<StateRecord>, removedNodes)
 
   const prevList = tmpl.__micraList
   if (prevList.length === 0) {
@@ -307,7 +366,10 @@ function renderNoKey<S extends StateRecord>(
   for (let i = 0; i < reuseLen; i++) {
     const node = prevList[i]!
     const item = items[i]!
-    if (canSkipUnchanged && node.__micraItem === item && node.__micraIndex === i) {
+    if (
+      canSkipUnchanged && node.__micraItem === item && node.__micraIndex === i &&
+      node.__micraScan && !scanHasOpaqueBindings(node.__micraScan)
+    ) {
       nextList[i] = node
       continue
     }
@@ -324,9 +386,14 @@ function renderNoKey<S extends StateRecord>(
     nextList[i] = node
   }
 
-  // 2. Shrink: remove tail nodes [nextLen, prevLen).
-  for (let i = nextLen; i < prevLen; i++) {
-    prevList[i]!.remove()
+  // 2. Shrink: remove tail nodes [nextLen, prevLen) and release their listeners.
+  if (nextLen < prevLen) {
+    const removedTail: Element[] = []
+    for (let i = nextLen; i < prevLen; i++) {
+      prevList[i]!.remove()
+      removedTail.push(prevList[i]!)
+    }
+    releaseRowListeners(instance as InternalInstance<StateRecord>, removedTail)
   }
 
   // 3. Grow: clone and attach fresh rows for [prevLen, nextLen).

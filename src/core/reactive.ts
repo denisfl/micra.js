@@ -29,6 +29,12 @@ export function createReactiveState<S extends StateRecord>(obj: S, schedule: () 
       schedule()
       return true
     },
+    deleteProperty(target, key: string) {
+      delete (target as StateRecord)[key]
+      onKey?.(key)
+      schedule()
+      return true
+    },
   })
 }
 
@@ -46,10 +52,14 @@ export function setPath(state: StateRecord, path: string, value: unknown): void 
   const parts = path.split('.')
   const top = parts[0]!
   if (parts.length === 1) { state[top] = value; return }
-  const root = { ...(state[top] as StateRecord) }
+  // Preserve arrays: `{ ...array }` would turn state.items into a plain object
+  // and data-each would clear the list. Numeric segments address array indices.
+  const copy = (v: unknown): StateRecord =>
+    (Array.isArray(v) ? [...v] : { ...(v as StateRecord) }) as StateRecord
+  const root = copy(state[top])
   let cur = root
   for (let i = 1; i < parts.length - 1; i++) {
-    cur = cur[parts[i]!] = { ...(cur[parts[i]!] as StateRecord) }
+    cur = cur[parts[i]!] = copy(cur[parts[i]!])
   }
   cur[parts[parts.length - 1]!] = value
   state[top] = root

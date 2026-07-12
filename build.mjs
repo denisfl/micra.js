@@ -22,13 +22,15 @@ import { gzipSync }       from 'zlib'
 const watch = process.argv.includes('--watch')
 const pkg   = JSON.parse(readFileSync('./package.json', 'utf8'))
 
-const banner = `/* Micra.js v${pkg.version} — https://github.com/micra-js/micra — MIT */`
+const banner = `/* Micra.js v${pkg.version} — https://github.com/denisfl/micra.js — MIT */`
 
 /** @type {import('esbuild').BuildOptions} */
 const shared = {
   entryPoints: ['src/index.ts'],
   bundle:      true,
-  target:      'es2019',
+  // es2020: ?. and ?? ship natively instead of being transpiled to ternaries
+  // (every browser with Proxy support — required anyway — has them).
+  target:      'es2020',
   banner:      { js: banner },
 }
 
@@ -48,6 +50,10 @@ const configs = [
     globalName: 'Micra',
     outfile:    'dist/micra.min.js',
     minify:     true,
+    // Internal per-element/per-instance fields (all prefixed __micra / the row
+    // _itemState) are @internal API — mangling them is behavior-safe within the
+    // single bundle and saves real bytes.
+    mangleProps: /^__micra|^_itemState$/,
   },
   // ── ESM for bundlers
   {

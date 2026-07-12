@@ -49,6 +49,9 @@ export function autoCleanup(): () => void {
   _observer = new MutationObserver((records) => {
     for (const rec of records)
       rec.removedNodes.forEach((n) => {
+        // Skip detaches performed by Micra's own data-if — the subtree will be
+        // re-inserted when the expression turns truthy again.
+        if ((n as import('../types').MicraElement).__micraIfDetached) return
         if (n instanceof HTMLElement && !n.isConnected) destroy(n)
       })
   })

@@ -11,8 +11,10 @@ import type { InternalInstance, StateRecord } from '../types';
 /**
  * Build `instance.refs` from the pre-scanned [data-ref] elements.
  *
- * Called once after the initial render and again on every re-render (refs may
- * point to newly created elements after an each-list update).
+ * Called once after the initial render and again on every re-render. Only
+ * component-level refs are collected — `data-ref` inside `data-each` rows is
+ * NOT collected (row clones would collide on the same name); a dev warning
+ * fires when rows declare refs.
  *
  * @param els - List of [data-ref] elements from scan.ts
  *

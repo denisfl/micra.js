@@ -4,7 +4,97 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.1] — 2026-07-12
+
+Bug-fix release — findings from a deep source review, each reproduced
+empirically before fixing. No API changes. Bundle stays at ~7.9 KB gzip (the
+minified build now mangles internal `__micra*` fields and targets ES2020).
+
+### Fixed
+
+- **Write-during-render guard.** A directive-expression method that mutates
+  state (`data-text="poison()"` where `poison()` writes `this.state.x`) used to
+  schedule render → evaluate → write → schedule … starving the microtask queue
+  and freezing the tab with no console output. The write now lands (and marks
+  the key dirty for the next real render) but no longer re-schedules from
+  inside a render; a one-time console warning points at the offending pattern.
+- **`data-model` on checkboxes and radios (state → DOM).** The sync wrote
+  `el.value`, so a checkbox could never be unchecked from state and a radio
+  group had its option values overwritten (every option became the selected
+  value). Both now sync the `checked` property: checkbox ← `Boolean(state)`,
+  radio ← `el.value === String(state)`; `value` is untouched.
+- **`data-bind="checked:…"`** set/removed the `checked` *attribute*, which is
+  only the default and stops reflecting after user interaction. It now writes
+  the property (like `value` already did).
+- **Whole-row `data-each` skip disabled for rows with method-call bindings.**
+  The "only the list key changed and this row's item ref is unchanged" skip
+  assumed a row's DOM depends only on its item — untrue for bindings like
+  `data-text="total()"` whose dependencies are unknowable. Rows containing any
+  call-bearing binding (including a nested `data-each` source) now always
+  re-apply. Rows with only plain-path bindings keep the fast path.
+- **Tracked-listener leak under keyed row churn.** Listener records for removed
+  rows stayed on the instance forever (retaining detached DOM + closures until
+  `destroy()`). Removing rows — keyed removal, non-keyed shrink, and the
+  clear-all path — now releases their records.
+- **`javascript:` URL guard bypass.** `java\tscript:alert(1)` passed the
+  `/^\s*javascript:/i` test but is a live `javascript:` URL after HTML's URL
+  parser strips tab/newline/CR. The guard now strips ASCII controls and spaces
+  before testing.
+- **`this.set()` through an array index.** `set('items.0.done', true)` spread
+  the array into a plain object (`{0: …}`), and the next render's `data-each`
+  cleared the list. `setPath` now preserves arrays at every level.
+- **`autoCleanup()` vs `data-if`.** Toggling a `data-if` ancestor detaches its
+  subtree; the MutationObserver treated that as a real removal and permanently
+  destroyed any component inside — it never came back when the expression
+  turned truthy again. Micra's own `data-if` detaches are now tagged and
+  skipped by `autoCleanup()`.
+
+- **`destroy()` returns the DOM to its pre-mount shape.** `data-if`-detached
+  elements are swapped back and rendered `data-each` rows (plus their markers)
+  are removed, so re-mounting the same DOM works — as the code always claimed.
+- **`delete state.key` now triggers a render** (the proxy gained a
+  `deleteProperty` trap).
+- **`data-on` handler expressions may contain `:` and `,` inside string
+  arguments** — `data-on="click:go('a:b')"` no longer truncates the handler.
+- **Non-`data-*` attributes are no longer misread as directives** — the scan's
+  prefix fast-path checked only the first and fifth characters, so `dark-text`
+  was treated as `data-text`.
+- **`data-bind` on* refusal no longer false-positives** on attributes like
+  `one-time` (only real `on<event>` names are refused).
+- **`data-html` re-render loop fixed for normalizing browsers** — the applied
+  string is cached instead of re-read from `innerHTML` (which the browser
+  normalizes), so equal renders no longer reset the subtree.
+
+### Changed
+
+- **`prop()` with a string default returns the raw attribute string** —
+  `this.prop('zip', '')` keeps `"01234"` intact; auto-cast still applies
+  without a default or with non-string defaults.
+- **Dev warnings for unsupported row bindings**: `data-model="item.x"` and
+  `data-ref` inside `data-each` rows now warn once per template instead of
+  silently misbehaving (they are not row-scoped — use
+  `@input="setX(item.id, $event.target.value)"` / query the row element).
+- **`data-if` on a `<template data-each>` warns** (it is inert — put the
+  condition on a wrapper element).
+- Minified build: internal fields mangled, target raised to ES2020 (all
+  Proxy-capable browsers ship it) — offsets the size cost of the fixes.
+
+### Known issues (documented behavior)
+
+- Mutating an item in place and copying only the array
+  (`items[0].done = true; state.items = [...state.items]`) does not re-render
+  the unchanged-ref rows — replace the item object instead
+  (`state.items = items.map(i => i.id === id ? { ...i, done: true } : i)`).
+
 ## [2.7.0] — 2026-06-17
+
+### Added — `destroy()` + `autoCleanup()`
+
+- `Micra.destroy(el)` / `instance.destroy()` — clean teardown (listeners, bus
+  subscriptions, `onDestroy`), and `Micra.autoCleanup()` — a MutationObserver
+  that destroys components whose DOM is swapped out (htmx/Turbo). *(This entry
+  was added retroactively in 2.7.1 — the feature shipped in 2.7.0 but was
+  missing from the changelog.)*
 
 ### Added — nested `data-each`
 
@@ -46,7 +136,7 @@ All notable changes to Micra.js will be documented in this file. Format follows
 ## [2.5.2] — 2026-06-15
 
 Security hardening. No API changes; behaviour changes only for clearly-unsafe
-inputs, so upgrading from 2.5.2 is recommended and should be transparent.
+inputs, so upgrading to 2.5.2 is recommended and should be transparent.
 
 ### Security
 

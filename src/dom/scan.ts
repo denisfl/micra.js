@@ -100,7 +100,7 @@ function classify(el: Element, scan: ScanIndex): void {
     if (
       first === 100 /* d */ &&
       name.length >= 6 &&
-      name.charCodeAt(4) === 45 /* '-' */
+      name.startsWith("data-")
     ) {
       // 'data-' prefix
       const rest = name.slice(5);

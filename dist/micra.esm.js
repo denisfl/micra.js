@@ -1,9 +1,8 @@
-/* Micra.js v2.7.0 — https://github.com/micra-js/micra — MIT */
+/* Micra.js v2.7.1 — https://github.com/denisfl/micra.js — MIT */
 
 // src/utils/fetch.ts
 function getCSRF() {
-  var _a, _b;
-  return (_b = (_a = document.querySelector('meta[name="csrf-token"]')) == null ? void 0 : _a.getAttribute("content")) != null ? _b : null;
+  return document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") ?? null;
 }
 function sameOrigin(url) {
   try {
@@ -21,8 +20,7 @@ var FetchError = class extends Error {
   }
 };
 async function micraFetch(url, options = {}) {
-  var _a, _b;
-  const method = ((_a = options.method) != null ? _a : "GET").toUpperCase();
+  const method = (options.method ?? "GET").toUpperCase();
   const headers = {
     Accept: "application/json",
     ...options.headers
@@ -51,7 +49,7 @@ async function micraFetch(url, options = {}) {
   });
   if (!res.ok)
     throw new FetchError(`[Micra] fetch: ${method} ${url} \u2192 ${res.status}`, res.status, res);
-  const ct = (_b = res.headers.get("content-type")) != null ? _b : "";
+  const ct = res.headers.get("content-type") ?? "";
   return ct.includes("application/json") ? res.json() : res.text();
 }
 
@@ -71,14 +69,13 @@ function registry() {
   return _registry;
 }
 function debug() {
-  var _a;
   if (_instances.size === 0) {
     console.log("[Micra] No live components.");
     return;
   }
   console.group(`[Micra] ${_instances.size} live component(s)`);
   for (const [el, instance] of _instances) {
-    const name = (_a = el.getAttribute("data-component")) != null ? _a : "(unnamed)";
+    const name = el.getAttribute("data-component") ?? "(unnamed)";
     console.group(`%c${name}`, "font-weight:bold;color:#6366f1");
     console.log("$el  ", el);
     console.log("state", { ...instance.state });
@@ -126,7 +123,6 @@ var PUNCT = [
   "%"
 ];
 function tokenize(src) {
-  var _a;
   const toks = [];
   let i = 0;
   const n = src.length;
@@ -141,7 +137,7 @@ function tokenize(src) {
       i++;
       while (i < n && src[i] !== c) {
         if (src[i] === "\\") {
-          s += (_a = src[i + 1]) != null ? _a : "";
+          s += src[i + 1] ?? "";
           i += 2;
         } else {
           s += src[i];
@@ -200,14 +196,12 @@ function parse(toks) {
   const peek = () => toks[pos];
   const next = () => toks[pos++];
   const eat = (v) => {
-    var _a;
-    if (((_a = peek()) == null ? void 0 : _a.v) !== v) throw 0;
+    if (peek()?.v !== v) throw 0;
     pos++;
   };
   function parseExpr() {
-    var _a;
     const c = parseBin(1);
-    if (((_a = peek()) == null ? void 0 : _a.v) === "?") {
+    if (peek()?.v === "?") {
       next();
       const a = parseExpr();
       eat(":");
@@ -237,21 +231,20 @@ function parse(toks) {
     return parsePostfix();
   }
   function parsePostfix() {
-    var _a, _b;
     let node = parsePrimary();
     for (; ; ) {
       const t = peek();
-      if ((t == null ? void 0 : t.v) === ".") {
+      if (t?.v === ".") {
         next();
         const id = next();
         if (!id || id.t !== "id") throw 0;
         node = { k: "mem", o: node, p: id.v };
-      } else if ((t == null ? void 0 : t.v) === "(") {
+      } else if (t?.v === "(") {
         next();
         const args = [];
-        if (((_a = peek()) == null ? void 0 : _a.v) !== ")") {
+        if (peek()?.v !== ")") {
           args.push(parseExpr());
-          while (((_b = peek()) == null ? void 0 : _b.v) === ",") {
+          while (peek()?.v === ",") {
             next();
             args.push(parseExpr());
           }
@@ -460,9 +453,8 @@ function off(event, handler) {
   if (set.size === 0) _bus.delete(event);
 }
 function emit(event, ...args) {
-  var _a;
   const payload = args[0];
-  (_a = _bus.get(event)) == null ? void 0 : _a.forEach((h) => {
+  _bus.get(event)?.forEach((h) => {
     try {
       h(payload);
     } catch (e) {
@@ -477,7 +469,13 @@ function createReactiveState(obj, schedule, onKey) {
     set(target, key, value) {
       ;
       target[key] = value;
-      onKey == null ? void 0 : onKey(key);
+      onKey?.(key);
+      schedule();
+      return true;
+    },
+    deleteProperty(target, key) {
+      delete target[key];
+      onKey?.(key);
       schedule();
       return true;
     }
@@ -490,10 +488,11 @@ function setPath(state, path, value) {
     state[top] = value;
     return;
   }
-  const root = { ...state[top] };
+  const copy = (v) => Array.isArray(v) ? [...v] : { ...v };
+  const root = copy(state[top]);
   let cur = root;
   for (let i = 1; i < parts.length - 1; i++) {
-    cur = cur[parts[i]] = { ...cur[parts[i]] };
+    cur = cur[parts[i]] = copy(cur[parts[i]]);
   }
   cur[parts[parts.length - 1]] = value;
   state[top] = root;
@@ -519,15 +518,16 @@ function config(opts) {
 
 // src/dom/directives.ts
 function applyText(el, expr, state) {
-  var _a;
-  const text = String((_a = evalExpr(expr, state)) != null ? _a : "");
+  const text = String(evalExpr(expr, state) ?? "");
   if (el.textContent !== text) el.textContent = text;
 }
 function applyHtml(el, expr, state) {
-  var _a;
-  const raw = String((_a = evalExpr(expr, state)) != null ? _a : "");
+  const raw = String(evalExpr(expr, state) ?? "");
   const html = _config.sanitize ? _config.sanitize(raw) : raw;
-  if (el.innerHTML !== html) el.innerHTML = html;
+  const m = el;
+  if (m.__micraHtml === html) return;
+  m.__micraHtml = html;
+  el.innerHTML = html;
 }
 function applyIf(binding, state) {
   const el = binding.el;
@@ -535,11 +535,13 @@ function applyIf(binding, state) {
   if (truthy) {
     const ph = binding.placeholder;
     if (ph && ph.parentNode) ph.parentNode.replaceChild(el, ph);
+    delete el.__micraIfDetached;
   } else {
     const parent = el.parentNode;
     if (parent) {
       if (!binding.placeholder)
         binding.placeholder = document.createComment("if");
+      el.__micraIfDetached = true;
       parent.replaceChild(binding.placeholder, el);
     }
   }
@@ -552,26 +554,28 @@ function applyShow(el, expr, state) {
 function applyBind(el, pairs, state) {
   for (const [attr, valExpr] of pairs) {
     const val = evalExpr(valExpr, state);
-    if (attr[0] === "o" && attr[1] === "n") {
+    if (/^on[a-z]+$/.test(attr)) {
       warn(`data-bind refused event-handler attribute "${attr}" \u2014 use @${attr.slice(2)}`);
       continue;
     }
     if (attr === "class") {
-      el.className = String(val != null ? val : "");
+      el.className = String(val ?? "");
+    } else if (attr === "checked") {
+      el.checked = Boolean(val) && val !== "false";
     } else if (attr === "value") {
       if (document.activeElement !== el)
-        el.value = String(val != null ? val : "");
+        el.value = String(val ?? "");
     } else if (attr === "style") {
       if (typeof val === "object" && val !== null) {
         Object.assign(el.style, val);
       } else {
-        el.setAttribute("style", String(val != null ? val : ""));
+        el.setAttribute("style", String(val ?? ""));
       }
     } else if (typeof val === "boolean") {
       val ? el.setAttribute(attr, "") : el.removeAttribute(attr);
     } else if (val == null) {
       el.removeAttribute(attr);
-    } else if (/^\s*javascript:/i.test(String(val))) {
+    } else if (/^javascript:/i.test(String(val).replace(/[\u0000-\u0020]/g, ""))) {
       warn(`data-bind dropped unsafe javascript: URL from "${attr}"`);
       el.removeAttribute(attr);
     } else {
@@ -587,6 +591,11 @@ function applyClass(el, pairs, state) {
 function applyModel(el, key, rawState) {
   const html = el;
   const stateVal = evalExpr(key, rawState);
+  if (html.type === "checkbox" || html.type === "radio") {
+    const want = html.type === "checkbox" ? Boolean(stateVal) : html.value === (stateVal == null ? "" : String(stateVal));
+    if (html.checked !== want) html.checked = want;
+    return;
+  }
   const desired = stateVal == null ? "" : String(stateVal);
   if (html.value !== desired) html.value = desired;
 }
@@ -613,6 +622,9 @@ function validateDirectives(scan) {
         `data-each="${el.getAttribute("data-each")}" has no data-key \u2014 keyed diff disabled. Add data-key="id" for better performance.`
       );
     }
+    if (el.hasAttribute("data-if")) {
+      warn(`data-if on a data-each template is ignored \u2014 put it on a wrapper element`);
+    }
   }
   for (const b of scan.bind) {
     const hasClassBind = b.pairs.some((p) => p[0] === "class");
@@ -626,9 +638,8 @@ function validateDirectives(scan) {
 
 // src/dom/events.ts
 function track(instance, el, type, fn) {
-  var _a;
   el.addEventListener(type, fn);
-  ((_a = instance.__micraListeners) != null ? _a : instance.__micraListeners = []).push({ el, type, fn });
+  (instance.__micraListeners ?? (instance.__micraListeners = [])).push({ el, type, fn });
 }
 var SYS_MOD = {
   ctrl: "ctrlKey",
@@ -666,13 +677,12 @@ function applyModifiers(e, el, mods) {
   return true;
 }
 function runHandler(instance, el, value, e) {
-  var _a;
   if (value.includes("(")) {
     let base;
     for (let n = el; n && !base; n = n.parentElement) {
       base = n._itemState;
     }
-    const scope = Object.create((_a = base != null ? base : instance.__micraExpr) != null ? _a : null);
+    const scope = Object.create(base ?? instance.__micraExpr ?? null);
     scope["$event"] = e;
     scope["event"] = e;
     evalExpr(value, scope);
@@ -683,15 +693,18 @@ function runHandler(instance, el, value, e) {
   else warn(`method "${value}" not found`);
 }
 function bindDataOn(els, instance) {
-  var _a;
   for (const el of els) {
     const mEl = el;
     if (mEl.__micraEvents) continue;
     mEl.__micraEvents = true;
-    const spec = (_a = mEl.dataset["on"]) != null ? _a : "";
-    for (const part of spec.split(",")) {
-      const [evSpec, method] = part.trim().split(":");
-      if (!evSpec || !method) continue;
+    const spec = mEl.dataset["on"] ?? "";
+    const parts = spec.split(/,(?=(?:[^'"]|'[^']*'|"[^"]*")*$)/);
+    for (const part of parts) {
+      const cut = part.indexOf(":");
+      if (cut === -1) continue;
+      const evSpec = part.slice(0, cut).trim();
+      const method = part.slice(cut + 1);
+      if (!evSpec || !method.trim()) continue;
       const [evName, ...mods] = evSpec.split(".");
       const handler = method.trim();
       track(instance, el, evName, (e) => {
@@ -797,7 +810,7 @@ function classify(el, scan) {
       }
       continue;
     }
-    if (first === 100 && name.length >= 6 && name.charCodeAt(4) === 45) {
+    if (first === 100 && name.length >= 6 && name.startsWith("data-")) {
       const rest = name.slice(5);
       switch (rest) {
         case "text":
@@ -873,13 +886,29 @@ function scanComponent(root) {
 }
 
 // src/dom/each.ts
+function scanHasOpaqueBindings(scan) {
+  const c = scan.__opaque;
+  if (c !== void 0) return c;
+  const o = scan.each.length > 0 || [scan.text, scan.html, scan.if, scan.show, scan.bind, scan.class].some(
+    (g) => g.some((b) => b.deps === null)
+  );
+  scan.__opaque = o;
+  return o;
+}
+var warnedRowBindings = /* @__PURE__ */ new WeakSet();
+function releaseRowListeners(instance, removed) {
+  const t = instance.__micraListeners;
+  if (!t?.length || !removed.length) return;
+  instance.__micraListeners = t.filter(
+    (r) => !removed.some((n) => n === r.el || n.contains(r.el))
+  );
+}
 function renderList(templates, state, rawState, instance, dirty) {
-  var _a;
   for (const tmplEl of templates) {
     if (tmplEl.tagName !== "TEMPLATE") continue;
     const tmpl = tmplEl;
     const itemsExpr = tmpl.getAttribute("data-each");
-    const keyAttr = (_a = tmpl.getAttribute("data-key")) != null ? _a : null;
+    const keyAttr = tmpl.getAttribute("data-key") ?? null;
     const items = evalExpr(itemsExpr, state);
     if (!tmpl.__micraMarker) {
       const m = document.createComment(`each:${itemsExpr}`);
@@ -892,7 +921,10 @@ function renderList(templates, state, rawState, instance, dirty) {
     const keyMap = tmpl.__micraNodes;
     if (!marker.parentNode) continue;
     if (!Array.isArray(items)) {
-      tmpl.__micraList.forEach((n) => n.remove());
+      if (tmpl.__micraList.length) {
+        tmpl.__micraList.forEach((n) => n.remove());
+        releaseRowListeners(instance, tmpl.__micraList);
+      }
       tmpl.__micraList = [];
       keyMap.clear();
       continue;
@@ -923,13 +955,21 @@ function createRowNode(tmpl, state, instance) {
   const rowScan = scanComponent(node);
   node.__micraScan = rowScan;
   node._itemState = Object.create(state);
+  if (!warnedRowBindings.has(tmpl)) {
+    const m = rowScan.model.find((b) => /^(item|index|\$index)\b/.test(b.expr));
+    if (m || rowScan.refs.length) {
+      warnedRowBindings.add(tmpl);
+      warn(
+        m ? `data-model="${m.expr}" in data-each is not row-scoped \u2014 use @input + a method` : `data-ref in data-each rows is not collected \u2014 query the row element`
+      );
+    }
+  }
   bindDataOn(rowScan.on, instance);
   bindAtEvents(rowScan.atEvents, instance);
   bindModels(rowScan.model, instance);
   return node;
 }
 function renderKeyed(tmpl, items, keyAttr, marker, keyMap, state, rawState, instance, canSkipUnchanged, dirty) {
-  var _a;
   const nextKeys = /* @__PURE__ */ new Set();
   const nextNodes = [];
   let warnedNullKey = false;
@@ -949,7 +989,7 @@ function renderKeyed(tmpl, items, keyAttr, marker, keyMap, state, rawState, inst
     if (!node) {
       node = createRowNode(tmpl, state, instance);
       keyMap.set(key, node);
-    } else if (canSkipUnchanged && node.__micraItem === item && node.__micraIndex === index) {
+    } else if (canSkipUnchanged && node.__micraItem === item && node.__micraIndex === index && node.__micraScan && !scanHasOpaqueBindings(node.__micraScan)) {
       nextNodes.push(node);
       continue;
     }
@@ -960,17 +1000,20 @@ function renderKeyed(tmpl, items, keyAttr, marker, keyMap, state, rawState, inst
     itemState.item = item;
     itemState.index = index;
     itemState.$index = index;
-    const rowScan = (_a = node.__micraScan) != null ? _a : node.__micraScan = scanComponent(node);
+    const rowScan = node.__micraScan ?? (node.__micraScan = scanComponent(node));
     applyDirectives(rowScan, itemState, rawState, rowDirty);
     if (rowScan.each.length) renderList(rowScan.each, itemState, rawState, instance, rowDirty);
     nextNodes.push(node);
   }
+  const removedNodes = [];
   for (const [key, node] of keyMap) {
     if (!nextKeys.has(key)) {
       node.remove();
       keyMap.delete(key);
+      removedNodes.push(node);
     }
   }
+  releaseRowListeners(instance, removedNodes);
   const prevList = tmpl.__micraList;
   if (prevList.length === 0) {
     if (nextNodes.length) {
@@ -1037,7 +1080,7 @@ function renderNoKey(tmpl, items, marker, state, rawState, instance, canSkipUnch
   for (let i = 0; i < reuseLen; i++) {
     const node = prevList[i];
     const item = items[i];
-    if (canSkipUnchanged && node.__micraItem === item && node.__micraIndex === i) {
+    if (canSkipUnchanged && node.__micraItem === item && node.__micraIndex === i && node.__micraScan && !scanHasOpaqueBindings(node.__micraScan)) {
       nextList[i] = node;
       continue;
     }
@@ -1052,8 +1095,13 @@ function renderNoKey(tmpl, items, marker, state, rawState, instance, canSkipUnch
     if (node.__micraScan.each.length) renderList(node.__micraScan.each, itemState, rawState, instance, rowDirty);
     nextList[i] = node;
   }
-  for (let i = nextLen; i < prevLen; i++) {
-    prevList[i].remove();
+  if (nextLen < prevLen) {
+    const removedTail = [];
+    for (let i = nextLen; i < prevLen; i++) {
+      prevList[i].remove();
+      removedTail.push(prevList[i]);
+    }
+    releaseRowListeners(instance, removedTail);
   }
   if (nextLen > prevLen) {
     const frag = document.createDocumentFragment();
@@ -1089,7 +1137,6 @@ function collectRefs(els, instance) {
 
 // src/core/mount.ts
 function mount(selector, definition) {
-  var _a;
   const root = typeof selector === "string" ? document.querySelector(selector) : selector;
   if (!root) {
     warn(`"${selector}" not found`);
@@ -1097,7 +1144,7 @@ function mount(selector, definition) {
   }
   if (_instances.has(root))
     return _instances.get(root);
-  const rawState = { ...(_a = definition.state) != null ? _a : {} };
+  const rawState = { ...definition.state ?? {} };
   const instance = { $el: root, refs: {} };
   for (const [key, val] of Object.entries(
     definition
@@ -1108,6 +1155,7 @@ function mount(selector, definition) {
   instance.prop = function(name, defaultVal) {
     const val = root.dataset[name];
     if (val === void 0) return defaultVal;
+    if (typeof defaultVal === "string") return val;
     if (val === "true") return true;
     if (val === "false") return false;
     if (val !== "" && !isNaN(Number(val))) return Number(val);
@@ -1125,7 +1173,20 @@ function mount(selector, definition) {
   let isRendering = false;
   const _dirty = /* @__PURE__ */ new Set();
   const schedule = createScheduler(() => instance.render());
-  instance.state = createReactiveState(rawState, schedule, (key) => {
+  let warnedRenderWrite = false;
+  const scheduleSafe = () => {
+    if (isRendering) {
+      if (!warnedRenderWrite) {
+        warn(
+          "state write during render is kept but not re-rendered \u2014 move writes out of directive expressions"
+        );
+        warnedRenderWrite = true;
+      }
+      return;
+    }
+    schedule();
+  };
+  instance.state = createReactiveState(rawState, scheduleSafe, (key) => {
     _dirty.add(key);
   });
   const boundMethods = /* @__PURE__ */ new Map();
@@ -1150,7 +1211,6 @@ function mount(selector, definition) {
   instance.__micraExpr = exprState;
   let warnedReentry = false;
   instance.render = function() {
-    var _a2;
     if (instance.__micraDestroyed) return;
     const dirty = _dirty.size ? new Set(_dirty) : null;
     _dirty.clear();
@@ -1166,7 +1226,7 @@ function mount(selector, definition) {
     isRendering = true;
     try {
       const mRoot2 = root;
-      const scan = (_a2 = mRoot2.__micraScan) != null ? _a2 : mRoot2.__micraScan = scanComponent(root);
+      const scan = mRoot2.__micraScan ?? (mRoot2.__micraScan = scanComponent(root));
       applyDirectives(scan, exprState, rawState, dirty);
       renderList(scan.each, exprState, rawState, instance, dirty);
       bindDataOn(scan.on, instance);
@@ -1178,13 +1238,25 @@ function mount(selector, definition) {
     }
   };
   instance.destroy = function() {
-    var _a2, _b;
     if (instance.__micraDestroyed) return;
     instance.__micraDestroyed = true;
-    (_a2 = instance.__micraListeners) == null ? void 0 : _a2.forEach(
+    instance.__micraListeners?.forEach(
       ({ el, type, fn }) => el.removeEventListener(type, fn)
     );
     instance.__micraListeners = [];
+    const scan = root.__micraScan;
+    for (const b of scan?.if ?? []) {
+      const ph = b.placeholder;
+      if (ph?.parentNode) ph.parentNode.replaceChild(b.el, ph);
+      delete b.el.__micraIfDetached;
+    }
+    for (const t of scan?.each ?? []) {
+      t.__micraList?.forEach((n) => n.remove());
+      t.__micraList = [];
+      t.__micraNodes?.clear();
+      t.__micraMarker?.remove();
+      delete t.__micraMarker;
+    }
     const clearFlags = (el) => {
       const m = el;
       delete m.__micraEvents;
@@ -1194,7 +1266,7 @@ function mount(selector, definition) {
     };
     clearFlags(root);
     root.querySelectorAll("*").forEach(clearFlags);
-    (_b = instance.__micraSubs) == null ? void 0 : _b.forEach((unsub) => unsub());
+    instance.__micraSubs?.forEach((unsub) => unsub());
     instance.__micraSubs = [];
     if (typeof definition.onDestroy === "function")
       definition.onDestroy.call(instance);
@@ -1227,14 +1299,10 @@ function start(root = document) {
 
 // src/core/destroy.ts
 function destroy(root = document) {
-  var _a;
   root.querySelectorAll("[data-component]").forEach(
-    (el) => {
-      var _a2;
-      return (_a2 = _instances.get(el)) == null ? void 0 : _a2.destroy();
-    }
+    (el) => _instances.get(el)?.destroy()
   );
-  if (root instanceof HTMLElement) (_a = _instances.get(root)) == null ? void 0 : _a.destroy();
+  if (root instanceof HTMLElement) _instances.get(root)?.destroy();
 }
 var _observer = null;
 function autoCleanup() {
@@ -1242,6 +1310,7 @@ function autoCleanup() {
   _observer = new MutationObserver((records) => {
     for (const rec of records)
       rec.removedNodes.forEach((n) => {
+        if (n.__micraIfDetached) return;
         if (n instanceof HTMLElement && !n.isConnected) destroy(n);
       });
   });
@@ -1249,7 +1318,7 @@ function autoCleanup() {
   return stopAutoCleanup;
 }
 function stopAutoCleanup() {
-  _observer == null ? void 0 : _observer.disconnect();
+  _observer?.disconnect();
   _observer = null;
 }
 export {
