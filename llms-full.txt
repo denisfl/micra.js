@@ -681,6 +681,72 @@ Rules of thumb:
 Full reference with Turbo Streams cleanup, no-flicker hydration pattern,
 and the Stimulus-vs-Micra split is in `docs/recipes/rails.md`.
 
+## Recipe 13 — Astro islands (`@micrajs/astro`)
+
+The official Astro integration. Astro renders the HTML; each `<Micra>` island
+hydrates on its own strategy and pulls **only its own component** as a separate
+chunk. A page with no islands ships no Micra.
+
+```bash
+npm install @micrajs/astro micra.js
+```
+
+```js
+// astro.config.mjs
+import { defineConfig } from 'astro/config'
+import micra from '@micrajs/astro'
+
+export default defineConfig({ integrations: [micra()] })
+```
+
+A component is one file under `src/micra/`, default-exporting a definition:
+
+```ts
+// src/micra/counter.ts
+import { defineComponent } from 'micra.js'
+
+export default defineComponent({
+  state: { count: 0 },
+  inc() { this.state.count++ },
+  onCreate() { this.state.count = this.prop('start', 0) },
+})
+```
+
+Wrap the markup in `<Micra>`. The slot is the template (server-rendered), `name`
+maps to the file, and `client` picks the hydration strategy:
+
+```astro
+---
+import Micra from '@micrajs/astro/Micra.astro'
+---
+<Micra name="counter" client="visible" props={{ start: 3 }}>
+  <button @click="inc">+</button>
+  <span data-text="count"></span>
+</Micra>
+```
+
+Rules of thumb:
+
+- **One file per component** in `src/micra/`, `export default defineComponent({...})`.
+  The filename is the `name`; each file becomes its own chunk, loaded when the
+  island hydrates. Do NOT call `Micra.start()` — the integration mounts each island.
+- **The slot is the template.** Write the same directive markup you'd use anywhere
+  (`data-text`, `@event`, `<template data-each>` with `data-key`, derived values as
+  methods) — the hard rules above still apply.
+- **`client`**: `load` (immediately), `idle`, `visible` (in-viewport), or
+  `media:(query)`. Omit it to use the integration's `defaultClient`.
+- **`props` are scalars** — serialized to `data-*`, read with `this.prop()`.
+  Structured or initial data belongs in `this.fetch()` inside `onCreate`, never a
+  JSON attribute (same rule as Rails' `data-initial-*`).
+- **View transitions**: with `<ClientRouter />`, islands re-arm per navigation and
+  torn-down pages clean up automatically; `transition:persist` keeps an island (and
+  its Micra state) across a swap.
+- **Whole-page Micra (not islands)** — drop the CDN `<script>` and call
+  `Micra.start()` yourself, as on any server-rendered page. The integration is
+  specifically for per-island, per-component loading.
+
+Full reference is in `docs/recipes/astro.md`. Package: `@micrajs/astro` on npm.
+
 ---
 
 # Anti-pattern reference (what LLMs gravitate to — DO NOT)
@@ -754,5 +820,6 @@ Before returning generated Micra code, verify ALL of these:
 - npm: https://www.npmjs.com/package/micra.js
 - LLM short guide: https://micrajs.dev/docs/llm-guide
 - Recipes: https://micrajs.dev/docs/recipes/todo-app
+- Astro integration (@micrajs/astro): https://micrajs.dev/docs/recipes/astro
 - Live example gallery: https://micrajs.dev/examples
 - Short llms.txt: https://github.com/denisfl/micra.js/blob/master/llms.txt

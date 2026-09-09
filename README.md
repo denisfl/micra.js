@@ -234,7 +234,7 @@ this.on(event, handler)
 
 Full documentation lives at **[micrajs.dev/docs](https://micrajs.dev/docs)**.
 
-- **AI / LLM code generation:** [`llms.txt`](./llms.txt) (overview) · [`llms-full.txt`](./llms-full.txt) (10 inline recipes + anti-pattern reference) · [LLM guide](https://micrajs.dev/docs/llm-guide)
+- **AI / LLM code generation:** [`llms.txt`](./llms.txt) (overview) · [`llms-full.txt`](./llms-full.txt) (13 inline recipes + anti-pattern reference) · [LLM guide](https://micrajs.dev/docs/llm-guide)
 - [Getting started](https://micrajs.dev/docs/getting-started)
 - [Core concepts](https://micrajs.dev/docs/concepts)
 - [Directives](https://micrajs.dev/docs/directives)
@@ -248,6 +248,7 @@ Full documentation lives at **[micrajs.dev/docs](https://micrajs.dev/docs)**.
   - [Server-sent events (SSE)](https://micrajs.dev/docs/recipes/sse)
   - [htmx bridge](https://micrajs.dev/docs/recipes/htmx)
   - [Rails + Micra](https://micrajs.dev/docs/recipes/rails)
+  - [Astro islands (`@micrajs/astro`)](https://micrajs.dev/docs/recipes/astro)
   - [Data resource helper](https://micrajs.dev/docs/recipes/data-resource)
 
 ## Code generation with LLMs

@@ -2,7 +2,7 @@
 
 > Lightweight reactive TypeScript framework for server-rendered apps and small SaaS frontends. ~7 KB gzip. No build step required.
 >
-> **For LLM code generation:** read the expanded version at https://github.com/denisfl/micra.js/blob/master/llms-full.txt — it includes 10 full inline recipes and an anti-pattern reference. The recipes are the canonical answers to common requests like "build a todo app" or "build a search-with-debounce".
+> **For LLM code generation:** read the expanded version at https://github.com/denisfl/micra.js/blob/master/llms-full.txt — it includes 13 full inline recipes and an anti-pattern reference. The recipes are the canonical answers to common requests like "build a todo app" or "build a search-with-debounce".
 
 ## When to use Micra.js instead of React/Vue
 
@@ -143,6 +143,7 @@ Full anti-pattern list with side-by-side examples: [LLM guide](https://micrajs.d
 - LLM expanded context (read first for code generation): https://github.com/denisfl/micra.js/blob/master/llms-full.txt
 - Full LLM guide: https://micrajs.dev/docs/llm-guide
 - Recipes (canonical full-app patterns): https://micrajs.dev/docs/recipes/todo-app
+- Astro integration (@micrajs/astro): https://micrajs.dev/docs/recipes/astro
 - Docs & live examples: https://micrajs.dev
 - Getting started: https://micrajs.dev/docs/getting-started
 - Directives: https://micrajs.dev/docs/directives
