@@ -138,7 +138,10 @@ if (watch) {
   // Bumped 7.5 -> 8 KB in v2.7 for destroy() + autoCleanup() — automatic teardown
   // in swap-driven setups (htmx/Turbo/Astro). Real size ~7.6 KB. (Marketing copy
   // still says ~7 KB; this is internal headroom, not a public number change.)
-  const MAX_GZIP_BYTES = 8 * 1024
+  // Lowered 8 -> 7.5 KB in v2.8 after the size audit (evaluator compiled to
+  // closures, shared list/event paths) brought the real size to ~7.0 KB. Keep
+  // it tight: the headroom is for real fixes, not for growth.
+  const MAX_GZIP_BYTES = 7.5 * 1024
   const minified  = readFileSync('dist/micra.min.js')
   const gzipSize  = gzipSync(minified).length
   const kbStr     = (gzipSize / 1024).toFixed(1)
