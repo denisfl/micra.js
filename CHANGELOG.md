@@ -43,7 +43,7 @@ Pro components, clicked through step by step) show identical output.
   `(scope) => value` functions and collects dependencies while parsing; the
   AST, the tree-walking interpreter and the separate dependency pass are gone,
   and the tokenizer is a single regex. Same grammar and security guards;
-  evaluation is faster. Whitespace outside the ASCII set (e.g. a non-breaking
+  evaluation speed is about the same. Whitespace outside the ASCII set (e.g. a non-breaking
   space) between tokens is now accepted instead of being a syntax error.
 - `data-on` and `@event` share one scan list and one binder; `data-on` still
   binds before `@event` on the same element.
