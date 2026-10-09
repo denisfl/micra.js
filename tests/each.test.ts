@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderList as _renderList } from '../src/dom/each'
 import { scanComponent } from '../src/dom/scan'
 import type { InternalInstance, MicraTemplate, StateRecord } from '../src/types'
+import { mountForTest } from './helpers/mount'
 
 // Shim: src/dom/each.ts now accepts a pre-scanned template list.
 // Tests still pass a root element — scan on call to keep test bodies stable.
@@ -551,5 +552,22 @@ describe('6. Nested data-each', () => {
     state.groups = [{ id: 1, name: 'A', children: [{ id: 11, label: 'a1' }, { id: 13, label: 'a3' }] }]
     _renderList(top, state, state, inst, null)
     expect(childTexts(root)).toEqual(['a1', 'a3'])
+  })
+})
+
+describe('whole-row skip and bindings that read the list itself', () => {
+  // Only `items` changes and rows 1-2 keep their item ref + index, so they used
+  // to take the whole-row skip — leaving `items.length` stale ("2,2,3").
+  it('keyed rows re-render a binding that depends on the list key', async () => {
+    const { root, inst } = mountForTest(
+      `<div><template data-each="items" data-key="id"><p data-text="items.length"></p></template></div>`,
+      { state: { items: [{ id: 1 }, { id: 2 }] } },
+    )
+    await Promise.resolve()
+    const st = inst.state as { items: { id: number }[] }
+    st.items = [...st.items, { id: 3 }]
+    await Promise.resolve()
+    await Promise.resolve()
+    expect([...root.querySelectorAll('p')].map((p) => p.textContent).join(',')).toBe('3,3,3')
   })
 })

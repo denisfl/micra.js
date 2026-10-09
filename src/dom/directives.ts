@@ -59,22 +59,17 @@ function applyIf(binding: CachedIfBinding, state: StateRecord): void {
   const el = binding.el as HTMLElement;
   const truthy = !!evalExpr(binding.expr, state);
   if (truthy) {
-    // If a placeholder is currently in the DOM in the element's slot, swap back.
-    const ph = binding.placeholder;
-    if (ph && ph.parentNode) ph.parentNode.replaceChild(el, ph);
+    // Swap back in if the placeholder holds the element's slot (replaceWith is
+    // a no-op while the placeholder itself is detached).
+    binding.placeholder?.replaceWith(el);
     delete (el as MicraElement).__micraIfDetached;
-  } else {
+  } else if (el.parentNode) {
     // Only detach if currently attached somewhere. Standalone elements
     // (no parent — common in unit tests) are a no-op.
-    const parent = el.parentNode;
-    if (parent) {
-      if (!binding.placeholder)
-        binding.placeholder = document.createComment("if");
-      // Mark the detach as Micra's own so autoCleanup() doesn't destroy
-      // components inside a temporarily-hidden subtree.
-      (el as MicraElement).__micraIfDetached = true;
-      parent.replaceChild(binding.placeholder, el);
-    }
+    // Mark the detach as Micra's own so autoCleanup() doesn't destroy
+    // components inside a temporarily-hidden subtree.
+    (el as MicraElement).__micraIfDetached = true;
+    el.replaceWith((binding.placeholder ??= document.createComment("if")));
   }
 }
 
@@ -150,6 +145,7 @@ function applyModel(el: Element, key: string, rawState: StateRecord): void {
   const html = el as HTMLInputElement;
   // evalExpr resolves both flat keys ("search") and dot-paths ("filters.query")
   const stateVal = evalExpr(key, rawState);
+  const desired = String(stateVal ?? "");
   // Checkboxes and radios sync the `checked` PROPERTY, never `value`: writing
   // value would corrupt a radio group's option values and can't uncheck a
   // checkbox (the checked attribute is only a default).
@@ -157,11 +153,10 @@ function applyModel(el: Element, key: string, rawState: StateRecord): void {
     const want =
       html.type === "checkbox"
         ? Boolean(stateVal)
-        : html.value === (stateVal == null ? "" : String(stateVal));
+        : html.value === desired;
     if (html.checked !== want) html.checked = want;
     return;
   }
-  const desired = stateVal == null ? "" : String(stateVal);
   // Only write when out of sync. This is a no-op during live typing (the input
   // event already drove state to match el.value) but still propagates
   // programmatic resets such as `this.state.q = ''` on focused inputs.
@@ -249,6 +244,3 @@ export function validateDirectives(scan: ScanIndex): void {
     }
   }
 }
-
-// Re-export warn for use in other modules
-export { warn };

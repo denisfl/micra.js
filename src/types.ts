@@ -217,6 +217,7 @@ export interface MicraElement extends HTMLElement {
   __micraScan?: ScanIndex; // single-pass scan result (cached after 1st render)
   __micraItem?: StateRecord; // keyed row: last-rendered item ref (for skip check)
   __micraIndex?: number; // keyed row: last-rendered index (for skip check)
+  __micraOpaque?: boolean; // row binding reads unknown deps or the list key: never whole-row skip
   _itemState?: StateRecord; // keyed row: reused itemState (avoids Object.create per render)
 }
 
@@ -237,6 +238,7 @@ export interface MicraTemplate extends HTMLTemplateElement {
   __micraNodes: Map<unknown, MicraElement>;
   __micraList: MicraElement[];
   __micraNoKeyWarned?: true;
+  __micraRowWarned?: true; // warned once about unsupported row bindings
 }
 
 /**

@@ -4,54 +4,29 @@
  * Responsibilities:
  *   - Process `<template data-each="items" data-key="id">` elements
  *   - Keyed diff: reuse/reorder DOM nodes by key — O(n) with a Map
- *   - Non-keyed fallback: length-based positional reuse — min(old, new) rows
- *     are kept as-is, the tail is removed or new rows are appended
+ *   - Non-keyed lists: positional reuse — min(old, new) rows are kept, the
+ *     tail is removed or rows are appended
  *   - Apply directives to each row with a scoped itemState
  *
  * LLM NOTE: renderList() is called on every render cycle AFTER applyDirectives().
  * The template list comes pre-scanned from scan.ts — no DOM queries here.
  * Each row node gets its own ScanIndex cached on `node.__micraScan` so
  * re-renders of that row don't re-walk the DOM.
- * Keyed mode (data-key present) mutates the DOM in-place — nodes are
- * created once and reused. Non-keyed mode also reuses existing nodes
- * positionally: only the length delta is touched, the rest gets a fresh
- * itemState and re-applies directives.
+ * Rows are created once and reused (by key, or by position without data-key);
+ * a reused row gets its itemState refreshed and re-applies directives.
  */
 
 import type {
+  CachedBinding,
   InternalInstance,
   MicraElement,
   MicraTemplate,
-  ScanIndex,
   StateRecord,
 } from '../types'
 import { evalExpr, warn } from '../utils/expr'
 import { applyDirectives } from './directives'
 import { bindDataOn, bindAtEvents, bindModels } from './events'
 import { scanComponent } from './scan'
-
-/**
- * True when a row scan contains any binding whose deps are unknown (method
- * calls — deps === null), including a nested data-each source expression.
- * Such rows can NOT take the whole-row skip: a method may read state beyond
- * the item, so "item ref + index unchanged" doesn't prove the DOM is current.
- * Cached on the scan (computed once per template shape).
- */
-function scanHasOpaqueBindings(scan: ScanIndex): boolean {
-  const c = (scan as ScanIndex & { __opaque?: boolean }).__opaque
-  if (c !== undefined) return c
-  type D = { deps: Set<string> | null }
-  const o =
-    scan.each.length > 0 ||
-    [scan.text, scan.html, scan.if, scan.show, scan.bind, scan.class].some(
-      (g) => (g as D[]).some((b) => b.deps === null),
-    )
-  ;(scan as ScanIndex & { __opaque?: boolean }).__opaque = o
-  return o
-}
-
-// Templates that already warned about unsupported row bindings (once each).
-const warnedRowBindings = new WeakSet<Element>()
 
 /**
  * Drop tracked listener records belonging to removed row subtrees so a
@@ -83,13 +58,15 @@ export function renderList<S extends StateRecord>(
   instance: InternalInstance<S>,
   dirty: Set<string> | null,
 ): void {
+  // scan.ts only collects <template data-each> elements, so no tag check here.
   for (const tmplEl of templates) {
-    if (tmplEl.tagName !== 'TEMPLATE') continue
     const tmpl = tmplEl as MicraTemplate
 
     const itemsExpr = tmpl.getAttribute('data-each')!
-    const keyAttr   = tmpl.getAttribute('data-key') ?? null
-    const items     = evalExpr(itemsExpr, state)
+    const keyAttr   = tmpl.getAttribute('data-key')
+    const value     = evalExpr(itemsExpr, state)
+    // Empty / non-array: an empty list — the diff below removes every row.
+    const items     = Array.isArray(value) ? value : []
 
     // Ensure marker comment + internal state are initialized
     if (!tmpl.__micraMarker) {
@@ -106,31 +83,63 @@ export function renderList<S extends StateRecord>(
     // ancestor unmounted this subtree. Nothing to do until it returns.
     if (!marker.parentNode) continue
 
-    // Empty / non-array: clear all rendered rows
-    if (!Array.isArray(items)) {
-      if (tmpl.__micraList.length) {
-        tmpl.__micraList.forEach(n => n.remove())
-        releaseRowListeners(instance as InternalInstance<StateRecord>, tmpl.__micraList)
-      }
-      tmpl.__micraList = []
-      keyMap.clear()
-      continue
-    }
-
     // canSkipUnchanged: true when ONLY this list's own key changed — rows whose
     // item reference and index are both unchanged can skip applyDirectives.
     const canSkipUnchanged =
       dirty !== null && dirty.size === 1 && dirty.has(itemsExpr)
 
-    if (keyAttr) {
-      renderKeyed(tmpl, items as StateRecord[], keyAttr, marker, keyMap, state, rawState, instance, canSkipUnchanged, dirty)
-    } else {
-      renderNoKey(tmpl, items as StateRecord[], marker, state, rawState, instance, canSkipUnchanged, dirty)
+    if (!keyAttr) { renderNoKey(tmpl, items, marker, state, rawState, instance, canSkipUnchanged, dirty); continue }
+    const nextKeys  = new Set<unknown>()
+    const nextNodes: MicraElement[] = []
+    let warnedNullKey = false
+    let warnedDupKey  = false
+
+    for (const [index, item] of items.entries()) {
+      const key = item[keyAttr]
+      if (key == null && !warnedNullKey) {
+        warn(`data-key="${keyAttr}" is null/undefined on item at index ${index}`)
+        warnedNullKey = true
+      }
+      if (nextKeys.has(key) && !warnedDupKey) {
+        warn(`data-key="${keyAttr}" has duplicate value ${JSON.stringify(key)} — rows will collide`)
+        warnedDupKey = true
+      }
+      nextKeys.add(key)
+
+      let node = keyMap.get(key)
+      if (!node) keyMap.set(key, (node = createRowNode(tmpl, state, instance)))
+      patchRow(node, item, index, rawState, instance, canSkipUnchanged, dirty)
+      nextNodes.push(node)
     }
+
+    // Remove stale nodes (and release their tracked listeners — see M3)
+    const removedNodes: Element[] = []
+    for (const [key, node] of keyMap) {
+      if (!nextKeys.has(key)) { node.remove(); keyMap.delete(key); removedNodes.push(node) }
+    }
+    releaseRowListeners(instance as InternalInstance<StateRecord>, removedNodes)
+
+    const prevList = tmpl.__micraList
+    if (prevList.length === 0) {
+      // First render (or refill after a clear): every node is new and already in
+      // order — batch into one fragment so the DOM takes a single insertion
+      // instead of N anchor.after() calls. Skips LIS entirely.
+      const frag = document.createDocumentFragment()
+      for (const node of nextNodes) frag.append(node)
+      marker.after(frag)
+    } else {
+      // Skip DOM reorder when list order is unchanged (pure JS array compare, no DOM reads).
+      if (
+        nextNodes.length !== prevList.length ||
+        nextNodes.some((node, i) => node !== prevList[i])
+      ) reorderKeyed(nextNodes, prevList, marker)
+    }
+
+    tmpl.__micraList = nextNodes
   }
 }
 
-// ── Row node creation (shared by both paths) ──────────────────────────────────
+// ── Row node creation ─────────────────────────────────────────────────────────
 
 /**
  * Clone the template into a fresh row node, wrapping multi-root content in
@@ -158,9 +167,8 @@ function createRowNode<S extends StateRecord>(
   const single =
     !!first &&
     !first.nextElementSibling &&
-    !Array.prototype.some.call(
-      frag.childNodes,
-      (c: Node) => c.nodeType === 3 && /[^\x00- ]/.test(c.textContent!),
+    !Array.from(frag.childNodes).some(
+      (c) => c.nodeType === 3 && /[^\x00- ]/.test(c.textContent!),
     )
   if (single) {
     node = first!
@@ -171,12 +179,22 @@ function createRowNode<S extends StateRecord>(
   }
   const rowScan = scanComponent(node)
   node.__micraScan = rowScan
+  // The whole-row skip (only this list's key changed; item ref + index
+  // unchanged) is sound only if no binding can read that key. A row is opaque
+  // (never skipped) when a binding has unknown deps (method calls), depends on
+  // the list key itself (e.g. `items.length`), or the row nests a data-each.
+  const listKey = tmpl.getAttribute('data-each')!
+  node.__micraOpaque =
+    rowScan.each.length > 0 ||
+    [rowScan.text, rowScan.html, rowScan.if, rowScan.show, rowScan.bind, rowScan.model, rowScan.class].some(
+      (g) => (g as CachedBinding[]).some((b) => !b.deps || b.deps.has(listKey)),
+    )
   node._itemState = Object.create(state) as StateRecord
   // Unsupported row bindings — warn once per template, not per row.
-  if (!warnedRowBindings.has(tmpl)) {
+  if (!tmpl.__micraRowWarned) {
     const m = rowScan.model.find((b) => /^(item|index|\$index)\b/.test(b.expr))
     if (m || rowScan.refs.length) {
-      warnedRowBindings.add(tmpl)
+      tmpl.__micraRowWarned = true
       warn(
         m
           ? `data-model="${m.expr}" in data-each is not row-scoped — use @input + a method`
@@ -190,107 +208,39 @@ function createRowNode<S extends StateRecord>(
   return node
 }
 
-// ── Keyed diff ────────────────────────────────────────────────────────────────
+// ── Row patch ─────────────────────────────────────────────────────────────────
 
-function renderKeyed<S extends StateRecord>(
-  tmpl: MicraTemplate,
-  items: StateRecord[],
-  keyAttr: string,
-  marker: Comment,
-  keyMap: Map<unknown, MicraElement>,
-  state: StateRecord,
+/**
+ * Bring one row node up to date with `item` at `index`. When the item ref and
+ * index are unchanged we're here only because some OTHER key changed, so the
+ * row is dep-filtered by `dirty` — or skipped outright when ONLY this list's
+ * key changed (`canSkip`) and every binding's deps are known (rows with
+ * method-call bindings never skip: a method may read anything). If the item
+ * or index changed, re-apply fully.
+ */
+function patchRow<S extends StateRecord>(
+  node: MicraElement,
+  item: StateRecord,
+  index: number,
   rawState: StateRecord,
   instance: InternalInstance<S>,
-  canSkipUnchanged: boolean,
+  canSkip: boolean,
   dirty: Set<string> | null,
 ): void {
-  const nextKeys  = new Set<unknown>()
-  const nextNodes: MicraElement[] = []
-  let warnedNullKey = false
-  let warnedDupKey  = false
-
-  for (const [index, item] of items.entries()) {
-    const key = item[keyAttr]
-    if (key == null && !warnedNullKey) {
-      warn(`data-key="${keyAttr}" is null/undefined on item at index ${index}`)
-      warnedNullKey = true
-    }
-    if (nextKeys.has(key) && !warnedDupKey) {
-      warn(`data-key="${keyAttr}" has duplicate value ${JSON.stringify(key)} — rows will collide`)
-      warnedDupKey = true
-    }
-    nextKeys.add(key)
-
-    let node = keyMap.get(key) as MicraElement | undefined
-
-    if (!node) {
-      node = createRowNode(tmpl, state, instance)
-      keyMap.set(key, node)
-    } else if (
-      canSkipUnchanged && node.__micraItem === item && node.__micraIndex === index &&
-      node.__micraScan && !scanHasOpaqueBindings(node.__micraScan)
-    ) {
-      // Item reference and index are unchanged, no other state key changed this
-      // cycle, and every binding's deps are known — the DOM provably reflects
-      // the latest values. Rows with method-call bindings never skip (a method
-      // may read anything). Skip re-render.
-      nextNodes.push(node)
-      continue
-    }
-
-    // Item ref + index unchanged → we're here only because some OTHER key
-    // changed, so dep-filter by `dirty`. If the item changed, re-apply fully.
-    const rowDirty =
-      node.__micraItem === item && node.__micraIndex === index ? dirty : null
-
-    node.__micraItem  = item
-    node.__micraIndex = index
-
-    // Reuse the cached itemState, just update the per-row values.
-    const itemState = node._itemState!
-    itemState.item = item
-    itemState.index = index
-    itemState.$index = index
-
-    // Use the cached scan if present (created above on first sight of this key);
-    // older paths may pass a node we haven't scanned yet.
-    const rowScan = node.__micraScan ?? (node.__micraScan = scanComponent(node))
-    applyDirectives(rowScan, itemState, rawState, rowDirty)
-    // Nested data-each: render templates inside this row against its itemState,
-    // so `<template data-each>` works inside another (boards, calendars, trees).
-    if (rowScan.each.length) renderList(rowScan.each, itemState, rawState, instance, rowDirty)
-    nextNodes.push(node)
-  }
-
-  // Remove stale nodes (and release their tracked listeners — see M3)
-  const removedNodes: Element[] = []
-  for (const [key, node] of keyMap) {
-    if (!nextKeys.has(key)) { node.remove(); keyMap.delete(key); removedNodes.push(node) }
-  }
-  releaseRowListeners(instance as InternalInstance<StateRecord>, removedNodes)
-
-  const prevList = tmpl.__micraList
-  if (prevList.length === 0) {
-    // First render (or refill after a clear): every node is new and already in
-    // order — batch into one fragment so the DOM takes a single insertion
-    // instead of N anchor.after() calls. Skips LIS entirely.
-    if (nextNodes.length) {
-      const frag = document.createDocumentFragment()
-      for (const node of nextNodes) frag.append(node)
-      marker.after(frag)
-    }
-  } else {
-    // Skip DOM reorder when list order is unchanged (pure JS array compare, no DOM reads).
-    let orderChanged = nextNodes.length !== prevList.length
-    if (!orderChanged) {
-      for (let i = 0; i < nextNodes.length; i++) {
-        if (nextNodes[i] !== prevList[i]) { orderChanged = true; break }
-      }
-    }
-    if (orderChanged) reorderKeyed(nextNodes, prevList, marker)
-  }
-
-  tmpl.__micraList = nextNodes
+  const rowScan = node.__micraScan!
+  const same = node.__micraItem === item && node.__micraIndex === index
+  if (same && canSkip && !node.__micraOpaque) return
+  const rowDirty = same ? dirty : null
+  node.__micraItem  = item
+  node.__micraIndex = index
+  // Reuse the cached itemState, just update the per-row values.
+  const itemState = node._itemState!
+  itemState.item = item
+  itemState.index = itemState.$index = index
+  applyDirectives(rowScan, itemState, rawState, rowDirty)
+  // Nested data-each: render templates inside this row against its itemState,
+  // so `<template data-each>` works inside another (boards, calendars, trees).
+  if (rowScan.each.length) renderList(rowScan.each, itemState, rawState, instance, rowDirty)
 }
 
 // ── Keyed list reorder (LIS) ───────────────────────────────────────────────────
@@ -311,41 +261,32 @@ function reorderKeyed(nextNodes: MicraElement[], prevList: MicraElement[], marke
   const n = nextNodes.length
   const tails: number[] = []     // patience sort: smallest tail at each LIS length
   const tailIdx: number[] = []   // index into nextNodes for each tail
-  const prev: number[] = new Array(n).fill(-1)
+  const prev: number[] = []      // LIS parent links (unset = undefined ends the chain)
 
   for (let i = 0; i < n; i++) {
     const p = prevPos.get(nextNodes[i]!)
     if (p === undefined) continue  // new node — always moved
     let lo = 0, hi = tails.length
     while (lo < hi) { const m = (lo + hi) >> 1; tails[m]! < p ? lo = m + 1 : hi = m }
-    if (lo > 0) prev[i] = tailIdx[lo - 1]!
+    prev[i] = tailIdx[lo - 1]!
     tails[lo] = p
     tailIdx[lo] = i
   }
 
-  // Reconstruct stable (non-moving) set from LIS parent chain
+  // Reconstruct stable (non-moving) set from LIS parent chain;
+  // `undefined >= 0` is false, so a missing link terminates the walk.
   const stable = new Set<number>()
   let idx: number = tailIdx[tails.length - 1]!
   while (idx >= 0) { stable.add(idx); idx = prev[idx]! }
 
   // Move unstable nodes into position; stable (LIS) nodes serve as anchors
   let anchor: ChildNode = marker
-  for (let i = 0; i < n; i++) {
-    const node = nextNodes[i]!
-    if (stable.has(i)) { anchor = node; continue }
-    anchor.after(node)
+  nextNodes.forEach((node, i) => {
+    if (!stable.has(i)) anchor.after(node)
     anchor = node
-  }
+  })
 }
 
-// ── Non-keyed (positional reuse) ──────────────────────────────────────────────
-
-/**
- * Diff a non-keyed list by length: reuse the first min(prev, next) DOM nodes,
- * remove the tail when the list shrinks, clone fresh rows for the growth delta.
- * Multi-root template rows are wrapped in `<micra-each-item style="display:contents">`
- * — same as keyed mode — so the reused list is one DOM node per row.
- */
 function renderNoKey<S extends StateRecord>(
   tmpl: MicraTemplate,
   items: StateRecord[],
@@ -359,64 +300,17 @@ function renderNoKey<S extends StateRecord>(
   const prevList = tmpl.__micraList
   const prevLen = prevList.length
   const nextLen = items.length
-  const reuseLen = nextLen < prevLen ? nextLen : prevLen
-  const nextList: MicraElement[] = new Array(nextLen)
-
-  // 1. Reuse [0, reuseLen): refresh itemState, re-apply directives in place.
-  for (let i = 0; i < reuseLen; i++) {
-    const node = prevList[i]!
-    const item = items[i]!
-    if (
-      canSkipUnchanged && node.__micraItem === item && node.__micraIndex === i &&
-      node.__micraScan && !scanHasOpaqueBindings(node.__micraScan)
-    ) {
-      nextList[i] = node
-      continue
-    }
-    const rowDirty =
-      node.__micraItem === item && node.__micraIndex === i ? dirty : null
-    node.__micraItem = item
-    node.__micraIndex = i
-    const itemState = node._itemState!
-    itemState.item = item
-    itemState.index = i
-    itemState.$index = i
-    applyDirectives(node.__micraScan!, itemState, rawState, rowDirty)
-    if (node.__micraScan!.each.length) renderList(node.__micraScan!.each, itemState, rawState, instance, rowDirty)
-    nextList[i] = node
+  const nextList: MicraElement[] = prevList.slice(0, nextLen)
+  nextList.forEach((node, i) => patchRow(node, items[i]!, i, rawState, instance, canSkipUnchanged, dirty))
+  const removed = prevList.slice(nextLen)
+  removed.forEach((n) => n.remove())
+  releaseRowListeners(instance as InternalInstance<StateRecord>, removed)
+  const frag = document.createDocumentFragment()
+  for (let i = prevLen; i < nextLen; i++) {
+    const node = createRowNode(tmpl, state, instance)
+    patchRow(node, items[i]!, i, rawState, instance, false, null)
+    frag.append((nextList[i] = node))
   }
-
-  // 2. Shrink: remove tail nodes [nextLen, prevLen) and release their listeners.
-  if (nextLen < prevLen) {
-    const removedTail: Element[] = []
-    for (let i = nextLen; i < prevLen; i++) {
-      prevList[i]!.remove()
-      removedTail.push(prevList[i]!)
-    }
-    releaseRowListeners(instance as InternalInstance<StateRecord>, removedTail)
-  }
-
-  // 3. Grow: clone and attach fresh rows for [prevLen, nextLen).
-  if (nextLen > prevLen) {
-    const frag = document.createDocumentFragment()
-    for (let i = prevLen; i < nextLen; i++) {
-      const node = createRowNode(tmpl, state, instance)
-      const item = items[i]!
-      const itemState = node._itemState!
-      itemState.item = item
-      itemState.index = i
-      itemState.$index = i
-      node.__micraItem = item
-      node.__micraIndex = i
-      applyDirectives(node.__micraScan!, itemState, rawState)
-      if (node.__micraScan!.each.length) renderList(node.__micraScan!.each, itemState, rawState, instance, null)
-      nextList[i] = node
-      frag.append(node)
-    }
-    // Insert after the last reused node, or the marker if the list was empty.
-    const anchor: ChildNode = prevLen > 0 ? nextList[prevLen - 1]! : marker
-    anchor.after(frag)
-  }
-
+  ;(nextList[prevLen - 1] ?? marker).after(frag)
   tmpl.__micraList = nextList
 }
