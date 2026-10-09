@@ -21,7 +21,7 @@
  */
 
 import type { CachedIfBinding, CachedPairBinding, ScanIndex } from "../types";
-import { exprDeps } from "../utils/expr";
+import { exprDeps, splitTop } from "../utils/expr";
 
 function emptyScan(): ScanIndex {
   return {
@@ -39,16 +39,17 @@ function emptyScan(): ScanIndex {
   };
 }
 
-/** @internal Parse `name:expr, name2:expr2` once at scan time. */
+/**
+ * @internal Parse `name:expr, name2:expr2` once at scan time. The first colon
+ * ends the name, unless the name is quoted — then it may contain colons
+ * (Tailwind variants): `'md:hidden': collapsed`.
+ */
 function parsePairs(expr: string): Array<readonly [string, string]> {
   const out: Array<readonly [string, string]> = [];
-  for (const part of expr.split(",")) {
-    const colon = part.indexOf(":");
-    if (colon === -1) continue;
-    const left = part.slice(0, colon).trim();
-    const right = part.slice(colon + 1).trim();
-    if (!left) continue;
-    out.push([left, right]);
+  for (const part of splitTop(expr)) {
+    const m = /^\s*(['"]?)(.*?)\1\s*:([\s\S]*)$/.exec(part);
+    const left = m?.[2]!.trim();
+    if (left) out.push([left, m![3]!.trim()]);
   }
   return out;
 }

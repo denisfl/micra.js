@@ -20,7 +20,7 @@ import type {
   MicraElement,
   StateRecord,
 } from '../types'
-import { evalExpr, warn } from '../utils/expr'
+import { evalExpr, splitTop, warn } from '../utils/expr'
 import { setPath } from '../core/reactive'
 
 /** @internal Attach a DOM listener and track it on the instance for destroy(). */
@@ -126,10 +126,9 @@ export function bindDataOn<S extends StateRecord>(
     mEl.__micraEvents = true
 
     const spec = mEl.dataset['on'] ?? ''
-    // Split on top-level commas only — a comma inside quotes belongs to a
-    // call argument: data-on="click:go('a,b'), focus:mark".
-    const parts = spec.split(/,(?=(?:[^'"]|'[^']*'|"[^"]*")*$)/)
-    for (const part of parts) {
+    // Split on top-level commas only — a comma inside quotes or parens belongs
+    // to a call: data-on="click:go('a,b'), focus:pick(1, 2)".
+    for (const part of splitTop(spec)) {
       // First colon separates event from handler; later colons belong to the
       // handler expression (string args, ternaries).
       const cut = part.indexOf(':')

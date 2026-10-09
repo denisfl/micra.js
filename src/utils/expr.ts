@@ -483,6 +483,33 @@ export function evalExpr(expr: string, state: StateRecord): unknown {
   }
 }
 
+/**
+ * @internal Split a `name:expr, …` list on top-level commas only — a comma
+ * inside (), [], {} or quotes belongs to the expression: `cls(a, b)`,
+ * `go('a,b')`. Shared by data-bind / data-class / data-on.
+ */
+export function splitTop(s: string): string[] {
+  const out: string[] = [];
+  let depth = 0,
+    q = "",
+    start = 0;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i]!;
+    if (q) {
+      if (c === "\\") i++;
+      else if (c === q) q = "";
+    } else if (c === "'" || c === '"') q = c;
+    else if ("([{".includes(c)) depth++;
+    else if (")]}".includes(c)) depth--;
+    else if (c === "," && !depth) {
+      out.push(s.slice(start, i));
+      start = i + 1;
+    }
+  }
+  out.push(s.slice(start));
+  return out;
+}
+
 // ── Dev warnings ──────────────────────────────────────────────────────────────
 
 /** @internal Consistent warning prefix. */
