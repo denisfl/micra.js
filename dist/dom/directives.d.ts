@@ -12,7 +12,6 @@
  * Important: this module does NOT handle data-each — see dom/each.ts.
  */
 import type { ScanIndex, StateRecord } from "../types";
-import { warn } from "../utils/expr";
 /**
  * Apply all non-each directives to a component subtree.
  *
@@ -35,4 +34,3 @@ export declare function applyDirectives(scan: ScanIndex, state: StateRecord, raw
  * @internal
  */
 export declare function validateDirectives(scan: ScanIndex): void;
-export { warn };

@@ -175,10 +175,10 @@ export interface MicraElement extends HTMLElement {
     __micraHtml?: string;
     __micraModel?: true;
     __micraEvents?: true;
-    __micraAtBound?: true;
     __micraScan?: ScanIndex;
     __micraItem?: StateRecord;
     __micraIndex?: number;
+    __micraOpaque?: boolean;
     _itemState?: StateRecord;
 }
 /**
@@ -197,6 +197,7 @@ export interface MicraTemplate extends HTMLTemplateElement {
     __micraNodes: Map<unknown, MicraElement>;
     __micraList: MicraElement[];
     __micraNoKeyWarned?: true;
+    __micraRowWarned?: true;
 }
 /**
  * @internal Per-element directive binding (element + expression string).
@@ -244,7 +245,6 @@ export interface ScanIndex {
     class: CachedPairBinding[];
     each: Element[];
     on: Element[];
-    atEvents: Element[];
     refs: Element[];
 }
 /**

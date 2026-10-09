@@ -4,7 +4,7 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] — 2.8.0
+## [2.8.0] — 2026-10-09
 
 Size release with two fixes and one small syntax addition. The core was
 audited for bytes: the expression evaluator now compiles to closures, and the

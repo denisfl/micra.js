@@ -15,30 +15,16 @@
  */
 import type { CachedBinding, InternalInstance, StateRecord } from '../types';
 /**
- * Bind `data-on="event:method[,event2:method2]"` listeners.
- * Listeners are bound once — re-render calls are no-ops for already-bound elements.
+ * Bind `data-on="event:method[,event2:method2]"` and `@event[.mod]="method"`
+ * listeners. Bound once per element (`__micraEvents`) — re-renders are no-ops.
  *
- * Supports modifiers: `click.prevent`, `click.stop`, `click.self`.
- *
- * @param els - Pre-computed list of [data-on] elements from scan.ts
+ * @param els - Elements with a data-on and/or @-prefixed attribute (scan.ts)
  *
  * @example
  * <button data-on="click:save">Save</button>
- * <form  data-on="submit.prevent:handleSubmit">
- */
-export declare function bindDataOn<S extends StateRecord>(els: Element[], instance: InternalInstance<S>): void;
-/**
- * Bind `@event="method"` shorthand attributes (Stimulus-style).
- * Bound once per element via `__micraAtBound` — re-renders are no-ops.
- *
- * @param els - Pre-computed list of elements with at least one @-prefixed attr
- *              (from scan.ts — replaces the old `querySelectorAll('*')` walk)
- *
- * @example
- * <button @click="increment">+</button>
  * <form @submit.prevent="handleSubmit">
  */
-export declare function bindAtEvents<S extends StateRecord>(els: Element[], instance: InternalInstance<S>): void;
+export declare function bindDataOn<S extends StateRecord>(els: Element[], instance: InternalInstance<S>): void;
 /**
  * Two-way binding: `data-model="key"` wires <input>/<select>/<textarea>
  * to `state[key]`. Binding is attached once per element.
