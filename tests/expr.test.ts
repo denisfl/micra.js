@@ -168,3 +168,21 @@ describe('2.4 Caching', () => {
     FunctionSpy.mockRestore()
   })
 })
+
+describe('bare keywords and whitelisted globals', () => {
+  // A bare word used to hit the simple-path fast path, which only looked it up
+  // in state — so `true`, `null`, `NaN`, `Math.PI` all came back undefined.
+  it('literals and globals resolve on their own, not only inside operators', () => {
+    expect(evalExpr('true', {})).toBe(true)
+    expect(evalExpr('false', {})).toBe(false)
+    expect(evalExpr('null', {})).toBe(null)
+    expect(evalExpr('undefined', {})).toBe(undefined)
+    expect(evalExpr('NaN', {})).toBeNaN()
+    expect(evalExpr('Infinity', {})).toBe(Infinity)
+    expect(evalExpr('Math.PI', {})).toBe(Math.PI)
+  })
+
+  it('a state key still shadows a global of the same name', () => {
+    expect(evalExpr('Infinity', { Infinity: 3 })).toBe(3)
+  })
+})
