@@ -124,9 +124,12 @@ Micra.start()
 
 Modifiers: `.prevent`, `.stop`, `.self`, plus key/system guards `.enter` `.escape` `.tab` `.space` `.up` `.down` `.left` `.right` `.delete` `.ctrl` `.shift` `.alt` `.meta` (combine: `@keydown.ctrl.enter="submit"`).
 
+Pair lists (`data-bind`, `data-class`, `data-on`) split on top-level commas only — a comma inside a call or string belongs to the expression: `data-bind="title:label(first, last)"`, `data-on="click:pick(1, 2)"`. A name ends at the first colon; quote it when it contains colons (Tailwind variants): `data-class="'md:hidden': collapsed"`. One class per key.
+
 ## Expression context (what works inside `data-text="…"`)
 
 - State keys: `count`, `user.name`
+- Literals: numbers, `'strings'`, `true`, `false`, `null`
 - Component methods (bound `this`): `format(price)`, `filtered()`
 - Whitelisted globals: `Math`, `JSON`, `Date`, `String`, `Number`, `Boolean`, `Array`, `Object`, `parseInt`, `parseFloat`, `isNaN`, `isFinite`, `NaN`, `Infinity`, `undefined`
 - Inside `data-each`: `item`, `index`, `$index`

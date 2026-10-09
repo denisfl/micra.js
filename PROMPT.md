@@ -113,6 +113,8 @@ Modifiers (events only): `.prevent`, `.stop`, `.self`, plus key/system guards `.
 - `value:` → sets input value, but does not fight live typing
 - `style:` → accepts string or object (object assigns to `el.style`, does NOT reset previous keys)
 
+Pair lists (`data-bind`, `data-class`, `data-on`) split on top-level commas only, so `data-bind="title:label(first, last)"` is one pair. A name ends at the first colon — quote names that contain colons (Tailwind variants): `data-class="'md:hidden': collapsed"`. One class per key.
+
 Expression context (what you can write in `data-text="..."` etc.):
 
 - State keys (`count`, `user.name`)

@@ -4,6 +4,50 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — 2.8.0
+
+Size release with two fixes and one small syntax addition. The core was
+audited for bytes: the expression evaluator now compiles to closures, and the
+list, directive, event and scan paths share code instead of duplicating it.
+Bundle goes from ~8.0 KB to **~7.0 KB gzip**; the build limit is lowered from
+8 to 7.5 KB. No API changes; differential tests against 2.7.1 (all demos and
+Pro components, clicked through step by step) show identical output.
+
+### Added
+
+- **Quoted names in pair lists.** A name may be quoted to contain colons, so
+  Tailwind variant classes work in `data-class`:
+  `data-class="'md:hidden': collapsed, 'data-[open]:block': open"`. Unquoted
+  names still end at the first colon.
+
+### Fixed
+
+- **Commas inside calls in `data-bind` / `data-class` / `data-on`.** Pair lists
+  were split on every comma, so `data-bind="class:cls(a, b)"` or
+  `data-on="click:pick(1, 2)"` was cut in half. All three now split on
+  top-level commas only — commas inside `()`, `[]`, `{}` or quotes belong to
+  the expression.
+- **Bare keywords and globals evaluated to `undefined`.** A simple-path fast
+  path looked every bare word up in state only, so `data-show="true"`,
+  `false`, `null`, `NaN`, `Infinity` and `Math.PI` all came back `undefined`.
+  They now resolve as documented; a state key still shadows a global of the
+  same name.
+- **Stale keyed rows when a row reads the list itself.** When only the list
+  key changed, rows with an unchanged item and index took the whole-row skip
+  even if a binding read the list (`<p data-text="items.length">` rendered
+  `2,2,3` after an append). Such rows are never skipped now.
+
+### Changed
+
+- **Expression evaluator compiles to closures.** The parser emits
+  `(scope) => value` functions and collects dependencies while parsing; the
+  AST, the tree-walking interpreter and the separate dependency pass are gone,
+  and the tokenizer is a single regex. Same grammar and security guards;
+  evaluation is faster. Whitespace outside the ASCII set (e.g. a non-breaking
+  space) between tokens is now accepted instead of being a syntax error.
+- `data-on` and `@event` share one scan list and one binder; `data-on` still
+  binds before `@event` on the same element.
+
 ## [2.7.1] — 2026-07-12
 
 Bug-fix release — findings from a deep source review, each reproduced
