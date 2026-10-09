@@ -34,7 +34,6 @@ function emptyScan(): ScanIndex {
     class: [],
     each: [],
     on: [],
-    atEvents: [],
     refs: [],
   };
 }
@@ -78,7 +77,7 @@ function classify(el: Element, scan: ScanIndex): void {
   }
 
   const attrs = el.attributes;
-  let atEventSeen = false;
+  let eventSeen = false;
 
   for (let i = 0; i < attrs.length; i++) {
     const a = attrs[i]!;
@@ -88,66 +87,34 @@ function classify(el: Element, scan: ScanIndex): void {
     // the common case (id, class, style, href, …) without a string compare.
     const first = name.charCodeAt(0);
 
-    if (first === 64 /* '@' */) {
-      // @event="method" or @event.modifier="method"
-      if (!atEventSeen) {
-        scan.atEvents.push(el);
-        atEventSeen = true;
+    if (first === 64 /* '@' */ || name === "data-on") {
+      // @event[.mod]="method" / data-on — one entry per element
+      if (!eventSeen) {
+        scan.on.push(el);
+        eventSeen = true;
       }
       continue;
     }
 
     // data-X attributes
-    if (
-      first === 100 /* d */ &&
-      name.length >= 6 &&
-      name.startsWith("data-")
-    ) {
+    if (name.startsWith("data-")) {
       // 'data-' prefix
       const rest = name.slice(5);
+      const expr = a.value;
       switch (rest) {
         case "text":
-          scan.text.push({ el, expr: a.value, deps: exprDeps(a.value) });
-          break;
         case "html":
-          scan.html.push({ el, expr: a.value, deps: exprDeps(a.value) });
-          break;
         case "if":
-          scan.if.push({
-            el,
-            expr: a.value,
-            deps: exprDeps(a.value),
-          } as CachedIfBinding);
-          break;
         case "show":
-          scan.show.push({ el, expr: a.value, deps: exprDeps(a.value) });
-          break;
-        case "bind": {
-          const pairs = parsePairs(a.value);
-          scan.bind.push({
-            el,
-            expr: a.value,
-            pairs,
-            deps: pairDeps(pairs),
-          } as CachedPairBinding);
-          break;
-        }
         case "model":
-          scan.model.push({ el, expr: a.value, deps: exprDeps(a.value) });
+          scan[rest].push({ el, expr, deps: exprDeps(expr) } as CachedIfBinding);
           break;
+        case "bind":
         case "class": {
-          const pairs = parsePairs(a.value);
-          scan.class.push({
-            el,
-            expr: a.value,
-            pairs,
-            deps: pairDeps(pairs),
-          } as CachedPairBinding);
+          const pairs = parsePairs(expr);
+          scan[rest].push({ el, expr, pairs, deps: pairDeps(pairs) });
           break;
         }
-        case "on":
-          scan.on.push(el);
-          break;
         case "ref":
           scan.refs.push(el);
           break;
@@ -158,13 +125,8 @@ function classify(el: Element, scan: ScanIndex): void {
 }
 
 /** @internal Shared filter: stop descending into nested components. */
-const NESTED_COMPONENT_FILTER: NodeFilter = {
-  acceptNode(node: Node): number {
-    if ((node as Element).hasAttribute("data-component"))
-      return NodeFilter.FILTER_REJECT;
-    return NodeFilter.FILTER_ACCEPT;
-  },
-};
+const NESTED_COMPONENT_FILTER = (node: Node): number =>
+  (node as Element).hasAttribute("data-component") ? 2 /* REJECT */ : 1 /* ACCEPT */;
 
 /**
  * Scan an Element subtree owned by one component. Skips nested
@@ -183,15 +145,11 @@ export function scanComponent(root: Element): ScanIndex {
 
   const walker = document.createTreeWalker(
     root,
-    NodeFilter.SHOW_ELEMENT,
+    1 /* NodeFilter.SHOW_ELEMENT */,
     NESTED_COMPONENT_FILTER,
   );
 
-  let node: Element | null = walker.nextNode() as Element | null;
-  while (node) {
-    classify(node, scan);
-    node = walker.nextNode() as Element | null;
-  }
+  for (let node; (node = walker.nextNode()); ) classify(node as Element, scan);
 
   return scan;
 }

@@ -29,7 +29,7 @@ import { on as busOn, emit as busEmit } from "../core/bus";
 import { createReactiveState, createScheduler, setPath } from "../core/reactive";
 import { applyDirectives, validateDirectives } from "../dom/directives";
 import { renderList } from "../dom/each";
-import { bindDataOn, bindAtEvents, bindModels } from "../dom/events";
+import { bindDataOn, bindModels } from "../dom/events";
 import { collectRefs } from "../dom/refs";
 import { scanComponent } from "../dom/scan";
 import { _instances } from "../core/registry";
@@ -70,7 +70,7 @@ export function mount<S extends StateRecord, M>(
   if (_instances.has(root))
     return _instances.get(root) as unknown as ComponentInstance<S, M>;
 
-  const rawState: StateRecord = { ...(definition.state ?? {}) };
+  const rawState: StateRecord = { ...definition.state };
   const instance = { $el: root, refs: {} } as InternalInstance<S>;
 
   // Copy user-defined methods from definition to instance
@@ -110,8 +110,7 @@ export function mount<S extends StateRecord, M>(
     handler: (payload: EventPayload<K>) => void,
   ): UnsubFn => {
     const unsub = busOn(event, handler as EventHandler);
-    if (!instance.__micraSubs) instance.__micraSubs = [];
-    instance.__micraSubs.push(unsub);
+    (instance.__micraSubs ?? (instance.__micraSubs = [])).push(unsub);
     return unsub;
   };
 
@@ -126,18 +125,16 @@ export function mount<S extends StateRecord, M>(
   // same write → schedule … starves the microtask queue and freezes the tab.
   // The write itself lands (and marks the key dirty for the next real render);
   // only the re-schedule is dropped.
-  let warnedRenderWrite = false;
+  const warned = new Set<string>();
+  const warnOnce = (msg: string) => {
+    if (!warned.has(msg)) warned.add(msg), warn(msg);
+  };
   const scheduleSafe = () => {
-    if (isRendering) {
-      if (!warnedRenderWrite) {
-        warn(
-          "state write during render is kept but not re-rendered — move writes out of directive expressions",
-        );
-        warnedRenderWrite = true;
-      }
-      return;
-    }
-    schedule();
+    if (isRendering)
+      warnOnce(
+        "state write during render is kept but not re-rendered — move writes out of directive expressions",
+      );
+    else schedule();
   };
   instance.state = createReactiveState(rawState, scheduleSafe, (key) => {
     _dirty.add(key);
@@ -154,51 +151,37 @@ export function mount<S extends StateRecord, M>(
   // accessing them via a directive expression returns undefined instead of
   // leaking the prototype.
   const boundMethods = new Map<string, Function>();
+  const hasOwn = (o: object, key: string) =>
+    Object.prototype.hasOwnProperty.call(o, key);
+  const isMethod = (key: string) =>
+    hasOwn(instance, key) && typeof instance[key] === "function";
   const exprState = new Proxy(rawState, {
     get(target, key: string) {
-      if (Object.prototype.hasOwnProperty.call(target, key)) return target[key];
-      if (
-        Object.prototype.hasOwnProperty.call(instance, key) &&
-        typeof instance[key] === "function"
-      ) {
-        const cached = boundMethods.get(key);
-        if (cached) return cached;
-        const bound = (instance[key] as Function).bind(instance);
-        boundMethods.set(key, bound);
+      if (hasOwn(target, key)) return target[key];
+      if (isMethod(key)) {
+        let bound = boundMethods.get(key);
+        if (!bound)
+          boundMethods.set(key, (bound = (instance[key] as Function).bind(instance)));
         return bound;
       }
-      return undefined;
     },
-    has(target, key: string) {
-      if (typeof key !== "string") return false;
-      if (Object.prototype.hasOwnProperty.call(target, key)) return true;
-      return (
-        Object.prototype.hasOwnProperty.call(instance, key) &&
-        typeof instance[key] === "function"
-      );
-    },
+    has: (target, key: string) => hasOwn(target, key) || isMethod(key),
   });
   // Exposed for events.ts so `@click="select(item.id)"` can evaluate the call
   // against component state + methods. Row elements eval against their own
   // `_itemState` (which prototype-chains to this); non-row elements use this.
   instance.__micraExpr = exprState;
 
-  let warnedReentry = false;
   instance.render = function () {
     if (instance.__micraDestroyed) return;
     // Snapshot + reset the dirty set. null = full render (initial mount, or a
     // direct render() call with no pending writes).
     const dirty = _dirty.size ? new Set(_dirty) : null;
     _dirty.clear();
-    if (isRendering) {
-      if (!warnedReentry) {
-        warn(
-          "render() re-entry detected — mutation inside a directive expression is ignored. Move state writes to a method.",
-        );
-        warnedReentry = true;
-      }
-      return;
-    }
+    if (isRendering)
+      return warnOnce(
+        "render() re-entry detected — mutation inside a directive expression is ignored. Move state writes to a method.",
+      );
     isRendering = true;
     try {
       // Single-pass scan, cached on the root for re-renders. Replaces what
@@ -209,7 +192,6 @@ export function mount<S extends StateRecord, M>(
       applyDirectives(scan, exprState, rawState, dirty);
       renderList(scan.each, exprState, rawState, instance, dirty);
       bindDataOn(scan.on, instance);
-      bindAtEvents(scan.atEvents, instance);
       bindModels(scan.model, instance);
       collectRefs(scan.refs, instance);
     } finally {
@@ -222,19 +204,17 @@ export function mount<S extends StateRecord, M>(
     if (instance.__micraDestroyed) return;
     instance.__micraDestroyed = true;
 
-    // Remove every DOM listener attached by bindDataOn / bindAtEvents / bindModels.
+    // Remove every DOM listener attached by bindDataOn (data-on + @event) / bindModels.
     instance.__micraListeners?.forEach(({ el, type, fn }) =>
       el.removeEventListener(type, fn),
     );
-    instance.__micraListeners = [];
 
     // Return the DOM to its pre-mount shape so a future re-mount of the same
     // DOM works: put back data-if-detached elements and remove rendered
     // each-rows + markers (a remount re-renders them from the template).
     const scan = (root as MicraElement).__micraScan;
     for (const b of scan?.if ?? []) {
-      const ph = b.placeholder;
-      if (ph?.parentNode) ph.parentNode.replaceChild(b.el, ph);
+      b.placeholder?.replaceWith(b.el);
       delete (b.el as MicraElement).__micraIfDetached;
     }
     for (const t of (scan?.each ?? []) as MicraTemplate[]) {
@@ -249,7 +229,6 @@ export function mount<S extends StateRecord, M>(
     const clearFlags = (el: Element) => {
       const m = el as MicraElement;
       delete m.__micraEvents;
-      delete m.__micraAtBound;
       delete m.__micraModel;
       delete m.__micraScan;
     };
@@ -257,7 +236,6 @@ export function mount<S extends StateRecord, M>(
     root.querySelectorAll("*").forEach(clearFlags);
 
     instance.__micraSubs?.forEach((unsub) => unsub());
-    instance.__micraSubs = [];
 
     if (typeof (definition as Record<string, unknown>).onDestroy === "function")
       (definition.onDestroy as () => void).call(instance);
@@ -269,8 +247,7 @@ export function mount<S extends StateRecord, M>(
   instance.render();
 
   // Validate directive usage and emit dev warnings — reuses the same scan.
-  const mRoot = root as MicraElement;
-  if (mRoot.__micraScan) validateDirectives(mRoot.__micraScan);
+  validateDirectives((root as MicraElement).__micraScan!);
 
   if (typeof (definition as Record<string, unknown>).onCreate === "function")
     Promise.resolve().then(() =>

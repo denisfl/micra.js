@@ -25,7 +25,7 @@ import type {
 } from '../types'
 import { evalExpr, warn } from '../utils/expr'
 import { applyDirectives } from './directives'
-import { bindDataOn, bindAtEvents, bindModels } from './events'
+import { bindDataOn, bindModels } from './events'
 import { scanComponent } from './scan'
 
 /**
@@ -203,7 +203,6 @@ function createRowNode<S extends StateRecord>(
     }
   }
   bindDataOn(rowScan.on, instance)
-  bindAtEvents(rowScan.atEvents, instance)
   bindModels(rowScan.model, instance)
   return node
 }

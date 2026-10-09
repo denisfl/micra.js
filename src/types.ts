@@ -213,7 +213,6 @@ export interface MicraElement extends HTMLElement {
   __micraHtml?: string;
   __micraModel?: true; // data-model listener bound
   __micraEvents?: true; // data-on listeners bound
-  __micraAtBound?: true; // @event shorthand bound (per-element)
   __micraScan?: ScanIndex; // single-pass scan result (cached after 1st render)
   __micraItem?: StateRecord; // keyed row: last-rendered item ref (for skip check)
   __micraIndex?: number; // keyed row: last-rendered index (for skip check)
@@ -292,8 +291,7 @@ export interface ScanIndex {
   // Lists — <template data-each>
   each: Element[];
   // Events — bound once per element
-  on: Element[]; // [data-on]
-  atEvents: Element[]; // any element with at least one @-prefixed attribute
+  on: Element[]; // [data-on] and/or any @-prefixed attribute
   // Refs — collected into instance.refs every render
   refs: Element[]; // [data-ref]
 }

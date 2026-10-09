@@ -16,10 +16,6 @@ import type { FetchOptions } from '../types'
 
 // ── CSRF ──────────────────────────────────────────────────────────────────────
 
-/** Read CSRF token from <meta name="csrf-token"> (Rails, Laravel, Django…). */
-function getCSRF(): string | null {
-  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? null
-}
 
 /**
  * True for relative / same-origin URLs. The CSRF token is attached only when
@@ -76,31 +72,34 @@ export async function micraFetch(url: string, options: FetchOptions = {}): Promi
     ...(options.headers as Record<string, string> | undefined),
   }
 
-  const csrf = getCSRF()
+  // CSRF token from <meta name="csrf-token"> (Rails, Laravel, Django…)
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
   if (csrf && sameOrigin(url)) headers['X-CSRF-Token'] = csrf
 
   let finalUrl = url
   let body: string | undefined
 
   if (method === 'GET' || method === 'HEAD') {
-    const params: Record<string, string> = {}
+    const params = new URLSearchParams()
     for (const [k, v] of Object.entries(options)) {
       if (k !== 'method' && k !== 'headers' && k !== 'signal' && v != null)
-        params[k] = String(v)
+        params.set(k, String(v))
     }
-    if (Object.keys(params).length)
-      finalUrl += (url.includes('?') ? '&' : '?') + new URLSearchParams(params)
+    const qs = String(params)
+    if (qs) finalUrl += (url.includes('?') ? '&' : '?') + qs
   } else if (options.body !== undefined) {
     headers['Content-Type'] = 'application/json'
     body = JSON.stringify(options.body)
   }
 
+  // undefined signal/body are ignored by fetch() (WebIDL optional members);
+  // the cast only satisfies exactOptionalPropertyTypes.
   const res = await fetch(finalUrl, {
     method,
     headers,
-    ...(options.signal !== undefined ? { signal: options.signal as AbortSignal } : {}),
-    ...(body !== undefined ? { body } : {}),
-  })
+    signal: options.signal,
+    body,
+  } as RequestInit)
 
   if (!res.ok)
     throw new FetchError(`[Micra] fetch: ${method} ${url} → ${res.status}`, res.status, res)

@@ -31,7 +31,7 @@ function track<S extends StateRecord>(
   fn: EventListener,
 ): void {
   el.addEventListener(type, fn)
-  ;(instance.__micraListeners ??= []).push({ el, type, fn })
+  ;(instance.__micraListeners ?? (instance.__micraListeners = [])).push({ el, type, fn })
 }
 
 // ── Event modifiers ─────────────────────────────────────────────────────────
@@ -92,8 +92,7 @@ function runHandler<S extends StateRecord>(
       base = (n as MicraElement)._itemState
     }
     const scope = Object.create(base ?? instance.__micraExpr ?? null) as StateRecord
-    scope['$event'] = e
-    scope['event'] = e
+    scope['$event'] = scope['event'] = e
     evalExpr(value, scope) // performs the call; return value ignored
     return
   }
@@ -102,19 +101,30 @@ function runHandler<S extends StateRecord>(
   else warn(`method "${value}" not found`)
 }
 
-// ── data-on ───────────────────────────────────────────────────────────────────
+// ── data-on + @event ──────────────────────────────────────────────────────────
+
+/** @internal Bind one `event[.mod…]` spec to a handler string. */
+function listen<S extends StateRecord>(
+  instance: InternalInstance<S>,
+  el: Element,
+  spec: string,
+  handler: string,
+): void {
+  const [type, ...mods] = spec.split('.')
+  track(instance, el, type!, (e: Event) => {
+    if (applyModifiers(e, el, mods)) runHandler(instance, el, handler, e)
+  })
+}
 
 /**
- * Bind `data-on="event:method[,event2:method2]"` listeners.
- * Listeners are bound once — re-render calls are no-ops for already-bound elements.
+ * Bind `data-on="event:method[,event2:method2]"` and `@event[.mod]="method"`
+ * listeners. Bound once per element (`__micraEvents`) — re-renders are no-ops.
  *
- * Supports modifiers: `click.prevent`, `click.stop`, `click.self`.
- *
- * @param els - Pre-computed list of [data-on] elements from scan.ts
+ * @param els - Elements with a data-on and/or @-prefixed attribute (scan.ts)
  *
  * @example
  * <button data-on="click:save">Save</button>
- * <form  data-on="submit.prevent:handleSubmit">
+ * <form @submit.prevent="handleSubmit">
  */
 export function bindDataOn<S extends StateRecord>(
   els: Element[],
@@ -125,10 +135,9 @@ export function bindDataOn<S extends StateRecord>(
     if (mEl.__micraEvents) continue
     mEl.__micraEvents = true
 
-    const spec = mEl.dataset['on'] ?? ''
     // Split on top-level commas only — a comma inside quotes or parens belongs
     // to a call: data-on="click:go('a,b'), focus:pick(1, 2)".
-    for (const part of splitTop(spec)) {
+    for (const part of splitTop(mEl.dataset['on'] ?? '')) {
       // First colon separates event from handler; later colons belong to the
       // handler expression (string args, ternaries).
       const cut = part.indexOf(':')
@@ -136,50 +145,10 @@ export function bindDataOn<S extends StateRecord>(
       const evSpec = part.slice(0, cut).trim()
       const method = part.slice(cut + 1)
       if (!evSpec || !method.trim()) continue
-
-      const [evName, ...mods] = evSpec.split('.')
-      const handler = method.trim()
-
-      track(instance, el, evName!, (e: Event) => {
-        if (applyModifiers(e, el, mods)) runHandler(instance, el, handler, e)
-      })
+      listen(instance, el, evSpec, method.trim())
     }
-  }
-}
-
-// ── @event shorthand ──────────────────────────────────────────────────────────
-
-/**
- * Bind `@event="method"` shorthand attributes (Stimulus-style).
- * Bound once per element via `__micraAtBound` — re-renders are no-ops.
- *
- * @param els - Pre-computed list of elements with at least one @-prefixed attr
- *              (from scan.ts — replaces the old `querySelectorAll('*')` walk)
- *
- * @example
- * <button @click="increment">+</button>
- * <form @submit.prevent="handleSubmit">
- */
-export function bindAtEvents<S extends StateRecord>(
-  els: Element[],
-  instance: InternalInstance<S>,
-): void {
-  for (const el of els) {
-    const mEl = el as MicraElement
-    if (mEl.__micraAtBound) continue
-
-    let bound = false
-    for (const attr of Array.from(el.attributes)) {
-      if (!attr.name.startsWith('@')) continue
-      const [evSpec, ...rest] = attr.name.slice(1).split('.')
-      const handler = attr.value.trim()
-
-      track(instance, el, evSpec!, (e: Event) => {
-        if (applyModifiers(e, el, rest)) runHandler(instance, el, handler, e)
-      })
-      bound = true
-    }
-    if (bound) mEl.__micraAtBound = true
+    for (const attr of el.attributes as unknown as Attr[])
+      if (attr.name[0] === '@') listen(instance, el, attr.name.slice(1), attr.value.trim())
   }
 }
 

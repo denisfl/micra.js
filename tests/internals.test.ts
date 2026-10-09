@@ -3,7 +3,7 @@
  * Tests for __micraEvents, __micraModel, __micraNodes deduplication.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { bindDataOn as _bindDataOn, bindModels as _bindModels, bindAtEvents as _bindAtEventsRaw } from '../src/dom/events'
+import { bindDataOn as _bindDataOn, bindModels as _bindModels } from '../src/dom/events'
 import { renderList as _renderList } from '../src/dom/each'
 import { scanComponent } from '../src/dom/scan'
 import type { InternalInstance, MicraElement, StateRecord } from '../src/types'
@@ -20,7 +20,7 @@ function bindModels(root: Element, inst: InternalInstance): void {
   _bindModels(scanComponent(root).model, inst)
 }
 function bindAtEvents(root: Element, inst: InternalInstance): void {
-  _bindAtEventsRaw(scanComponent(root).atEvents, inst)
+  _bindDataOn(scanComponent(root).on, inst)
 }
 function renderList(root: Element, state: StateRecord, rawState: StateRecord, inst: InternalInstance): void {
   _renderList(scanComponent(root).each, state, rawState, inst, null)
