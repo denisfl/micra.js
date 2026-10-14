@@ -99,6 +99,7 @@ this.$el        // root HTMLElement
 this.state      // reactive state proxy
 this.refs       // { [name]: HTMLElement } from data-ref
 this.render()   // force re-render
+this.tick()     // promise: resolves after the pending render
 this.destroy()  // unmount
 this.prop(name, default?)   // read data-* attributes (SSR props)
 this.fetch(url, options?)   // fetch helper
@@ -134,7 +135,7 @@ When generating Micra.js code, DO NOT:
 5. Write `state.user.name = x` directly — the shallow proxy won't see it. Replace top-level (`state.user = {...state.user, name: x}`) or use `this.set('user.name', x)`.
 6. Import React, Vue, Alpine, htmx, or any other framework alongside Micra.
 
-Supported (use freely): key modifiers `@keydown.enter` / `.escape` / `.ctrl` etc.; call expressions in `@event` (`@click="select(item.id)"`); dot-paths in `data-model="filters.search"` and `this.set('filters.search', x)`.
+Supported (use freely): key modifiers `@keydown.enter` / `.escape` / `.ctrl` etc.; `@keydown.escape.window` and `@click.outside` for listeners outside the element; `await this.tick()` to wait for the DOM after a write; call expressions in `@event` (`@click="select(item.id)"`); dot-paths in `data-model="filters.search"` and `this.set('filters.search', x)`.
 
 Full anti-pattern list with side-by-side examples: [LLM guide](https://micrajs.dev/docs/llm-guide)
 

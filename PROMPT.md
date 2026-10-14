@@ -32,7 +32,7 @@ Micra.js is a lightweight reactive UI framework (~7 KB gzip). It is NOT React, N
 3. **Event handlers must use `@event` or `data-on`.** Never `addEventListener` inside a render-like helper — those listeners leak past `destroy()`.
 4. **After mutating state, do NOT call a re-render manually.** Micra batches a microtask render on every state write. Side effects (`localStorage`, `fetch`, `analytics`) are OK. `this.renderList()`/`this.refresh()`/`this.update()` are NOT.
 5. **State is shallow.** `this.state.user.name = 'x'` is invisible to Micra. Either replace the top-level key (`this.state.user = { ...this.state.user, name: 'x' }`) or use the path setter `this.set('user.name', 'x')`.
-6. **Key modifiers are supported.** `@keydown.enter`, `@keydown.escape`, `@keydown.ctrl`, `@click.ctrl` etc. gate the handler on the key/modifier. (Combine: `@keydown.ctrl.enter`.)
+6. **Key modifiers are supported.** `@keydown.enter`, `@keydown.escape`, `@keydown.ctrl`, `@click.ctrl` etc. gate the handler on the key/modifier. (Combine: `@keydown.ctrl.enter`.) For listeners outside the element use `@keydown.escape.window` and `@click.outside` — no `document.addEventListener`.
 7. **`data-model` supports dot-paths.** `data-model="filters.search"` reads and writes `state.filters.search` (reconstructs the nested object). Flat keys work as before.
 8. **One single HTML file with CDN preferred** unless told otherwise:
    ```html
@@ -81,6 +81,7 @@ Micra.start();
 - `this.$el` — root HTMLElement
 - `this.refs` — `{ name: HTMLElement }` from `data-ref="name"`
 - `this.render()` — force sync re-render (rarely needed)
+- `this.tick()` — promise resolved after the pending render (`await this.tick()` then focus/scroll)
 - `this.destroy()` — unmount
 - `this.prop(attr, default)` — read SSR `data-*` attribute, auto-typed (`"true"` → `true`, `"42"` → `42`)
 - `this.fetch(url, opts)` — JSON + CSRF helper, throws `FetchError` on non-2xx
@@ -105,7 +106,7 @@ Micra.start();
 | `@event`     | `@click="save"`, `@submit.prevent="submit"`    | event binding                                                                  |
 | `data-on`    | `data-on="click:save, blur:close"`             | same as `@event`                                                               |
 
-Modifiers (events only): `.prevent`, `.stop`, `.self`, plus key/system guards `.enter` `.escape` `.tab` `.space` `.up` `.down` `.left` `.right` `.delete` `.ctrl` `.shift` `.alt` `.meta` (an unrecognized one matches `e.key` case-insensitively). Combine freely: `@keydown.ctrl.enter="submit"`.
+Modifiers (events only): `.prevent`, `.stop`, `.self`, plus key/system guards `.enter` `.escape` `.tab` `.space` `.up` `.down` `.left` `.right` `.delete` `.ctrl` `.shift` `.alt` `.meta` (an unrecognized one matches `e.key` case-insensitively). Combine freely: `@keydown.ctrl.enter="submit"`. Where to listen: `.window` (listen on `window`: `@keydown.escape.window="close"`), `.outside` (runs when the event happens outside the element: `@click.outside="close"`; put it on the element that contains both the trigger and the panel, usually the component root). Both are removed on `destroy()` — never hand-roll `document.addEventListener` for these.
 
 `data-bind` special left-hand-sides:
 

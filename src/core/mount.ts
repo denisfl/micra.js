@@ -104,6 +104,9 @@ export function mount<S extends StateRecord, M>(
   // ── fetch(), emit(), on() ─────────────────────────────────────────────────
   instance.fetch = micraFetch;
   instance.emit = busEmit;
+  // Resolves after the pending render: the render is a microtask queued on the
+  // first state write, so a microtask queued now runs after it.
+  instance.tick = () => new Promise<void>((r) => queueMicrotask(r));
 
   instance.on = <K extends string>(
     event: K,
@@ -205,8 +208,8 @@ export function mount<S extends StateRecord, M>(
     instance.__micraDestroyed = true;
 
     // Remove every DOM listener attached by bindDataOn (data-on + @event) / bindModels.
-    instance.__micraListeners?.forEach(({ el, type, fn }) =>
-      el.removeEventListener(type, fn),
+    instance.__micraListeners?.forEach(({ el, type, fn, c }) =>
+      el.removeEventListener(type, fn, c),
     );
 
     // Return the DOM to its pre-mount shape so a future re-mount of the same

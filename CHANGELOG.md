@@ -4,6 +4,24 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Two gaps where the core told you not to use `addEventListener` but gave no
+alternative. Measured cost: +120 bytes gzip.
+
+### Added
+
+- **`.window` and `.outside` event modifiers.** `@keydown.escape.window="close"`
+  listens on `window`; `@click.outside="close"` runs when the click lands
+  outside the element. Both are tracked like other listeners and removed on
+  `destroy()` and when their `data-each` row goes away. `.outside` listens in
+  the capture phase, so the click that opens a panel can't also count as an
+  outside click once the panel renders, and it stays silent while its element
+  is detached by `data-if`.
+- **`this.tick()`** — a promise that resolves after the pending render:
+  `this.state.open = true; await this.tick(); this.refs.input.focus()`.
+  Replaces the double `requestAnimationFrame` used to wait for the DOM.
+
 ## [2.8.0] — 2026-10-09
 
 Size release with two fixes and one small syntax addition. The core was

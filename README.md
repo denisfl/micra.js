@@ -257,7 +257,7 @@ Micra has a small surface area, but LLMs default to jQuery / vanilla-JS or React
 
 1. **Lists** go through `<template data-each="items" data-key="id">`. Never `getElementById` / `innerHTML` for component output.
 2. **Derived values** (counts, totals, filtered subsets) are **methods**, not state fields. State holds raw data only.
-3. **Event handlers** use `@event` / `data-on`. Never `addEventListener` inside methods — it leaks past `destroy()`. Document-level listeners go in `onCreate` and are removed in `onDestroy`.
+3. **Event handlers** use `@event` / `data-on`. Never `addEventListener` inside methods — it leaks past `destroy()`. For window/document listeners use `@keydown.escape.window` / `@click.outside` — Micra removes them on destroy.
 4. **No manual re-render.** Micra batches a microtask render on every state write — no `this.refresh()` / `this.update()` / `this.renderList()`.
 5. **State proxy is shallow.** Replace top-level (`state.user = { ...state.user, name: x }`), or use the path sugar: `this.set('user.name', x)` and `data-model="user.name"` — both reconstruct + reassign the top-level key for you. Never `state.user.name = x`.
 6. **Use event modifiers.** `@keydown.enter`, `@keydown.escape`, `@keydown.tab`, `@click.ctrl`, plus `.prevent` / `.stop` / `.self` — don't branch on `e.key` by hand.

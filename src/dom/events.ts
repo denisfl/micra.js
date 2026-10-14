@@ -23,20 +23,26 @@ import type {
 import { evalExpr, splitTop, warn } from '../utils/expr'
 import { setPath } from '../core/reactive'
 
-/** @internal Attach a DOM listener and track it on the instance for destroy(). */
+/**
+ * @internal Attach a DOM listener and track it on the instance for destroy().
+ * `target` defaults to the element; `.window` / `.outside` pass window/document.
+ */
 function track<S extends StateRecord>(
   instance: InternalInstance<S>,
   el: Element,
   type: string,
   fn: EventListener,
+  target: EventTarget = el,
+  c?: boolean,
 ): void {
-  el.addEventListener(type, fn)
-  ;(instance.__micraListeners ?? (instance.__micraListeners = [])).push({ el, type, fn })
+  target.addEventListener(type, fn, c)
+  ;(instance.__micraListeners ?? (instance.__micraListeners = [])).push({ el: target, type, fn, o: el, c })
 }
 
 // ── Event modifiers ─────────────────────────────────────────────────────────
 // `.prevent` / `.stop` / `.self` are actions/guards. Everything else is a key
 // or system-key guard: the handler runs only if the event matches.
+// `.window` / `.outside` choose where to listen; listen() strips them first.
 const SYS_MOD: Record<string, 'ctrlKey' | 'shiftKey' | 'altKey' | 'metaKey'> = {
   ctrl: 'ctrlKey', shift: 'shiftKey', alt: 'altKey', meta: 'metaKey', cmd: 'metaKey',
 }
@@ -103,17 +109,31 @@ function runHandler<S extends StateRecord>(
 
 // ── data-on + @event ──────────────────────────────────────────────────────────
 
-/** @internal Bind one `event[.mod…]` spec to a handler string. */
+/**
+ * @internal Bind one `event[.mod…]` spec to a handler string.
+ *
+ *   @keydown.escape.window → listens on window
+ *   @click.outside         → listens on document; runs only when the event
+ *                            target is outside the element
+ *
+ * `.outside` listens in the capture phase, so it sees the click before any
+ * handler inside the page runs: the click that opens a panel can't also count
+ * as an outside click once the panel has rendered. Elements detached by
+ * `data-if` are skipped.
+ */
 function listen<S extends StateRecord>(
   instance: InternalInstance<S>,
   el: Element,
   spec: string,
   handler: string,
 ): void {
-  const [type, ...mods] = spec.split('.')
+  const [type, ...all] = spec.split('.')
+  const out = all.includes('outside')
+  const mods = all.filter((m) => m !== 'outside' && m !== 'window')
   track(instance, el, type!, (e: Event) => {
+    if (out && (!el.isConnected || el.contains(e.target as Node))) return
     if (applyModifiers(e, el, mods)) runHandler(instance, el, handler, e)
-  })
+  }, out ? document : all.includes('window') ? window : el, out)
 }
 
 /**

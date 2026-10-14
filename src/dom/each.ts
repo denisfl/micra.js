@@ -36,9 +36,13 @@ import { scanComponent } from './scan'
 function releaseRowListeners(instance: InternalInstance<StateRecord>, removed: readonly Element[]): void {
   const t = instance.__micraListeners
   if (!t?.length || !removed.length) return
-  instance.__micraListeners = t.filter(
-    (r) => !removed.some((n) => n === r.el || n.contains(r.el)),
-  )
+  // Listeners on the row's own nodes die with them; window/document ones
+  // (`.window`, `.outside`) must be removed explicitly.
+  instance.__micraListeners = t.filter((r) => {
+    const gone = removed.some((n) => n === r.o || n.contains(r.o))
+    if (gone) r.el.removeEventListener(r.type, r.fn, r.c)
+    return !gone
+  })
 }
 
 /**

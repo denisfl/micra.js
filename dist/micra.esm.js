@@ -464,9 +464,9 @@ function validateDirectives(scan) {
 }
 
 // src/dom/events.ts
-function track(instance, el, type, fn) {
-  el.addEventListener(type, fn);
-  (instance.__micraListeners ?? (instance.__micraListeners = [])).push({ el, type, fn });
+function track(instance, el, type, fn, target = el, c) {
+  target.addEventListener(type, fn, c);
+  (instance.__micraListeners ?? (instance.__micraListeners = [])).push({ el: target, type, fn, o: el, c });
 }
 var SYS_MOD = {
   ctrl: "ctrlKey",
@@ -519,10 +519,13 @@ function runHandler(instance, el, value, e) {
   else warn(`method "${value}" not found`);
 }
 function listen(instance, el, spec, handler) {
-  const [type, ...mods] = spec.split(".");
+  const [type, ...all] = spec.split(".");
+  const out = all.includes("outside");
+  const mods = all.filter((m) => m !== "outside" && m !== "window");
   track(instance, el, type, (e) => {
+    if (out && (!el.isConnected || el.contains(e.target))) return;
     if (applyModifiers(e, el, mods)) runHandler(instance, el, handler, e);
-  });
+  }, out ? document : all.includes("window") ? window : el, out);
 }
 function bindDataOn(els, instance) {
   for (const el of els) {
@@ -658,9 +661,11 @@ function scanComponent(root) {
 function releaseRowListeners(instance, removed) {
   const t = instance.__micraListeners;
   if (!t?.length || !removed.length) return;
-  instance.__micraListeners = t.filter(
-    (r) => !removed.some((n) => n === r.el || n.contains(r.el))
-  );
+  instance.__micraListeners = t.filter((r) => {
+    const gone = removed.some((n) => n === r.o || n.contains(r.o));
+    if (gone) r.el.removeEventListener(r.type, r.fn, r.c);
+    return !gone;
+  });
 }
 function renderList(templates, state, rawState, instance, dirty) {
   for (const tmplEl of templates) {
@@ -861,6 +866,7 @@ function mount(selector, definition) {
   instance.set = (path, value) => setPath(instance.state, path, value);
   instance.fetch = micraFetch;
   instance.emit = emit;
+  instance.tick = () => new Promise((r) => queueMicrotask(r));
   instance.on = (event, handler) => {
     const unsub = on(event, handler);
     (instance.__micraSubs ?? (instance.__micraSubs = [])).push(unsub);
@@ -924,7 +930,7 @@ function mount(selector, definition) {
     if (instance.__micraDestroyed) return;
     instance.__micraDestroyed = true;
     instance.__micraListeners?.forEach(
-      ({ el, type, fn }) => el.removeEventListener(type, fn)
+      ({ el, type, fn, c }) => el.removeEventListener(type, fn, c)
     );
     const scan = root.__micraScan;
     for (const b of scan?.if ?? []) {

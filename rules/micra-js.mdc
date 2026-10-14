@@ -47,10 +47,13 @@ Micra.start();
 - Bind handlers with `@event` or `data-on` (e.g. `@click="save"`). Micra removes
   them on `destroy()`.
 - Never call `addEventListener` inside a method — it leaks past `destroy()`.
-  The only exception is document-level listeners: add in `onCreate`, remove in
-  `onDestroy`.
-- No key modifiers — `@keydown.enter` does nothing. Branch on
-  `e.key === "Enter"` inside the handler.
+  For window/document listeners use modifiers: `@keydown.escape.window="close"`,
+  `@click.outside="close"` (on the element that contains trigger and panel).
+  Micra removes them on `destroy()`.
+- Key modifiers are supported: `@keydown.enter`, `.escape`, `.ctrl`, combined
+  `@keydown.ctrl.enter`. Don't branch on `e.key` by hand.
+- To act on the DOM right after a state write: `await this.tick()`, then
+  focus/scroll. No `requestAnimationFrame` or `setTimeout` for this.
 
 ### State writes
 - The state proxy is **shallow**: it tracks top-level writes only. Never write a

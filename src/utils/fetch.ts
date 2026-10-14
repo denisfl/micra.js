@@ -72,7 +72,8 @@ export async function micraFetch(url: string, options: FetchOptions = {}): Promi
     ...(options.headers as Record<string, string> | undefined),
   }
 
-  // CSRF token from <meta name="csrf-token"> (Rails, Laravel, Django…)
+  // CSRF token from <meta name="csrf-token"> (Rails, Laravel; Django needs
+  // CSRF_HEADER_NAME = "HTTP_X_CSRF_TOKEN", see the Django recipe)
   const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
   if (csrf && sameOrigin(url)) headers['X-CSRF-Token'] = csrf
 

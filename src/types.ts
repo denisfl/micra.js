@@ -108,6 +108,12 @@ export interface ComponentBuiltins<S extends StateRecord = StateRecord> {
   /** Force a synchronous re-render. Normally not needed — state mutations batch automatically. */
   render(): void;
   /**
+   * Wait for the pending render. `await this.tick()` after a state write, then
+   * the DOM reflects it — focus an input that `data-if` just inserted, scroll
+   * to a row that `data-each` just added.
+   */
+  tick(): Promise<void>;
+  /**
    * Set a value by dot-path, reconstructing nested objects immutably and
    * reassigning the top-level key so the shallow proxy fires a render.
    * @example this.set('user.name', 'Ada')  // ≡ state.user = { ...state.user, name: 'Ada' }
@@ -224,9 +230,11 @@ export interface MicraElement extends HTMLElement {
  * @internal A DOM listener tracked for cleanup on destroy().
  */
 export interface TrackedListener {
-  el: Element;
+  el: EventTarget; // where the listener is attached: the element, or window/document
   type: string;
   fn: EventListener;
+  o: Element; // the element that declared it (row release matches on this)
+  c?: boolean | undefined; // capture flag, needed to remove it
 }
 
 /**

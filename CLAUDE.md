@@ -195,17 +195,11 @@ toggle(e) { const id = e.currentTarget.dataset.id; /* ... */ }
 el.addEventListener('click', () => this.toggle(id))   // leaks on destroy
 ```
 
-The only exception is **document-level** listeners (e.g. outside-click handler) —
-those must be added in `onCreate` and removed in `onDestroy`:
+Window/document listeners (outside click, global Escape) use modifiers, which
+Micra also removes on `destroy()`:
 
-```js
-onCreate() {
-  this._outside = e => { if (!this.$el.contains(e.target)) this.close() }
-  document.addEventListener('click', this._outside)
-},
-onDestroy() {
-  document.removeEventListener('click', this._outside)
-}
+```html
+<div data-component="dropdown" @click.outside="close" @keydown.escape.window="close">
 ```
 
 ### Rule 4: No manual re-render after a mutation
@@ -260,7 +254,7 @@ Run through this list. If you cannot tick every box, rewrite:
 
 - [ ] Every list is `<template data-each>` with `data-key`. No `getElementById`/`innerHTML` for lists.
 - [ ] No state field is a `.length` / `.filter(...).length` / `.some(...)` / `.map(...)` of another state field. All such values are methods.
-- [ ] No `addEventListener` inside a method (document-level listeners in `onCreate`/`onDestroy` are fine).
+- [ ] No `addEventListener` inside a method. Outside-click / global keys use `@click.outside` / `@keydown.escape.window`.
 - [ ] No `this.renderList()` / `this.update()` / `this.refresh()` calls after state mutations.
 - [ ] No direct nested-path writes (`state.user.name = x`). Replace top-level, or use `this.set('user.name', x)` / `data-model="user.name"`.
 - [ ] Key modifiers (`@keydown.enter` / `.escape` / `.ctrl` …) are supported — use them instead of branching on `e.key`.
