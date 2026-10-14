@@ -4,7 +4,7 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.9.0] — 2026-10-16
 
 Two gaps where the core told you not to use `addEventListener` but gave no
 alternative. Measured cost: +120 bytes gzip.

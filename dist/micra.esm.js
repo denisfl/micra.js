@@ -1,4 +1,4 @@
-/* Micra.js v2.8.0 — https://github.com/denisfl/micra.js — MIT */
+/* Micra.js v2.9.0 — https://github.com/denisfl/micra.js — MIT */
 
 // src/utils/fetch.ts
 function sameOrigin(url) {
