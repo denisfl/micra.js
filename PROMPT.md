@@ -68,14 +68,23 @@ Micra.define("name", {
   // Actions — mutate state, Micra re-renders
   add() { this.state.items = [...this.state.items, x] },
 });
-Micra.start();
 ```
 
 ```html
-<div data-component="name">…</div>
+<micra-name>…</micra-name>
 ```
 
-`<micra-name>` tags (2.10+): `Micra.define("name", …)` also registers `<micra-name>`, which mounts and tears itself down with no `Micra.start()`. Use it for plain container roots and add `micra-name { display: block }`; keep `data-component` on `<form>`, `<nav>`, `<section>`. Names: lowercase letters, digits, hyphens. During page parsing it mounts on `DOMContentLoaded`, so read `Micra.instances()` after that or after `Micra.start()`.
+**Which root to write (Micra 2.10+).** The default is the `<micra-name>` tag: `Micra.define("name", …)` registers it, it mounts when it enters the document, however it got there, and it tears itself down when it leaves. Don't call `Micra.start()` or `Micra.autoCleanup()` for it, and don't write htmx or Turbo glue. Add `micra-name { display: block }` when the root holds block content, because the tag is inline by default. Names: lowercase letters, digits, hyphens (`"user-card"`, not `"userCard"`).
+
+Use `<element data-component="name">` plus `Micra.start()` only when:
+
+- the root must be a specific element: `<form>`, `<button>`, `<nav>`, `<section>`, `<ul>`, `<table>`;
+- a script reads `Micra.instances()` right after `define()`: tags mount on `DOMContentLoaded` while the page parses, and `Micra.start()` mounts immediately;
+- the project is pinned to Micra below 2.10.
+
+Both forms can share a page, and everything inside the root is written the same way.
+
+The examples below use `data-component` and `Micra.start()`, and they run as they are. In new code, write a plain `<div>` root as `<micra-name>` and leave out `Micra.start()`.
 
 **`this` inside methods:**
 
@@ -432,5 +441,5 @@ Micra.debug(); // prints all live components, their state and $el to console
 - [ ] No `getElementById` / `querySelector` / `innerHTML =`.
 - [ ] No `this.renderList()` or `this.update()` after mutations.
 - [ ] State is flat — `state.user.name = …` is rewritten as `state.user = { …, name: … }`.
-- [ ] `Micra.start()` is at the end of the script.
+- [ ] The root is `<micra-name>`, with `micra-name { display: block }` if it holds block content. `data-component` plus `Micra.start()` at the end of the script is only for roots that must be a specific element, like `<form>`.
 - [ ] `<script src="https://cdn.jsdelivr.net/npm/micra.js@2/dist/micra.min.js"></script>` is in `<head>` or before the component script. NOT `unpkg.com` (blocked by Claude/AI sandbox CSPs).

@@ -38,10 +38,12 @@ This exposes a global `Micra` object.
 ## Core pattern
 
 ```html
-<div data-component="counter">
+<style>micra-counter { display: block; }</style>
+
+<micra-counter>
   <span data-text="count"></span>
   <button @click="increment">+</button>
-</div>
+</micra-counter>
 ```
 
 ```js
@@ -49,11 +51,17 @@ Micra.define('counter', {
   state: { count: 0 },
   increment() { this.state.count++ },
 })
-
-Micra.start()
 ```
 
-`<micra-name>` tags (2.10+): `Micra.define("name", …)` also registers `<micra-name>`, which mounts and tears itself down with no `Micra.start()`. Use it for plain container roots and add `micra-name { display: block }`; keep `data-component` on `<form>`, `<nav>`, `<section>`. Names: lowercase letters, digits, hyphens. During page parsing it mounts on `DOMContentLoaded`, so read `Micra.instances()` after that or after `Micra.start()`.
+**Which root to write (Micra 2.10+).** The default is the `<micra-name>` tag: `Micra.define("name", …)` registers it, it mounts when it enters the document, however it got there, and it tears itself down when it leaves. Don't call `Micra.start()` or `Micra.autoCleanup()` for it, and don't write htmx or Turbo glue. Add `micra-name { display: block }` when the root holds block content, because the tag is inline by default. Names: lowercase letters, digits, hyphens (`"user-card"`, not `"userCard"`).
+
+Use `<element data-component="name">` plus `Micra.start()` only when:
+
+- the root must be a specific element: `<form>`, `<button>`, `<nav>`, `<section>`, `<ul>`, `<table>`;
+- a script reads `Micra.instances()` right after `define()`: tags mount on `DOMContentLoaded` while the page parses, and `Micra.start()` mounts immediately;
+- the project is pinned to Micra below 2.10.
+
+Both forms can share a page, and everything inside the root is written the same way.
 
 ## Directives
 
