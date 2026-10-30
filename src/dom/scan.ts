@@ -20,8 +20,8 @@
  *     time. Reused on every render.
  */
 
-import type { CachedIfBinding, CachedPairBinding, ScanIndex } from "../types";
-import { exprDeps, splitTop } from "../utils/expr";
+import type { CachedIfBinding, CachedPairBinding, MicraElement, ScanIndex } from "../types";
+import { exprDeps, splitTop, warn } from "../utils/expr";
 
 function emptyScan(): ScanIndex {
   return {
@@ -129,31 +129,53 @@ function classify(el: Element, scan: ScanIndex): void {
  * <micra-*> element is a component even before it connects and sets its own
  * data-component — e.g. inside a data-each row that is still being built.
  */
-const NESTED_COMPONENT_FILTER = (node: Node): number =>
+export const NESTED_COMPONENT_FILTER = (node: Node): number =>
   (node as Element).hasAttribute("data-component") ||
   (node as Element).localName.startsWith("micra-")
     ? 2 /* REJECT */
     : 1 /* ACCEPT */;
 
+const warnedTags = new Set<string>();
+
+/**
+ * @internal The filter, plus a warning for a <micra-*> tag nobody registered:
+ * its contents are skipped here and nothing else will render them.
+ */
+const scanFilter = (node: Node): number => {
+  const tag = (node as Element).localName;
+  if (
+    tag.startsWith("micra-") &&
+    !(node as Element).hasAttribute("data-component") &&
+    !customElements.get(tag) &&
+    !warnedTags.has(tag)
+  ) {
+    warnedTags.add(tag);
+    warn(`<${tag}> is not defined: directives inside it are skipped until define() registers it`);
+  }
+  return NESTED_COMPONENT_FILTER(node);
+};
+
 /**
  * Scan an Element subtree owned by one component. Skips nested
  * [data-component] subtrees entirely. Visits the root itself.
  *
- * Cached on `el.__micraScan` after the first call — subsequent renders
- * are free.
+ * Pass `row` when `root` is the single root of a data-each row: if it is a
+ * component, the row owns its attributes and the component owns what's inside.
  */
-export function scanComponent(root: Element): ScanIndex {
+export function scanComponent(root: Element, row?: boolean): ScanIndex {
   const scan = emptyScan();
 
   // Always classify root itself first — the TreeWalker's filter would
   // REJECT it if it had `data-component` (which it normally does for a
-  // mounted component). The filter is for *descendants*.
-  classify(root, scan);
+  // mounted component). The filter is for *descendants*. A component mounted
+  // on a row root leaves the attributes to the row that scanned them.
+  if (!(root as MicraElement)._itemState) classify(root, scan);
+  if (row && NESTED_COMPONENT_FILTER(root) === 2) return scan;
 
   const walker = document.createTreeWalker(
     root,
     1 /* NodeFilter.SHOW_ELEMENT */,
-    NESTED_COMPONENT_FILTER,
+    scanFilter,
   );
 
   for (let node; (node = walker.nextNode()); ) classify(node as Element, scan);

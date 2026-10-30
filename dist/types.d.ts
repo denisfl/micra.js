@@ -240,8 +240,8 @@ export interface CachedPairBinding {
  * optimization: instead of 10+ querySelectorAll calls per render, the scanner
  * classifies every directive/event/ref attribute in a single DOM walk.
  *
- * LLM NOTE: ScanIndex is built lazily on first render and stored on
- * `el.__micraScan`. Subsequent renders skip the scan entirely.
+ * LLM NOTE: ScanIndex is built lazily on first render and kept by mount()
+ * (rows: on `el.__micraScan`). Subsequent renders skip the scan entirely.
  */
 export interface ScanIndex {
     text: CachedBinding[];

@@ -93,8 +93,9 @@ function runHandler<S extends StateRecord>(
   if (value.includes('(')) {
     // Build the scope: nearest ancestor-or-self row itemState (it already
     // prototype-chains to the component's expr scope), else the expr scope.
+    // Rows above this component's root belong to its parent.
     let base: StateRecord | undefined
-    for (let n: Element | null = el; n && !base; n = n.parentElement) {
+    for (let n: Element | null = el; n && n !== instance.$el && !base; n = n.parentElement) {
       base = (n as MicraElement)._itemState
     }
     const scope = Object.create(base ?? instance.__micraExpr ?? null) as StateRecord

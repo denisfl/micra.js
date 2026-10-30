@@ -4,6 +4,41 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.1] — 2026-10-30
+
+Fixes for `<micra-name>` tags from a review of 2.10.0. Bundle: 7.49 KB gzip, about
+180 bytes more.
+
+### Fixed
+
+- **A component as the single root of a `data-each` row.** The row scanned the
+  component's contents as its own, so `@click` inside it never reached the
+  component. Now the row owns the attributes on the root and the component owns
+  everything inside. This also fixes `data-component` on a row root.
+- **Call handlers inside a component inside a row.** `@click="inc(2)"` ran against
+  the row's scope instead of the component's.
+- **Removing a parent and re-inserting it later.** Destroying the parent wiped the
+  scan and listener flags of the components nested in it, so their rows and `data-if`
+  elements weren't restored and the next mount threw a `TypeError`. A live child of
+  a parent destroyed with `instance.destroy()` could also bind its listeners twice.
+- **A leak under `data-if`.** A component held out of the DOM by `data-if` wasn't
+  destroyed when its parent or its `data-each` row went away, including through
+  `Micra.destroy()` and `Micra.autoCleanup()`. It now runs `onDestroy`.
+
+### Changed
+
+- `define("each-item", …)` no longer registers a tag: `<micra-each-item>` is the
+  wrapper `data-each` puts around multi-root rows. The `data-component` form still
+  works with that name.
+- A `<micra-*>` tag that isn't registered when its parent scans now logs a warning
+  once per tag. It stays a boundary, so a later `define()` still works.
+
+### Documentation
+
+- Corrected the claim that Turbo needs no glue with `<micra-name>`. A restored Turbo
+  snapshot or htmx history entry contains rendered rows, and mounting on top of them
+  duplicates the rows. Recipes 11 and 12 show the fix.
+
 ## [2.10.0] — 2026-10-30
 
 `Micra.define()` also registers a custom element. Measured cost: about 200 bytes

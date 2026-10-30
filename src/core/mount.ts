@@ -20,6 +20,7 @@ import type {
   InternalInstance,
   MicraElement,
   MicraTemplate,
+  ScanIndex,
   StateRecord,
   UnsubFn,
 } from "../types";
@@ -31,7 +32,8 @@ import { applyDirectives, validateDirectives } from "../dom/directives";
 import { renderList } from "../dom/each";
 import { bindDataOn, bindModels } from "../dom/events";
 import { collectRefs } from "../dom/refs";
-import { scanComponent } from "../dom/scan";
+import { NESTED_COMPONENT_FILTER, scanComponent } from "../dom/scan";
+import { releaseScan } from "../core/destroy";
 import { _instances } from "../core/registry";
 
 /**
@@ -119,6 +121,9 @@ export function mount<S extends StateRecord, M>(
 
   // ── Render ────────────────────────────────────────────────────────────────
   let isRendering = false;
+  // Lives here and not on the root: a root that is also a data-each row keeps
+  // its row scan on `__micraScan`, and the two have different owners.
+  let scan: ScanIndex | undefined;
   // Keys written since the last render. The renderer uses them to skip
   // directives whose dependencies didn't change this cycle.
   const _dirty = new Set<string>();
@@ -187,11 +192,9 @@ export function mount<S extends StateRecord, M>(
       );
     isRendering = true;
     try {
-      // Single-pass scan, cached on the root for re-renders. Replaces what
-      // used to be ~10 separate querySelectorAll passes per render.
-      const mRoot = root as MicraElement;
-      const scan =
-        mRoot.__micraScan ?? (mRoot.__micraScan = scanComponent(root));
+      // Single-pass scan, cached for re-renders. Replaces what used to be
+      // ~10 separate querySelectorAll passes per render.
+      scan ??= scanComponent(root);
       applyDirectives(scan, exprState, rawState, dirty);
       renderList(scan.each, exprState, rawState, instance, dirty);
       bindDataOn(scan.on, instance);
@@ -215,11 +218,7 @@ export function mount<S extends StateRecord, M>(
     // Return the DOM to its pre-mount shape so a future re-mount of the same
     // DOM works: put back data-if-detached elements and remove rendered
     // each-rows + markers (a remount re-renders them from the template).
-    const scan = (root as MicraElement).__micraScan;
-    for (const b of scan?.if ?? []) {
-      b.placeholder?.replaceWith(b.el);
-      delete (b.el as MicraElement).__micraIfDetached;
-    }
+    if (scan) releaseScan(scan);
     for (const t of (scan?.each ?? []) as MicraTemplate[]) {
       t.__micraList?.forEach((n) => n.remove());
       t.__micraList = [];
@@ -228,15 +227,16 @@ export function mount<S extends StateRecord, M>(
       delete t.__micraMarker;
     }
 
-    // Clear per-element flags & cached scan so a future re-mount of the same DOM works.
+    // Clear per-element flags so a future re-mount of the same DOM works. Nested
+    // components own their flags: they may outlive this one.
     const clearFlags = (el: Element) => {
       const m = el as MicraElement;
       delete m.__micraEvents;
       delete m.__micraModel;
-      delete m.__micraScan;
     };
     clearFlags(root);
-    root.querySelectorAll("*").forEach(clearFlags);
+    const walker = document.createTreeWalker(root, 1, NESTED_COMPONENT_FILTER);
+    for (let n; (n = walker.nextNode()); ) clearFlags(n as Element);
 
     instance.__micraSubs?.forEach((unsub) => unsub());
 
@@ -250,7 +250,7 @@ export function mount<S extends StateRecord, M>(
   instance.render();
 
   // Validate directive usage and emit dev warnings — reuses the same scan.
-  validateDirectives((root as MicraElement).__micraScan!);
+  validateDirectives(scan!);
 
   if (typeof (definition as Record<string, unknown>).onCreate === "function")
     Promise.resolve().then(() =>

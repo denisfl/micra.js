@@ -21,10 +21,16 @@
  */
 import type { ScanIndex } from "../types";
 /**
+ * @internal Shared filter: stop descending into nested components. A
+ * <micra-*> element is a component even before it connects and sets its own
+ * data-component — e.g. inside a data-each row that is still being built.
+ */
+export declare const NESTED_COMPONENT_FILTER: (node: Node) => number;
+/**
  * Scan an Element subtree owned by one component. Skips nested
  * [data-component] subtrees entirely. Visits the root itself.
  *
- * Cached on `el.__micraScan` after the first call — subsequent renders
- * are free.
+ * Pass `row` when `root` is the single root of a data-each row: if it is a
+ * component, the row owns its attributes and the component owns what's inside.
  */
-export declare function scanComponent(root: Element): ScanIndex;
+export declare function scanComponent(root: Element, row?: boolean): ScanIndex;

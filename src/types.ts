@@ -219,7 +219,7 @@ export interface MicraElement extends HTMLElement {
   __micraHtml?: string;
   __micraModel?: true; // data-model listener bound
   __micraEvents?: true; // data-on listeners bound
-  __micraScan?: ScanIndex; // single-pass scan result (cached after 1st render)
+  __micraScan?: ScanIndex; // data-each row: single-pass scan result, reused on every patch
   __micraItem?: StateRecord; // keyed row: last-rendered item ref (for skip check)
   __micraIndex?: number; // keyed row: last-rendered index (for skip check)
   __micraOpaque?: boolean; // row binding reads unknown deps or the list key: never whole-row skip
@@ -284,8 +284,8 @@ export interface CachedPairBinding {
  * optimization: instead of 10+ querySelectorAll calls per render, the scanner
  * classifies every directive/event/ref attribute in a single DOM walk.
  *
- * LLM NOTE: ScanIndex is built lazily on first render and stored on
- * `el.__micraScan`. Subsequent renders skip the scan entirely.
+ * LLM NOTE: ScanIndex is built lazily on first render and kept by mount()
+ * (rows: on `el.__micraScan`). Subsequent renders skip the scan entirely.
  */
 export interface ScanIndex {
   // Directives — applied on every render

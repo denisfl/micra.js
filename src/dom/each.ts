@@ -24,6 +24,7 @@ import type {
   StateRecord,
 } from '../types'
 import { evalExpr, warn } from '../utils/expr'
+import { releaseScan } from '../core/destroy'
 import { applyDirectives } from './directives'
 import { bindDataOn, bindModels } from './events'
 import { scanComponent } from './scan'
@@ -33,7 +34,8 @@ import { scanComponent } from './scan'
  * long-lived list doesn't retain every row ever rendered (detached nodes +
  * handler closures) until destroy().
  */
-function releaseRowListeners(instance: InternalInstance<StateRecord>, removed: readonly Element[]): void {
+function releaseRowListeners(instance: InternalInstance<StateRecord>, removed: readonly MicraElement[]): void {
+  removed.forEach((n) => releaseScan(n.__micraScan!))
   const t = instance.__micraListeners
   if (!t?.length || !removed.length) return
   // Listeners on the row's own nodes die with them; window/document ones
@@ -117,7 +119,7 @@ export function renderList<S extends StateRecord>(
     }
 
     // Remove stale nodes (and release their tracked listeners — see M3)
-    const removedNodes: Element[] = []
+    const removedNodes: MicraElement[] = []
     for (const [key, node] of keyMap) {
       if (!nextKeys.has(key)) { node.remove(); keyMap.delete(key); removedNodes.push(node) }
     }
@@ -181,7 +183,7 @@ function createRowNode<S extends StateRecord>(
     node.style.display = 'contents'
     node.append(frag)
   }
-  const rowScan = scanComponent(node)
+  const rowScan = scanComponent(node, single)
   node.__micraScan = rowScan
   // The whole-row skip (only this list's key changed; item ref + index
   // unchanged) is sound only if no binding can read that key. A row is opaque

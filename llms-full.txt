@@ -93,7 +93,7 @@ Micra.define('name', {
 <micra-name>…</micra-name>
 ```
 
-**Which root to write (Micra 2.10+).** The default is the `<micra-name>` tag: `Micra.define("name", …)` registers it, it mounts when it enters the document, however it got there, and it tears itself down when it leaves. Don't call `Micra.start()` or `Micra.autoCleanup()` for it, and don't write htmx or Turbo glue. Add `micra-name { display: block }` when the root holds block content, because the tag is inline by default. Names: lowercase letters, digits, hyphens (`"user-card"`, not `"userCard"`).
+**Which root to write (Micra 2.10+).** The default is the `<micra-name>` tag: `Micra.define("name", …)` registers it, it mounts when it enters the document, however it got there, and it tears itself down when it leaves. Don't call `Micra.start()` or `Micra.autoCleanup()` for it, and don't write htmx or Turbo glue. Add `micra-name { display: block }` when the root holds block content, because the tag is inline by default. Names: lowercase letters, digits, hyphens (`"user-card"`, not `"userCard"`); `"each-item"` is reserved.
 
 Use `<element data-component="name">` plus `Micra.start()` only when:
 
@@ -553,7 +553,9 @@ The recipes below were written with `data-component` and `Micra.start()`, and th
 Wire htmx for server-driven DOM swaps and Micra for local reactivity on
 the same page. Twelve lines of glue, written once. With `<micra-name>` roots
 (2.10+) you can skip the glue: swapped-in tags mount, and swapped-out ones are
-destroyed, on their own.
+destroyed, on their own. With `hx-push-url`, also put `hx-history="false"` on the
+page: htmx's history snapshot holds rendered rows, and mounting on a restored one
+duplicates them. Back then re-requests the page from the server.
 
 ```html
 <main hx-get="/page/home" hx-trigger="load" hx-swap="innerHTML"></main>
@@ -609,7 +611,9 @@ Pin Micra in `config/importmap.rb`, boot it once in the layout — that's
 the whole integration. CSRF works automatically (Micra reads
 `<meta name="csrf-token">` that Rails already ships). Turbo Drive needs
 a `turbo:load` mirror so the second navigation doesn't ghost. With
-`<micra-name>` roots (2.10+) neither the boot call nor the mirror is needed.
+`<micra-name>` roots (2.10+) neither the boot call nor the mirror is needed, only
+one line for the Turbo cache, whose snapshots hold rendered rows that a restored page
+would duplicate: `document.addEventListener("turbo:before-cache", () => Micra.destroy())`.
 
 ```ruby
 # config/importmap.rb

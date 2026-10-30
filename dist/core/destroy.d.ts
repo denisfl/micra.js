@@ -13,6 +13,7 @@
  *                    mounted root leaves the document. Backend-agnostic; works
  *                    with any swap mechanism. Opt-in, call once.
  */
+import type { ScanIndex } from '../types';
 /**
  * Tear down the Micra component on `root` and every nested component inside it:
  * runs each onDestroy, removes their DOM listeners, and drops them from the live
@@ -21,6 +22,13 @@
  * @example Micra.destroy(document.getElementById('panel'))
  */
 export declare function destroy(root?: Document | HTMLElement): void;
+/**
+ * @internal The owner of `scan` is going away: put back what its data-if
+ * bindings hold out of the DOM, and destroy the components in there. They got
+ * their one disconnect when they were detached, so nothing else will. Rows of
+ * its lists hold their own data-if bindings.
+ */
+export declare function releaseScan(scan: ScanIndex): void;
 /**
  * Automatically destroy() components whose element is removed from the DOM by
  * ANY means — htmx, Turbo, Unpoly, Astro, or a raw innerHTML swap. The

@@ -19,7 +19,8 @@ export function registerElement(name: string): void {
   const tag = 'micra-' + name
   const ce = globalThis.customElements
   // Custom element names must be lowercase; skip names that can't be tags.
-  if (!ce || ce.get(tag) || !/^[a-z][a-z0-9-]*$/.test(name)) return
+  // <micra-each-item> is the wrapper data-each puts around multi-root rows.
+  if (!ce || ce.get(tag) || !/^(?!each-item$)[a-z][a-z0-9-]*$/.test(name)) return
   ce.define(
     tag,
     class extends HTMLElement {

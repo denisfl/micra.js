@@ -1,4 +1,4 @@
-/* Micra.js v2.10.0 — https://github.com/denisfl/micra.js — MIT */
+/* Micra.js v2.10.1 — https://github.com/denisfl/micra.js — MIT */
 "use strict";
 var Micra = (() => {
   var __defProp = Object.defineProperty;
@@ -470,6 +470,42 @@ var Micra = (() => {
     }
   }
 
+  // src/core/destroy.ts
+  function destroy(root = document) {
+    root.querySelectorAll("[data-component]").forEach(
+      (el) => _instances.get(el)?.destroy()
+    );
+    if (root instanceof HTMLElement) _instances.get(root)?.destroy();
+  }
+  function releaseScan(scan) {
+    for (const b of scan.if) {
+      const el = b.el;
+      const held = el.__micraIfDetached;
+      b.placeholder?.replaceWith(el);
+      delete el.__micraIfDetached;
+      if (held) destroy(el);
+    }
+    for (const t of scan.each)
+      t.__micraList?.forEach((n) => releaseScan(n.__micraScan));
+  }
+  var _observer = null;
+  function autoCleanup() {
+    if (_observer) return stopAutoCleanup;
+    _observer = new MutationObserver((records) => {
+      for (const rec of records)
+        rec.removedNodes.forEach((n) => {
+          if (n.__micraIfDetached) return;
+          if (n instanceof HTMLElement && !n.isConnected) destroy(n);
+        });
+    });
+    _observer.observe(document.documentElement, { childList: true, subtree: true });
+    return stopAutoCleanup;
+  }
+  function stopAutoCleanup() {
+    _observer?.disconnect();
+    _observer = null;
+  }
+
   // src/dom/events.ts
   function track(instance, el, type, fn, target = el, c) {
     target.addEventListener(type, fn, c);
@@ -513,7 +549,7 @@ var Micra = (() => {
   function runHandler(instance, el, value, e) {
     if (value.includes("(")) {
       let base;
-      for (let n = el; n && !base; n = n.parentElement) {
+      for (let n = el; n && n !== instance.$el && !base; n = n.parentElement) {
         base = n._itemState;
       }
       const scope = Object.create(base ?? instance.__micraExpr ?? null);
@@ -652,13 +688,23 @@ var Micra = (() => {
     }
   }
   var NESTED_COMPONENT_FILTER = (node) => node.hasAttribute("data-component") || node.localName.startsWith("micra-") ? 2 : 1;
-  function scanComponent(root) {
+  var warnedTags = /* @__PURE__ */ new Set();
+  var scanFilter = (node) => {
+    const tag = node.localName;
+    if (tag.startsWith("micra-") && !node.hasAttribute("data-component") && !customElements.get(tag) && !warnedTags.has(tag)) {
+      warnedTags.add(tag);
+      warn(`<${tag}> is not defined: directives inside it are skipped until define() registers it`);
+    }
+    return NESTED_COMPONENT_FILTER(node);
+  };
+  function scanComponent(root, row) {
     const scan = emptyScan();
-    classify(root, scan);
+    if (!root._itemState) classify(root, scan);
+    if (row && NESTED_COMPONENT_FILTER(root) === 2) return scan;
     const walker = document.createTreeWalker(
       root,
       1,
-      NESTED_COMPONENT_FILTER
+      scanFilter
     );
     for (let node; node = walker.nextNode(); ) classify(node, scan);
     return scan;
@@ -666,6 +712,7 @@ var Micra = (() => {
 
   // src/dom/each.ts
   function releaseRowListeners(instance, removed) {
+    removed.forEach((n) => releaseScan(n.__micraScan));
     const t = instance.__micraListeners;
     if (!t?.length || !removed.length) return;
     instance.__micraListeners = t.filter((r) => {
@@ -750,7 +797,7 @@ var Micra = (() => {
       node.style.display = "contents";
       node.append(frag);
     }
-    const rowScan = scanComponent(node);
+    const rowScan = scanComponent(node, single);
     node.__micraScan = rowScan;
     const listKey = tmpl.getAttribute("data-each");
     node.__micraOpaque = rowScan.each.length > 0 || [rowScan.text, rowScan.html, rowScan.if, rowScan.show, rowScan.bind, rowScan.model, rowScan.class].some(
@@ -880,6 +927,7 @@ var Micra = (() => {
       return unsub;
     };
     let isRendering = false;
+    let scan;
     const _dirty = /* @__PURE__ */ new Set();
     const schedule = createScheduler(() => instance.render());
     const warned = /* @__PURE__ */ new Set();
@@ -922,8 +970,7 @@ var Micra = (() => {
         );
       isRendering = true;
       try {
-        const mRoot = root;
-        const scan = mRoot.__micraScan ?? (mRoot.__micraScan = scanComponent(root));
+        scan ?? (scan = scanComponent(root));
         applyDirectives(scan, exprState, rawState, dirty);
         renderList(scan.each, exprState, rawState, instance, dirty);
         bindDataOn(scan.on, instance);
@@ -939,11 +986,7 @@ var Micra = (() => {
       instance.__micraListeners?.forEach(
         ({ el, type, fn, c }) => el.removeEventListener(type, fn, c)
       );
-      const scan = root.__micraScan;
-      for (const b of scan?.if ?? []) {
-        b.placeholder?.replaceWith(b.el);
-        delete b.el.__micraIfDetached;
-      }
+      if (scan) releaseScan(scan);
       for (const t of scan?.each ?? []) {
         t.__micraList?.forEach((n) => n.remove());
         t.__micraList = [];
@@ -955,10 +998,10 @@ var Micra = (() => {
         const m = el;
         delete m.__micraEvents;
         delete m.__micraModel;
-        delete m.__micraScan;
       };
       clearFlags(root);
-      root.querySelectorAll("*").forEach(clearFlags);
+      const walker = document.createTreeWalker(root, 1, NESTED_COMPONENT_FILTER);
+      for (let n; n = walker.nextNode(); ) clearFlags(n);
       instance.__micraSubs?.forEach((unsub) => unsub());
       if (typeof definition.onDestroy === "function")
         definition.onDestroy.call(instance);
@@ -966,7 +1009,7 @@ var Micra = (() => {
     };
     _instances.set(root, instance);
     instance.render();
-    validateDirectives(root.__micraScan);
+    validateDirectives(scan);
     if (typeof definition.onCreate === "function")
       Promise.resolve().then(
         () => definition.onCreate.call(instance)
@@ -978,7 +1021,7 @@ var Micra = (() => {
   function registerElement(name) {
     const tag = "micra-" + name;
     const ce = globalThis.customElements;
-    if (!ce || ce.get(tag) || !/^[a-z][a-z0-9-]*$/.test(name)) return;
+    if (!ce || ce.get(tag) || !/^(?!each-item$)[a-z][a-z0-9-]*$/.test(name)) return;
     ce.define(
       tag,
       class extends HTMLElement {
@@ -1043,31 +1086,6 @@ var Micra = (() => {
       }
       mount(el, def);
     });
-  }
-
-  // src/core/destroy.ts
-  function destroy(root = document) {
-    root.querySelectorAll("[data-component]").forEach(
-      (el) => _instances.get(el)?.destroy()
-    );
-    if (root instanceof HTMLElement) _instances.get(root)?.destroy();
-  }
-  var _observer = null;
-  function autoCleanup() {
-    if (_observer) return stopAutoCleanup;
-    _observer = new MutationObserver((records) => {
-      for (const rec of records)
-        rec.removedNodes.forEach((n) => {
-          if (n.__micraIfDetached) return;
-          if (n instanceof HTMLElement && !n.isConnected) destroy(n);
-        });
-    });
-    _observer.observe(document.documentElement, { childList: true, subtree: true });
-    return stopAutoCleanup;
-  }
-  function stopAutoCleanup() {
-    _observer?.disconnect();
-    _observer = null;
   }
   return __toCommonJS(index_exports);
 })();

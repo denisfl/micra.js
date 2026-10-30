@@ -14,6 +14,7 @@
  *                    with any swap mechanism. Opt-in, call once.
  */
 
+import type { MicraElement, MicraTemplate, ScanIndex } from '../types'
 import { _instances } from './registry'
 
 /**
@@ -28,6 +29,24 @@ export function destroy(root: Document | HTMLElement = document): void {
     _instances.get(el)?.destroy(),
   )
   if (root instanceof HTMLElement) _instances.get(root)?.destroy()
+}
+
+/**
+ * @internal The owner of `scan` is going away: put back what its data-if
+ * bindings hold out of the DOM, and destroy the components in there. They got
+ * their one disconnect when they were detached, so nothing else will. Rows of
+ * its lists hold their own data-if bindings.
+ */
+export function releaseScan(scan: ScanIndex): void {
+  for (const b of scan.if) {
+    const el = b.el as MicraElement
+    const held = el.__micraIfDetached
+    b.placeholder?.replaceWith(el)
+    delete el.__micraIfDetached
+    if (held) destroy(el)
+  }
+  for (const t of scan.each as MicraTemplate[])
+    t.__micraList?.forEach((n) => releaseScan(n.__micraScan!))
 }
 
 let _observer: MutationObserver | null = null
