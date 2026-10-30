@@ -75,6 +75,8 @@ Micra.start();
 <div data-component="name">…</div>
 ```
 
+`<micra-name>` tags (2.10+): `Micra.define("name", …)` also registers `<micra-name>`, which mounts and tears itself down with no `Micra.start()`. Use it for plain container roots and add `micra-name { display: block }`; keep `data-component` on `<form>`, `<nav>`, `<section>`. Names: lowercase letters, digits, hyphens. During page parsing it mounts on `DOMContentLoaded`, so read `Micra.instances()` after that or after `Micra.start()`.
+
 **`this` inside methods:**
 
 - `this.state` — reactive Proxy

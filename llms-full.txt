@@ -107,6 +107,8 @@ Micra.start()
 - `this.emit(event, payload?)` — emit on global bus
 - `this.on(event, handler)` — subscribe on global bus, auto-unsubscribed on destroy
 
+`<micra-name>` tags (2.10+): `Micra.define("name", …)` also registers `<micra-name>`, which mounts and tears itself down with no `Micra.start()`. Use it for plain container roots and add `micra-name { display: block }`; keep `data-component` on `<form>`, `<nav>`, `<section>`. Names: lowercase letters, digits, hyphens. During page parsing it mounts on `DOMContentLoaded`, so read `Micra.instances()` after that or after `Micra.start()`.
+
 ## Directives
 
 | Directive | Example | Behavior |

@@ -4,6 +4,32 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.0] — 2026-10-30
+
+`Micra.define()` also registers a custom element. Measured cost: about 200 bytes
+gzip. The `data-component` form keeps working as before.
+
+### Added
+
+- **`<micra-name>` tags.** `Micra.define("name", …)` registers `<micra-name>`, which
+  mounts when it enters the document and is destroyed when it leaves, with no
+  `Micra.start()` or `Micra.autoCleanup()`. It works for markup inserted by htmx,
+  Turbo or `innerHTML`. Moves and `data-if` detaches keep the instance. Names that
+  can't be tags (uppercase letters) get no tag and keep working with
+  `data-component`. While the page is parsing, the element mounts on
+  `DOMContentLoaded`; a custom element is inline by default, so container roots need
+  `micra-name { display: block }`.
+
+### Changed
+
+- A `<micra-*>` element is always a component boundary: its parent doesn't process
+  directives inside it, even before it connects.
+
+### Packaging
+
+- Added the `LICENSE` file, which `package.json` already listed but the repository
+  and the npm package didn't have.
+
 ## [2.9.0] — 2026-10-19
 
 Two gaps where the core told you not to use `addEventListener` but gave no

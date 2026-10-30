@@ -15,6 +15,7 @@ import type {
   InternalInstance,
   StateRecord,
 } from '../types'
+import { registerElement } from './element'
 
 // Named definition map — populated by define()
 export const _registry  = new Map<string, ComponentDefinition>()
@@ -44,6 +45,7 @@ export function define<S extends StateRecord, M>(
   definition: ComponentDefinition<S, M>,
 ): void {
   _registry.set(name, definition as unknown as ComponentDefinition)
+  registerElement(name)
 }
 
 /**

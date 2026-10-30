@@ -1,4 +1,4 @@
-/* Micra.js v2.9.0 — https://github.com/denisfl/micra.js — MIT */
+/* Micra.js v2.10.0 — https://github.com/denisfl/micra.js — MIT */
 
 // src/utils/fetch.ts
 function sameOrigin(url) {
@@ -48,37 +48,6 @@ async function micraFetch(url, options = {}) {
     throw new FetchError(`[Micra] fetch: ${method} ${url} \u2192 ${res.status}`, res.status, res);
   const ct = res.headers.get("content-type") ?? "";
   return ct.includes("application/json") ? res.json() : res.text();
-}
-
-// src/core/registry.ts
-var _registry = /* @__PURE__ */ new Map();
-var _instances = /* @__PURE__ */ new Map();
-function define(name, definition) {
-  _registry.set(name, definition);
-}
-function defineComponent(definition) {
-  return definition;
-}
-function instances() {
-  return _instances;
-}
-function registry() {
-  return _registry;
-}
-function debug() {
-  if (_instances.size === 0) {
-    console.log("[Micra] No live components.");
-    return;
-  }
-  console.group(`[Micra] ${_instances.size} live component(s)`);
-  for (const [el, instance] of _instances) {
-    const name = el.getAttribute("data-component") ?? "(unnamed)";
-    console.group(`%c${name}`, "font-weight:bold;color:#6366f1");
-    console.log("$el  ", el);
-    console.log("state", { ...instance.state });
-    console.groupEnd();
-  }
-  console.groupEnd();
 }
 
 // src/utils/expr.ts
@@ -644,7 +613,7 @@ function classify(el, scan) {
     }
   }
 }
-var NESTED_COMPONENT_FILTER = (node) => node.hasAttribute("data-component") ? 2 : 1;
+var NESTED_COMPONENT_FILTER = (node) => node.hasAttribute("data-component") || node.localName.startsWith("micra-") ? 2 : 1;
 function scanComponent(root) {
   const scan = emptyScan();
   classify(root, scan);
@@ -965,6 +934,63 @@ function mount(selector, definition) {
       () => definition.onCreate.call(instance)
     );
   return instance;
+}
+
+// src/core/element.ts
+function registerElement(name) {
+  const tag = "micra-" + name;
+  const ce = globalThis.customElements;
+  if (!ce || ce.get(tag) || !/^[a-z][a-z0-9-]*$/.test(name)) return;
+  ce.define(
+    tag,
+    class extends HTMLElement {
+      connectedCallback() {
+        this.setAttribute("data-component", name);
+        const go = () => this.isConnected && mount(this, _registry.get(name));
+        document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", go, { once: true }) : queueMicrotask(go);
+      }
+      disconnectedCallback() {
+        queueMicrotask(() => {
+          if (this.isConnected) return;
+          for (let n = this; n; n = n.parentNode)
+            if (n.__micraIfDetached) return;
+          _instances.get(this)?.destroy();
+        });
+      }
+    }
+  );
+}
+
+// src/core/registry.ts
+var _registry = /* @__PURE__ */ new Map();
+var _instances = /* @__PURE__ */ new Map();
+function define(name, definition) {
+  _registry.set(name, definition);
+  registerElement(name);
+}
+function defineComponent(definition) {
+  return definition;
+}
+function instances() {
+  return _instances;
+}
+function registry() {
+  return _registry;
+}
+function debug() {
+  if (_instances.size === 0) {
+    console.log("[Micra] No live components.");
+    return;
+  }
+  console.group(`[Micra] ${_instances.size} live component(s)`);
+  for (const [el, instance] of _instances) {
+    const name = el.getAttribute("data-component") ?? "(unnamed)";
+    console.group(`%c${name}`, "font-weight:bold;color:#6366f1");
+    console.log("$el  ", el);
+    console.log("state", { ...instance.state });
+    console.groupEnd();
+  }
+  console.groupEnd();
 }
 
 // src/core/start.ts

@@ -41,7 +41,7 @@ What you get:
 - reactive `state` via a shallow `Proxy` (top-level writes only)
 - JS expressions in directives: `data-if="count > 0"`
 - keyed list diffing: `data-each` + `data-key`
-- auto-mounting via `data-component` + `Micra.start()`
+- auto-mounting via `data-component` + `Micra.start()`, or `<micra-name>` tags that mount and tear down themselves (2.10+)
 - SSR props from `data-*` attributes via `this.prop()`
 - built-in `this.fetch()` helper with `AbortSignal` support
 - global event bus: `Micra.on()` / `Micra.emit()`

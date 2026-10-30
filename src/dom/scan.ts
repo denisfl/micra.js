@@ -124,9 +124,16 @@ function classify(el: Element, scan: ScanIndex): void {
   }
 }
 
-/** @internal Shared filter: stop descending into nested components. */
+/**
+ * @internal Shared filter: stop descending into nested components. A
+ * <micra-*> element is a component even before it connects and sets its own
+ * data-component — e.g. inside a data-each row that is still being built.
+ */
 const NESTED_COMPONENT_FILTER = (node: Node): number =>
-  (node as Element).hasAttribute("data-component") ? 2 /* REJECT */ : 1 /* ACCEPT */;
+  (node as Element).hasAttribute("data-component") ||
+  (node as Element).localName.startsWith("micra-")
+    ? 2 /* REJECT */
+    : 1 /* ACCEPT */;
 
 /**
  * Scan an Element subtree owned by one component. Skips nested

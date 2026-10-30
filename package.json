@@ -1,6 +1,6 @@
 {
   "name": "micra.js",
-  "version": "2.9.0",
+  "version": "2.10.0",
   "description": "Lightweight reactive UI framework for server-rendered pages — reactive state, directives, event bus. < 7 KB gzip.",
   "type": "module",
   "main": "./dist/micra.cjs.js",
@@ -51,7 +51,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/denisfl/micra.js.git"
+    "url": "git+https://github.com/denisfl/micra.js.git"
   },
   "homepage": "https://github.com/denisfl/micra.js#readme",
   "bugs": {
