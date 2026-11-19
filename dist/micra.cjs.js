@@ -1,4 +1,4 @@
-/* Micra.js v2.12.0 — https://github.com/denisfl/micra.js — MIT */
+/* Micra.js v2.13.0 — https://github.com/denisfl/micra.js — MIT */
 "use strict";
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -879,6 +879,10 @@ function collectRefs(els, instance) {
 }
 
 // src/core/mount.ts
+globalThis.document?.addEventListener("turbo:before-morph-element", (e) => {
+  if (e.detail.newElement && _instances.has(e.target))
+    e.preventDefault();
+});
 function mount(selector, definition) {
   const root = typeof selector === "string" ? document.querySelector(selector) : selector;
   if (!root) {
@@ -889,6 +893,7 @@ function mount(selector, definition) {
     return _instances.get(root);
   const rawState = { ...definition.state };
   const instance = { $el: root, refs: {} };
+  root.setAttribute("hx-morph-skip", "");
   for (const [key, val] of Object.entries(
     definition
   )) {
@@ -990,6 +995,7 @@ function mount(selector, definition) {
     const walker = document.createTreeWalker(root, 1, NESTED_COMPONENT_FILTER);
     for (let n; n = walker.nextNode(); ) clearFlags(n);
     instance.__micraSubs?.forEach((unsub) => unsub());
+    root.removeAttribute("hx-morph-skip");
     if (typeof definition.onDestroy === "function")
       definition.onDestroy.call(instance);
     _instances.delete(root);

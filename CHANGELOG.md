@@ -4,6 +4,30 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.13.0] — 2026-11-19
+
+Components survive morphing. htmx 4 and Turbo 8 can update a page by patching the
+existing DOM toward the server's HTML. Inside a component that HTML is the template
+before Micra rendered it, so a morph used to wipe the rendered list for good, reset
+texts and values, and leave new nodes unbound.
+
+### Added
+
+- **A live component is a morph boundary.** Its root gets `hx-morph-skip`, which
+  htmx 4 morph swaps respect, and Micra cancels Turbo's `turbo:before-morph-element`
+  for it, which covers Turbo 8 page refreshes. The page around the component is
+  morphed; the component keeps its state and DOM. When the new HTML no longer
+  contains the component, it is removed and destroyed as before. For idiomorph used
+  directly, skip roots in `beforeNodeMorphed` (see the htmx and Rails recipes).
+  Cost: 77 bytes gzip.
+
+### Notes
+
+- Morphing pairs elements by tag and position. Give `data-component` roots, and
+  repeated `<micra-name>` tags, an `id`, or an id-less `<div data-component>` can be
+  paired with a neighbouring `<div>`. Changing the `id` makes the server's version
+  replace the component.
+
 ## [2.12.0] — 2026-11-19
 
 ### Added

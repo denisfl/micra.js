@@ -36,6 +36,17 @@ import { NESTED_COMPONENT_FILTER, scanComponent } from "../dom/scan";
 import { releaseScan } from "../core/destroy";
 import { _instances } from "../core/registry";
 
+// Morphing (Turbo 8 page refresh, idiomorph) patches existing DOM toward the
+// server's HTML. Inside a component that HTML is the pre-render template, so
+// a morph would wipe rendered rows and values. A live component is a morph
+// boundary: Turbo skips it here, htmx 4 skips it via hx-morph-skip (below).
+// Turbo sends the same event before removing a node, without newElement:
+// removal must go through, so the component is destroyed with it.
+globalThis.document?.addEventListener("turbo:before-morph-element", (e) => {
+  if ((e as CustomEvent).detail.newElement && _instances.has(e.target as HTMLElement))
+    e.preventDefault();
+});
+
 /**
  * Mount a component definition onto a DOM element.
  * Returns the component instance, or null if the root element is not found.
@@ -74,6 +85,7 @@ export function mount<S extends StateRecord, M>(
 
   const rawState: StateRecord = { ...definition.state };
   const instance = { $el: root, refs: {} } as InternalInstance<S>;
+  root.setAttribute("hx-morph-skip", "");
 
   // Copy user-defined methods from definition to instance
   for (const [key, val] of Object.entries(
@@ -241,6 +253,7 @@ export function mount<S extends StateRecord, M>(
     for (let n; (n = walker.nextNode()); ) clearFlags(n as Element);
 
     instance.__micraSubs?.forEach((unsub) => unsub());
+    root.removeAttribute("hx-morph-skip");
 
     if (typeof (definition as Record<string, unknown>).onDestroy === "function")
       (definition.onDestroy as () => void).call(instance);

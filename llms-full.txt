@@ -563,6 +563,11 @@ destroyed, on their own. With `hx-push-url`, also put `hx-history="false"` on th
 page: htmx's history snapshot holds rendered rows, and mounting on a restored one
 duplicates them. Back then re-requests the page from the server.
 
+**Morph swaps (htmx 4 `innerMorph` / `outerMorph`, Micra 2.13+).** A live component
+is skipped by the morph: Micra puts `hx-morph-skip` on its root, so its rendered
+rows, input values and state survive while the HTML around it updates. If the new
+HTML no longer has the component, it is removed and destroyed. Give `data-component` roots an `id`, and repeated tags too: morphing pairs elements by tag and position, so an id-less `<div data-component>` can be mistaken for a neighbouring `<div>`. To make the server replace a component, change its `id`.
+
 ```html
 <main hx-get="/page/home" hx-trigger="load" hx-swap="innerHTML"></main>
 
@@ -620,6 +625,15 @@ a `turbo:load` mirror so the second navigation doesn't ghost. With
 `<micra-name>` roots (2.10+) neither the boot call nor the mirror is needed, only
 one line for the Turbo cache, whose snapshots hold rendered rows that a restored page
 would duplicate: `document.addEventListener("turbo:before-cache", () => Micra.destroy())`.
+
+**Turbo 8 morphing** (`<meta name="turbo-refresh-method" content="morph">`, Micra
+2.13+): Micra cancels `turbo:before-morph-element` for live component roots, so a
+page refresh keeps each component's state and rendered DOM. A component missing from
+the new page is still removed and destroyed. Give `data-component` roots an `id`, and repeated tags too: morphing pairs elements by tag and position, so an id-less `<div data-component>` can be mistaken for a neighbouring `<div>`. To make the server replace a component, change its `id`.
+
+**Other morph libraries** (idiomorph called directly, and similar): skip live roots in
+the callback, `Idiomorph.morph(el, html, { callbacks: { beforeNodeMorphed: (node) =>
+!Micra.instances().has(node) } })`.
 
 ```ruby
 # config/importmap.rb
