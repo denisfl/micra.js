@@ -22,8 +22,8 @@
  *   trusted code regardless.
  *
  * Grammar (precedence low→high):
- *   ternary ?:  |  ||  |  &&  |  == != === !==  |  < <= > >=  |  + -  |
- *   * / %  |  unary ! -  |  call() / member.  |  primary
+ *   ternary ?:  |  || ??  |  &&  |  == != === !==  |  < <= > >=  |  + -  |
+ *   * / %  |  unary ! -  |  call() / member. / ?. / ?.()  |  primary
  *   primary = number | string | true | false | null | identifier | ( expr )
  *   (`undefined`, `NaN`, `Infinity` resolve as whitelisted globals)
  */

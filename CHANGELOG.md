@@ -4,6 +4,16 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.12.0] — 2026-11-19
+
+### Added
+
+- **`??` and `?.` in directive expressions.** `data-text="user?.name ?? 'Guest'"`
+  works. `?.` reads like `.`, since member access in Micra was already null-safe;
+  an optional call `fn?.()` returns `undefined` when the function is missing
+  instead of warning. Language models write both all the time, and until now
+  each one was an "invalid expression". Cost: 54 bytes gzip.
+
 ## [2.11.0] — 2026-11-19
 
 Fixes from a review of the core, and room for what comes next: `micra.min.js` is

@@ -265,7 +265,7 @@ Micra has a small surface area, but LLMs default to jQuery / vanilla-JS or React
 4. **No manual re-render.** Micra batches a microtask render on every state write — no `this.refresh()` / `this.update()` / `this.renderList()`.
 5. **State proxy is shallow.** Replace top-level (`state.user = { ...state.user, name: x }`), or use the path sugar: `this.set('user.name', x)` and `data-model="user.name"` — both reconstruct + reassign the top-level key for you. Never `state.user.name = x`.
 6. **Use event modifiers.** `@keydown.enter`, `@keydown.escape`, `@keydown.tab`, `@click.ctrl`, plus `.prevent` / `.stop` / `.self` — don't branch on `e.key` by hand.
-7. **No literals in directive expressions.** The CSP-safe evaluator doesn't parse object/array literals — `data-each="items || []"` and `@click="f({a:1})"` fail. `data-each` already renders nothing for `null`; pass object args from a method.
+7. **No literals in directive expressions.** `??` and `?.` work (2.12+), but the CSP-safe evaluator doesn't parse object/array literals or template literals — `data-each="items || []"` and `@click="f({a:1})"` fail. `data-each` already renders nothing for `null`; pass object args from a method.
 8. **Use jsDelivr, not unpkg** — `cdn.jsdelivr.net` is in the CSP allowlist of Claude artifacts / ChatGPT canvas; `unpkg.com` is blocked there.
 
 Full anti-pattern reference with side-by-side examples: the [LLM guide](https://micrajs.dev/docs/llm-guide) and [`llms-full.txt`](./llms-full.txt).

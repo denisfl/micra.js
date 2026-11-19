@@ -1,4 +1,4 @@
-/* Micra.js v2.11.0 — https://github.com/denisfl/micra.js — MIT */
+/* Micra.js v2.12.0 — https://github.com/denisfl/micra.js — MIT */
 "use strict";
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -102,10 +102,11 @@ var BLOCKED_PROPS = /* @__PURE__ */ new Set([
 var OBJ_PROTO_KEYS = new Set(
   Object.getOwnPropertyNames(Object.prototype)
 );
-var TOKEN = /([0-9][0-9.]*|[A-Za-z_$][\w$]*|'(?:\\[^]|[^\\'])*'|"(?:\\[^]|[^\\"])*"|===|!==|[=!<>]=|&&|\|\||[-().,?:!<>+*/%])|\S/g;
+var TOKEN = /([0-9][0-9.]*|[A-Za-z_$][\w$]*|'(?:\\[^]|[^\\'])*'|"(?:\\[^]|[^\\"])*"|===|!==|[=!<>]=|&&|\|\||\?\?|\?\.(?!\d)|[-().,?:!<>+*/%])|\S/g;
 var IDENT = /^[A-Za-z_$]/;
 var BIN_OPS = /* @__PURE__ */ new Map([
   ["||", [1, (l, r) => l || r()]],
+  ["??", [1, (l, r) => l ?? r()]],
   ["&&", [2, (l, r) => l && r()]],
   ["==", [3, (l, r) => l == r()]],
   ["!=", [3, (l, r) => l != r()]],
@@ -178,10 +179,11 @@ function parse(src) {
   }
   function parsePostfix() {
     let node = parsePrimary();
-    for (let t; (t = peek()) === "." || t === "("; ) {
+    for (let t, opt; (t = peek()) === "." || t === "(" || t === "?."; ) {
       next();
       const o = node;
-      if (t === ".") {
+      if ((opt = t === "?.") && peek() === "(") next(), t = "(";
+      if (t !== "(") {
         const p = next();
         if (!p || !IDENT.test(p)) throw 0;
         node = Object.assign((s) => member(o(s), p), { o, p });
@@ -197,6 +199,7 @@ function parse(src) {
         node = (s) => {
           const that = self && self(s);
           const fn = self ? member(that, p) : o(s);
+          if (opt && fn == null) return;
           if (typeof fn !== "function") throw new TypeError("not a function");
           return fn.apply(that, args.map((a) => a(s)));
         };

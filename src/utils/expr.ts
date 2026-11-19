@@ -22,8 +22,8 @@
  *   trusted code regardless.
  *
  * Grammar (precedence low→high):
- *   ternary ?:  |  ||  |  &&  |  == != === !==  |  < <= > >=  |  + -  |
- *   * / %  |  unary ! -  |  call() / member.  |  primary
+ *   ternary ?:  |  || ??  |  &&  |  == != === !==  |  < <= > >=  |  + -  |
+ *   * / %  |  unary ! -  |  call() / member. / ?. / ?.()  |  primary
  *   primary = number | string | true | false | null | identifier | ( expr )
  *   (`undefined`, `NaN`, `Infinity` resolve as whitelisted globals)
  */
@@ -61,8 +61,9 @@ type Fn = ((scope: StateRecord) => unknown) & { o?: Fn; p?: string };
 // One match per token: number | identifier | string | punctuator. Any other
 // non-space char matches the bare `\S` (group 1 empty) and is a syntax error.
 // Tokens stay raw strings — the first char tells the kind (strings keep quotes).
+// `?.` followed by a digit is a ternary with a decimal (`a?.5:1`), as in JS.
 const TOKEN =
-  /([0-9][0-9.]*|[A-Za-z_$][\w$]*|'(?:\\[^]|[^\\'])*'|"(?:\\[^]|[^\\"])*"|===|!==|[=!<>]=|&&|\|\||[-().,?:!<>+*/%])|\S/g;
+  /([0-9][0-9.]*|[A-Za-z_$][\w$]*|'(?:\\[^]|[^\\'])*'|"(?:\\[^]|[^\\"])*"|===|!==|[=!<>]=|&&|\|\||\?\?|\?\.(?!\d)|[-().,?:!<>+*/%])|\S/g;
 const IDENT = /^[A-Za-z_$]/;
 
 // ── Operators ─────────────────────────────────────────────────────────────────
@@ -72,6 +73,7 @@ const IDENT = /^[A-Za-z_$]/;
 type BinOp = [number, (l: any, r: () => any) => unknown];
 const BIN_OPS = new Map<string | undefined, BinOp>([
   ["||", [1, (l, r) => l || r()]],
+  ["??", [1, (l, r) => l ?? r()]],
   ["&&", [2, (l, r) => l && r()]],
   ["==", [3, (l, r) => l == r()]],
   ["!=", [3, (l, r) => l != r()]],
@@ -176,10 +178,13 @@ function parse(src: string): Compiled {
 
   function parsePostfix(): Fn {
     let node = parsePrimary();
-    for (let t; (t = peek()) === "." || t === "("; ) {
+    for (let t, opt; (t = peek()) === "." || t === "(" || t === "?."; ) {
       next();
       const o = node;
-      if (t === ".") {
+      // `a?.b` reads like `a.b`: member access is already null-safe. Only an
+      // optional call `fn?.()` differs: a missing function gives undefined.
+      if ((opt = t === "?.") && peek() === "(") next(), (t = "(");
+      if (t !== "(") {
         const p = next();
         if (!p || !IDENT.test(p)) throw 0;
         node = Object.assign((s: StateRecord) => member(o(s), p), { o, p });
@@ -196,6 +201,7 @@ function parse(src: string): Compiled {
         node = (s) => {
           const that = self && self(s);
           const fn = self ? member(that, p!) : o(s);
+          if (opt && fn == null) return;
           if (typeof fn !== "function") throw new TypeError("not a function");
           return fn.apply(that, args.map((a) => a(s)));
         };

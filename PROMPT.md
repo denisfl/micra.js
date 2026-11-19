@@ -130,6 +130,7 @@ Pair lists (`data-bind`, `data-class`, `data-on`) split on top-level commas only
 Expression context (what you can write in `data-text="..."` etc.):
 
 - State keys (`count`, `user.name`)
+- Operators: `+ - * / %`, comparisons, `&& || !`, ternary `a ? b : c`, nullish `a ?? b` and optional chaining `user?.name`, `fn?.()` (2.12+). Not supported: template literals, array and object literals, arrow functions, assignments.
 - Component methods (`format(price)`, `filtered()`) — `this` is bound to the instance
 - A whitelist of globals: `Math`, `JSON`, `Date`, `String`, `Number`, `Boolean`, `Array`, `Object`, `parseInt`, `parseFloat`, `isNaN`, `isFinite`, `NaN`, `Infinity`, `undefined`
 - Everything else (`window`, `fetch`, `document`, `eval`, `constructor`, `setTimeout`) resolves to `undefined` — by design (security model)

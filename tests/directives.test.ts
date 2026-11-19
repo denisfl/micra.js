@@ -423,3 +423,15 @@ describe('3.6 data-class', () => {
     expect(el.classList.contains('disabled')).toBe(true)
   })
 })
+
+describe('?? and ?. in directives', () => {
+  it('renders a fallback for a missing nested value', async () => {
+    document.body.innerHTML = '<div id="nn"><b data-text="user?.name ?? \'Guest\'"></b></div>'
+    const { mount } = await import('../src/core/mount')
+    const inst = mount('#nn', { state: { user: null as null | { name: string } } })!
+    expect(document.querySelector('#nn b')!.textContent).toBe('Guest')
+    inst.state.user = { name: 'Ann' }
+    await new Promise((r) => setTimeout(r, 0))
+    expect(document.querySelector('#nn b')!.textContent).toBe('Ann')
+  })
+})

@@ -2,7 +2,7 @@
  * tests/expr.test.ts — Expression evaluator tests (section 2)
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { evalExpr } from '../src/utils/expr'
+import { evalExpr, exprDeps } from '../src/utils/expr'
 
 // ── 2.1 Simple expressions ────────────────────────────────────────────────────
 
@@ -208,5 +208,48 @@ describe('2.6 Binary operators and grouping', () => {
     ['!(t && f)', true],
   ])('%s', (expr, want) => {
     expect(evalExpr(expr, s)).toBe(want)
+  })
+})
+
+// ── 2.7 Nullish coalescing and optional chaining ─────────────────────────────
+
+describe('2.7 ?? and ?.', () => {
+  const s = {
+    none: null as unknown,
+    zero: 0,
+    empty: '',
+    user: { name: 'Ann', tags: { first: 'x' }, greet() { return 'hi ' + this.name } },
+    fn: () => 'called',
+  }
+  it.each([
+    ["none ?? 'x'", 'x'],
+    ["missing ?? 'x'", 'x'],
+    ["zero ?? 1", 0],
+    ["empty ?? 'x'", ''],
+    ["user?.name", 'Ann'],
+    ["none?.name", undefined],
+    ["none?.name ?? 'Guest'", 'Guest'],
+    ["none?.tags.first", undefined],
+    ["user?.tags?.first", 'x'],
+    ["fn?.()", 'called'],
+    ["missing?.()", undefined],
+    ["user.greet?.()", 'hi Ann'],
+    ["user.nope?.()", undefined],
+    ["none ?? zero ? 'a' : 'b'", 'b'],
+    ["user ? 'yes' : 'no'", 'yes'],
+  ])('%s', (expr, want) => {
+    expect(evalExpr(expr, s)).toBe(want)
+  })
+
+  it('a missing function without ?. still warns', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(evalExpr('nofn2()', {})).toBeUndefined()
+    expect(warn).toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('deps: ?. keeps the root key, ?.() makes the expression opaque', () => {
+    expect([...exprDeps('user?.name ?? fallback')!].sort()).toEqual(['fallback', 'user'])
+    expect(exprDeps('fn?.()')).toBeNull()
   })
 })
