@@ -11,7 +11,7 @@ All notable changes to Micra.js will be documented in this file. Format follows
 - **`??` and `?.` in directive expressions.** `data-text="user?.name ?? 'Guest'"`
   works. `?.` reads like `.`, since member access in Micra was already null-safe;
   an optional call `fn?.()` returns `undefined` when the function is missing
-  instead of warning. Language models write both all the time, and until now
+  instead of warning. Both are everyday JavaScript since ES2020, and until now
   each one was an "invalid expression". Cost: 54 bytes gzip.
 
 ## [2.11.0] — 2026-11-19
