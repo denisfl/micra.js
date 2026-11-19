@@ -64,7 +64,7 @@ export function mount<S extends StateRecord, M>(
       : selector;
 
   if (!root) {
-    warn(`"${selector}" not found`);
+    warn(__DEV__ && `"${selector}" not found`);
     return null;
   }
 
@@ -134,13 +134,14 @@ export function mount<S extends StateRecord, M>(
   // The write itself lands (and marks the key dirty for the next real render);
   // only the re-schedule is dropped.
   const warned = new Set<string>();
-  const warnOnce = (msg: string) => {
-    if (!warned.has(msg)) warned.add(msg), warn(msg);
+  const warnOnce = (msg: string | false) => {
+    if (!warned.has(msg as string)) warned.add(msg as string), warn(msg);
   };
   const scheduleSafe = () => {
     if (isRendering)
       warnOnce(
-        "state write during render is kept but not re-rendered — move writes out of directive expressions",
+        __DEV__ &&
+          "state write during render is kept but not re-rendered — move writes out of directive expressions",
       );
     else schedule();
   };
@@ -188,7 +189,8 @@ export function mount<S extends StateRecord, M>(
     _dirty.clear();
     if (isRendering)
       return warnOnce(
-        "render() re-entry detected — mutation inside a directive expression is ignored. Move state writes to a method.",
+        __DEV__ &&
+          "render() re-entry detected — mutation inside a directive expression is ignored. Move state writes to a method.",
       );
     isRendering = true;
     try {
@@ -250,11 +252,14 @@ export function mount<S extends StateRecord, M>(
   instance.render();
 
   // Validate directive usage and emit dev warnings — reuses the same scan.
-  validateDirectives(scan!);
+  if (__DEV__) validateDirectives(scan!);
 
   if (typeof (definition as Record<string, unknown>).onCreate === "function")
-    Promise.resolve().then(() =>
-      (definition.onCreate as () => void | Promise<void>).call(instance),
+    Promise.resolve().then(
+      // A component destroyed in the same task never runs onCreate.
+      () =>
+        instance.__micraDestroyed ||
+        (definition.onCreate as () => void | Promise<void>).call(instance),
     );
 
   return instance as unknown as ComponentInstance<S, M>;

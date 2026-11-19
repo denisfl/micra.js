@@ -93,7 +93,7 @@ function applyBind(
     // Security: a binding must never install an inline event handler — that's
     // a direct XSS sink. Use @event for handlers.
     if (/^on[a-z]+$/.test(attr)) {
-      warn(`data-bind refused event-handler attribute "${attr}" — use @${attr.slice(2)}`);
+      warn(__DEV__ && `data-bind refused event-handler attribute "${attr}" — use @${attr.slice(2)}`);
       continue;
     }
 
@@ -118,7 +118,7 @@ function applyBind(
       el.removeAttribute(attr);
     } else if (/^javascript:/i.test(String(val).replace(/[\u0000-\u0020]/g, ""))) {
       // Security: drop javascript: URLs (XSS via href/src/…)
-      warn(`data-bind dropped unsafe javascript: URL from "${attr}"`);
+      warn(__DEV__ && `data-bind dropped unsafe javascript: URL from "${attr}"`);
       el.removeAttribute(attr);
     } else {
       el.setAttribute(attr, String(val));

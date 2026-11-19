@@ -53,5 +53,9 @@ export declare function evalExpr(expr: string, state: StateRecord): unknown;
  * `go('a,b')`. Shared by data-bind / data-class / data-on.
  */
 export declare function splitTop(s: string): string[];
-/** @internal Consistent warning prefix. */
-export declare function warn(msg: string): void;
+/**
+ * @internal Consistent warning prefix. Call sites pass `__DEV__ && \`…\``, so
+ * micra.min.js carries no message text: it prints one hint pointing to the
+ * unminified build instead.
+ */
+export declare function warn(msg: string | false): void;

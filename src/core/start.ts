@@ -34,7 +34,7 @@ export function start(root: Document | HTMLElement = document): void {
     const name = el.getAttribute('data-component')!
     const def  = _registry.get(name)
     if (!def) {
-      warn(`component "${name}" not defined. Call Micra.define('${name}', {...}) first.`)
+      warn(__DEV__ && `component "${name}" not defined. Call Micra.define('${name}', {...}) first.`)
       return
     }
     mount(el, def)

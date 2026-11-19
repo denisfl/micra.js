@@ -4,6 +4,39 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.0] — 2026-11-19
+
+Fixes from a review of the core, and room for what comes next: `micra.min.js` is
+about 780 bytes smaller (7668 → 6887 bytes gzip).
+
+### Changed
+
+- **`micra.min.js` no longer carries warning messages.** Where it used to print a
+  warning, it now prints one line, once: load `micra.js` to see them. `micra.js`,
+  `micra.esm.js` and `micra.cjs.js` keep the full warnings. Security guards in
+  `data-bind` still refuse `on*` attributes and `javascript:` URLs in every build;
+  only the message text moved.
+- `data-each` without `data-key` now goes through the keyed diff, keyed by index.
+  Rows are still reused by position. Saves 140 bytes.
+
+### Fixed
+
+- **`data-if` on the single root of a `data-each` row** was ignored on the first
+  render, so hidden rows showed. Such a row now gets the `<micra-each-item>`
+  wrapper, like a multi-root row, so the `data-if` has somewhere to leave its
+  placeholder.
+- **`onCreate` after `destroy()`.** A component destroyed in the same task as its
+  mount ran `onCreate` after `onDestroy`. It now skips `onCreate`.
+- **`this.refs` kept elements removed by `data-if`.** A ref inside a falsy `data-if`
+  is no longer in `this.refs`.
+- **Removing rows with listeners was quadratic.** Clearing 3000 rows with two `@`
+  listeners each took about 150 ms; it is now linear.
+
+### Tests
+
+- Binary operators and grouping in expressions (`&&`, `==`, `!==`, `<`, `-`, `/`,
+  `%`, parentheses) had no coverage; they do now.
+
 ## [2.10.1] — 2026-10-30
 
 Fixes for `<micra-name>` tags from a review of 2.10.0. Bundle: 7.49 KB gzip, about

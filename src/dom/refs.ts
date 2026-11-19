@@ -32,6 +32,7 @@ export function collectRefs<S extends StateRecord>(
   instance.refs = {}
   for (const el of els) {
     const name = (el as MicraElement).dataset['ref']
-    if (name) instance.refs[name] = el as HTMLElement
+    // Skip elements a data-if has taken out of the component.
+    if (name && instance.$el.contains(el)) instance.refs[name] = el as HTMLElement
   }
 }

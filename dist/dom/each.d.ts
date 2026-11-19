@@ -4,7 +4,7 @@
  * Responsibilities:
  *   - Process `<template data-each="items" data-key="id">` elements
  *   - Keyed diff: reuse/reorder DOM nodes by key — O(n) with a Map
- *   - Non-keyed lists: positional reuse — min(old, new) rows are kept, the
+ *   - Non-keyed lists use the same diff keyed by index: positional reuse, the
  *     tail is removed or rows are appended
  *   - Apply directives to each row with a scoped itemState
  *

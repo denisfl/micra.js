@@ -1,4 +1,4 @@
-/* Micra.js v2.10.1 — https://github.com/denisfl/micra.js — MIT */
+/* Micra.js v2.11.0 — https://github.com/denisfl/micra.js — MIT */
 "use strict";
 var Micra = (() => {
   var __defProp = Object.defineProperty;
@@ -276,6 +276,11 @@ var Micra = (() => {
     return out;
   }
   function warn(msg) {
+    if (false) {
+      if (hinted) return;
+      hinted = true;
+      msg = "warnings are off in micra.min.js, load micra.js to see them";
+    }
     console.warn(`[Micra] ${msg}`);
   }
 
@@ -715,10 +720,12 @@ var Micra = (() => {
     removed.forEach((n) => releaseScan(n.__micraScan));
     const t = instance.__micraListeners;
     if (!t?.length || !removed.length) return;
+    const rows = new Set(removed);
     instance.__micraListeners = t.filter((r) => {
-      const gone = removed.some((n) => n === r.o || n.contains(r.o));
-      if (gone) r.el.removeEventListener(r.type, r.fn, r.c);
-      return !gone;
+      let n = r.o;
+      while (n && !rows.has(n)) n = n.parentNode;
+      if (n) r.el.removeEventListener(r.type, r.fn, r.c);
+      return !n;
     });
   }
   function renderList(templates, state, rawState, instance, dirty) {
@@ -739,16 +746,12 @@ var Micra = (() => {
       const keyMap = tmpl.__micraNodes;
       if (!marker.parentNode) continue;
       const canSkipUnchanged = dirty !== null && dirty.size === 1 && dirty.has(itemsExpr);
-      if (!keyAttr) {
-        renderNoKey(tmpl, items, marker, state, rawState, instance, canSkipUnchanged, dirty);
-        continue;
-      }
       const nextKeys = /* @__PURE__ */ new Set();
       const nextNodes = [];
       let warnedNullKey = false;
       let warnedDupKey = false;
       for (const [index, item] of items.entries()) {
-        const key = item[keyAttr];
+        const key = keyAttr ? item[keyAttr] : index;
         if (key == null && !warnedNullKey) {
           warn(`data-key="${keyAttr}" is null/undefined on item at index ${index}`);
           warnedNullKey = true;
@@ -787,7 +790,7 @@ var Micra = (() => {
     const frag = tmpl.content.cloneNode(true);
     let node;
     const first = frag.firstElementChild;
-    const single = !!first && !first.nextElementSibling && !Array.from(frag.childNodes).some(
+    const single = !!first && !first.nextElementSibling && !first.hasAttribute("data-if") && !Array.from(frag.childNodes).some(
       (c) => c.nodeType === 3 && /[^\x00- ]/.test(c.textContent)
     );
     if (single) {
@@ -861,25 +864,6 @@ var Micra = (() => {
       anchor = node;
     });
   }
-  function renderNoKey(tmpl, items, marker, state, rawState, instance, canSkipUnchanged, dirty) {
-    const prevList = tmpl.__micraList;
-    const prevLen = prevList.length;
-    const nextLen = items.length;
-    const nextList = prevList.slice(0, nextLen);
-    nextList.forEach((node, i) => patchRow(node, items[i], i, rawState, instance, canSkipUnchanged, dirty));
-    const removed = prevList.slice(nextLen);
-    removed.forEach((n) => n.remove());
-    releaseRowListeners(instance, removed);
-    const frag = document.createDocumentFragment();
-    for (let i = prevLen; i < nextLen; i++) {
-      const node = createRowNode(tmpl, state, instance);
-      patchRow(node, items[i], i, rawState, instance, false, null);
-      frag.append(nextList[i] = node);
-    }
-    ;
-    (nextList[prevLen - 1] ?? marker).after(frag);
-    tmpl.__micraList = nextList;
-  }
 
   // src/dom/refs.ts
   function collectRefs(els, instance) {
@@ -887,7 +871,7 @@ var Micra = (() => {
     instance.refs = {};
     for (const el of els) {
       const name = el.dataset["ref"];
-      if (name) instance.refs[name] = el;
+      if (name && instance.$el.contains(el)) instance.refs[name] = el;
     }
   }
 
@@ -1009,10 +993,11 @@ var Micra = (() => {
     };
     _instances.set(root, instance);
     instance.render();
-    validateDirectives(scan);
+    if (true) validateDirectives(scan);
     if (typeof definition.onCreate === "function")
       Promise.resolve().then(
-        () => definition.onCreate.call(instance)
+        // A component destroyed in the same task never runs onCreate.
+        () => instance.__micraDestroyed || definition.onCreate.call(instance)
       );
     return instance;
   }

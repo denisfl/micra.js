@@ -30,6 +30,11 @@ Or via CDN (no build step):
 
 This exposes a global `Micra` object.
 
+`micra.min.js` doesn't print warnings: if something is wrong, it logs one line asking
+you to switch to `dist/micra.js`, the unminified build, which explains each problem
+(unknown method, invalid expression, undefined component). Use `micra.js` while
+developing and debugging, `micra.min.js` in production.
+
 > **CDN choice matters for AI sandboxes.** Use `cdn.jsdelivr.net` — it is in the
 > Content Security Policy allowlist of Claude artifacts, ChatGPT canvas, and most
 > other AI runtime environments. `unpkg.com` is NOT in those allowlists and will

@@ -186,3 +186,27 @@ describe('bare keywords and whitelisted globals', () => {
     expect(evalExpr('Infinity', { Infinity: 3 })).toBe(3)
   })
 })
+
+// ── 2.6 Operators (2.11 review: these paths had no coverage) ─────────────────
+
+describe('2.6 Binary operators and grouping', () => {
+  const s = { a: 6, b: 4, t: true, f: false, n: '6' }
+  it.each([
+    ['a && b', 4],
+    ['f && a', false],
+    ['a == n', true],
+    ['a != n', false],
+    ['a !== n', true],
+    ['b < a', true],
+    ['a <= 6', true],
+    ['b >= a', false],
+    ['a - b', 2],
+    ['a / b', 1.5],
+    ['a % b', 2],
+    ['(a + b) * 2', 20],
+    ['a + b * 2', 14],
+    ['!(t && f)', true],
+  ])('%s', (expr, want) => {
+    expect(evalExpr(expr, s)).toBe(want)
+  })
+})

@@ -105,7 +105,7 @@ function runHandler<S extends StateRecord>(
   }
   const fn = instance[value]
   if (typeof fn === 'function') (fn as (e: Event) => void).call(instance, e)
-  else warn(`method "${value}" not found`)
+  else warn(__DEV__ && `method "${value}" not found`)
 }
 
 // ── data-on + @event ──────────────────────────────────────────────────────────

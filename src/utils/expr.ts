@@ -241,7 +241,7 @@ function compile(expr: string): Compiled {
     try {
       cached = parse(expr);
     } catch {
-      warn(`invalid expression "${expr}"`);
+      warn(__DEV__ && `invalid expression "${expr}"`);
       cached = { f: () => undefined, deps: null };
     }
     exprCache.set(expr, cached);
@@ -277,7 +277,7 @@ export function evalExpr(expr: string, state: StateRecord): unknown {
   } catch (e) {
     if (!cached.warned) {
       cached.warned = 1;
-      warn(`runtime error in "${expr}": ${(e as Error).message}`);
+      warn(__DEV__ && `runtime error in "${expr}": ${(e as Error).message}`);
     }
     return undefined;
   }
@@ -312,7 +312,18 @@ export function splitTop(s: string): string[] {
 
 // ── Dev warnings ──────────────────────────────────────────────────────────────
 
-/** @internal Consistent warning prefix. */
-export function warn(msg: string): void {
+let hinted = false;
+
+/**
+ * @internal Consistent warning prefix. Call sites pass `__DEV__ && \`…\``, so
+ * micra.min.js carries no message text: it prints one hint pointing to the
+ * unminified build instead.
+ */
+export function warn(msg: string | false): void {
+  if (!__DEV__) {
+    if (hinted) return;
+    hinted = true;
+    msg = "warnings are off in micra.min.js, load micra.js to see them";
+  }
   console.warn(`[Micra] ${msg}`);
 }

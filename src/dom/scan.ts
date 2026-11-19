@@ -150,7 +150,7 @@ const scanFilter = (node: Node): number => {
     !warnedTags.has(tag)
   ) {
     warnedTags.add(tag);
-    warn(`<${tag}> is not defined: directives inside it are skipped until define() registers it`);
+    warn(__DEV__ && `<${tag}> is not defined: directives inside it are skipped until define() registers it`);
   }
   return NESTED_COMPONENT_FILTER(node);
 };

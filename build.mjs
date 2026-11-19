@@ -42,6 +42,7 @@ const configs = [
     globalName: 'Micra',
     outfile:    'dist/micra.js',
     sourcemap:  true,
+    define:     { __DEV__: 'true' },
   },
   // ── CDN minified
   {
@@ -50,6 +51,8 @@ const configs = [
     globalName: 'Micra',
     outfile:    'dist/micra.min.js',
     minify:     true,
+    // Production: warnings collapse to one hint (see warn() in utils/expr.ts).
+    define:     { __DEV__: 'false' },
     // Internal per-element/per-instance fields (all prefixed __micra / the row
     // _itemState) are @internal API — mangling them is behavior-safe within the
     // single bundle and saves real bytes.
@@ -61,6 +64,7 @@ const configs = [
     format:     'esm',
     outfile:    'dist/micra.esm.js',
     sourcemap:  true,
+    define:     { __DEV__: 'true' },
   },
   // ── CJS for Node.js require()
   {
@@ -68,6 +72,7 @@ const configs = [
     format:     'cjs',
     outfile:    'dist/micra.cjs.js',
     sourcemap:  true,
+    define:     { __DEV__: 'true' },
   },
 ]
 
@@ -128,6 +133,15 @@ if (watch) {
     }
   }
   console.log('🔒 CSP guard: no eval / new Function in the bundle ✓')
+
+  // ── Dev/prod guard ─────────────────────────────────────────────────────────
+  // micra.min.js must carry no warning text (call sites pass `__DEV__ && …`),
+  // only the one hint that points to micra.js.
+  const minSrc = readFileSync('dist/micra.min.js', 'utf8')
+  if (/runtime error in|not defined\. Call/.test(minSrc) || !minSrc.includes('load micra.js')) {
+    console.error('❌ Dev/prod guard: micra.min.js has dev warnings or lacks the hint')
+    process.exit(1)
+  }
 
   // ── Bundle size guard ──────────────────────────────────────────────────────
   // 7 KB — raised from 5.5 KB in v2.4 for the CSP-safe expression evaluator

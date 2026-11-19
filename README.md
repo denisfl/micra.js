@@ -81,6 +81,10 @@ What you get:
 <script src="https://cdn.jsdelivr.net/npm/micra.js/dist/micra.min.js"></script>
 ```
 
+`micra.min.js` prints a single hint instead of warnings. While developing, load
+`dist/micra.js`: it explains each problem (unknown method, invalid expression,
+undefined component).
+
 ### npm
 
 ```bash
