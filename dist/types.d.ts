@@ -103,10 +103,20 @@ export interface ComponentBuiltins<S extends StateRecord = StateRecord> {
      * Read a `data-*` attribute from the root element with auto-cast.
      * Casts "true"/"false" → boolean, numeric strings → number. A string
      * `defaultVal` opts out of auto-cast (data-zip="01234" stays "01234").
+     * An array or object `defaultVal` parses the attribute as JSON, and falls
+     * back to the default when it isn't valid JSON.
      * @example this.prop('perPage', 10) // data-per-page="20" → 20
+     * @example this.prop('items', []) // data-items='[{"id":1}]' → [{ id: 1 }]
      */
     prop(name: string): string | number | boolean | undefined;
     prop<T>(name: string, defaultVal: T): T;
+    /**
+     * Add a DOM listener from JS that is removed on destroy(), like `@event`
+     * listeners. `this` in `fn` is the instance. Returns a function that removes
+     * it earlier (e.g. at the end of a drag).
+     * @example onCreate() { this.listen(window, 'resize', this.measure) }
+     */
+    listen(target: EventTarget, type: string, fn: (e: Event) => void, options?: boolean | AddEventListenerOptions): () => void;
     /** Fetch helper: CSRF header, JSON body, query params, typed errors. */
     fetch(url: string, options?: FetchOptions): Promise<unknown>;
     /**
@@ -166,6 +176,13 @@ export type ComponentDefinition<S extends StateRecord = StateRecord, M = Compone
      */
     onCreate?(): void | Promise<void>;
     /**
+     * Called after each render once mounted, when the DOM reflects the state.
+     * `keys` holds the state keys written since the last render, or is null
+     * after a full render (`this.render()` with no pending writes).
+     * @example onUpdate(keys) { if (keys?.has('data')) this.chart.update() }
+     */
+    onUpdate?(keys: Set<string> | null): void;
+    /**
      * Called on destroy — clean up DOM listeners, timers, etc.
      * Event bus subscriptions added via `this.on()` are cleaned up automatically.
      */
@@ -195,7 +212,7 @@ export interface TrackedListener {
     type: string;
     fn: EventListener;
     o: Element;
-    c?: boolean | undefined;
+    c?: boolean | AddEventListenerOptions | undefined;
 }
 /**
  * @internal Extended HTMLTemplateElement with keyed-diff state.

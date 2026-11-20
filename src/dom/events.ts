@@ -27,13 +27,13 @@ import { setPath } from '../core/reactive'
  * @internal Attach a DOM listener and track it on the instance for destroy().
  * `target` defaults to the element; `.window` / `.outside` pass window/document.
  */
-function track<S extends StateRecord>(
+export function track<S extends StateRecord>(
   instance: InternalInstance<S>,
   el: Element,
   type: string,
   fn: EventListener,
   target: EventTarget = el,
-  c?: boolean,
+  c?: boolean | AddEventListenerOptions,
 ): void {
   target.addEventListener(type, fn, c)
   ;(instance.__micraListeners ?? (instance.__micraListeners = [])).push({ el: target, type, fn, o: el, c })

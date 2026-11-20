@@ -4,6 +4,37 @@ All notable changes to Micra.js will be documented in this file. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning follows
 [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.0] — 2026-11-20
+
+Three small additions for component authors, each one a pattern the component
+catalog kept writing by hand. Cost: 106 bytes gzip together.
+
+### Added
+
+- **JSON props.** `this.prop("items", [])` parses `data-items='[{"id":1}]'` when the
+  default is an array or an object, and falls back to the default (with a warning in
+  `micra.js`) when the attribute isn't valid JSON. Other defaults behave as before.
+  14 of the 34 catalog components parsed props by hand, several with their own
+  try/catch.
+- **`this.listen(target, type, fn, options?)`** adds a listener from JS that
+  `destroy()` removes, the way it removes `@event` listeners. `this` in `fn` is the
+  instance. It returns a function that removes the listener earlier, for listeners
+  that live only during a drag. For wrappers around third-party libraries and for
+  components whose behavior must not depend on attributes copied onto the root.
+- **`onUpdate(keys)`** runs after each render once the component is mounted, with the
+  DOM already updated. `keys` is the set of state keys written since the last render,
+  or `null` after a full `this.render()`. State writes inside it render normally. For
+  syncing a chart, a map or `localStorage` with state.
+
+### Documentation
+
+- The htmx recipe in `llms-full.txt` still showed htmx 2 (`htmx.org@2`,
+  `htmx:afterSettle`, and an `htmx:trigger` listener that htmx never fires). It now
+  shows htmx 4: no glue with `<micra-name>` tags, `HX-Trigger` events caught with
+  `@name.window`, the `data-component` bridge with `htmx:after:settle` and
+  `autoCleanup()`, and Micra loaded in `<head>` so a history restore doesn't run it
+  twice.
+
 ## [2.13.0] — 2026-11-19
 
 Components survive morphing. htmx 4 and Turbo 8 can update a page by patching the

@@ -1,4 +1,4 @@
-/* Micra.js v2.13.0 — https://github.com/denisfl/micra.js — MIT */
+/* Micra.js v2.14.0 — https://github.com/denisfl/micra.js — MIT */
 
 // src/utils/fetch.ts
 function sameOrigin(url) {
@@ -866,12 +866,27 @@ function mount(selector, definition) {
     const val = root.dataset[name];
     if (val === void 0) return defaultVal;
     if (typeof defaultVal === "string") return val;
+    if (defaultVal && typeof defaultVal === "object")
+      try {
+        return JSON.parse(val);
+      } catch {
+        warn(`data-${name} is not valid JSON`);
+        return defaultVal;
+      }
     if (val === "true") return true;
     if (val === "false") return false;
     if (val !== "" && !isNaN(Number(val))) return Number(val);
     return val;
   };
   instance.set = (path, value) => setPath(instance.state, path, value);
+  instance.listen = (target, type, fn, c) => {
+    const h = (e) => fn.call(instance, e);
+    track(instance, root, type, h, target, c);
+    return () => {
+      target.removeEventListener(type, h, c);
+      instance.__micraListeners = instance.__micraListeners.filter((r) => r.fn !== h);
+    };
+  };
   instance.fetch = micraFetch;
   instance.emit = emit;
   instance.tick = () => new Promise((r) => queueMicrotask(r));
@@ -923,6 +938,7 @@ function mount(selector, definition) {
         "render() re-entry detected \u2014 mutation inside a directive expression is ignored. Move state writes to a method."
       );
     isRendering = true;
+    const mounted = scan;
     try {
       scan ?? (scan = scanComponent(root));
       applyDirectives(scan, exprState, rawState, dirty);
@@ -933,6 +949,7 @@ function mount(selector, definition) {
     } finally {
       isRendering = false;
     }
+    if (mounted) definition.onUpdate?.call(instance, dirty);
   };
   instance.destroy = function() {
     if (instance.__micraDestroyed) return;

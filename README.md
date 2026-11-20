@@ -46,7 +46,7 @@ What you get:
 - built-in `this.fetch()` helper with `AbortSignal` support
 - global event bus: `Micra.on()` / `Micra.emit()`
 - DOM refs via `data-ref`, additive class toggling via `data-class`
-- lifecycle hooks: `onCreate`, `onDestroy`
+- lifecycle hooks: `onCreate`, `onUpdate`, `onDestroy`
 
 ## Quick Start
 
@@ -228,7 +228,8 @@ this.state
 this.refs
 this.render()
 this.destroy()
-this.prop(name, default?)
+this.prop(name, default?)   // an array/object default parses JSON
+this.listen(target, type, fn, options?)  // removed on destroy; returns a remover
 this.fetch(url, options?)   // supports AbortSignal in options.signal
 this.emit(event, payload?)
 this.on(event, handler)

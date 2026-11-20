@@ -94,10 +94,12 @@ The examples below use `data-component` and `Micra.start()`, and they run as the
 - `this.render()` — force sync re-render (rarely needed)
 - `this.tick()` — promise resolved after the pending render (`await this.tick()` then focus/scroll)
 - `this.destroy()` — unmount
-- `this.prop(attr, default)` — read SSR `data-*` attribute, auto-typed (`"true"` → `true`, `"42"` → `42`)
+- `this.prop(attr, default)` — read SSR `data-*` attribute, auto-typed (`"true"` → `true`, `"42"` → `42`); an array or object default parses JSON: `this.prop("items", [])` (2.14+)
 - `this.fetch(url, opts)` — JSON + CSRF helper, throws `FetchError` on non-2xx
 - `this.emit(event, payload)` — component-local + global bus
 - `this.on(event, handler)` — auto-unsubscribed on destroy
+- `this.listen(target, type, fn)` — DOM listener from JS (window, document, a library element), removed on destroy; returns a remover (2.14+)
+- `onUpdate(keys)` hook — runs after each render once mounted; `keys` = state keys written (2.14+)
 
 ---
 

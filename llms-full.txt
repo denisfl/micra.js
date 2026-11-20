@@ -83,6 +83,7 @@ Micra.define('name', {
   state: { /* flat raw data */ },
 
   onCreate() { /* mounted, refs available, safe to fetch */ },
+  onUpdate(keys) { /* after each later render; keys = state keys written (2.14+) */ },
   onDestroy() { /* clear timers, remove manual listeners */ },
 
   // Derived values — methods, called from directives via `methodName()`
@@ -120,6 +121,8 @@ Both forms can share a page, and everything inside the root is written the same 
 - `this.fetch(url, options?)` — JSON + CSRF helper, throws `FetchError` on non-2xx
 - `this.emit(event, payload?)` — emit on global bus
 - `this.on(event, handler)` — subscribe on global bus, auto-unsubscribed on destroy
+- `this.listen(target, type, fn, options?)` — DOM listener from JS (window, document, a library's element), removed on destroy; returns a remover (2.14+)
+- `this.prop(name, [])` / `this.prop(name, {})` — an array or object default parses the attribute as JSON (2.14+)
 
 ## Directives
 
@@ -554,67 +557,82 @@ The recipes below were written with `data-component` and `Micra.start()`, and th
 </script>
 ```
 
-## Recipe 11 — htmx bridge (server-driven HTML swaps + Micra islands)
+## Recipe 11 — htmx 4 + Micra islands (server-driven HTML swaps)
 
-Wire htmx for server-driven DOM swaps and Micra for local reactivity on
-the same page. Twelve lines of glue, written once. With `<micra-name>` roots
-(2.10+) you can skip the glue: swapped-in tags mount, and swapped-out ones are
-destroyed, on their own. With `hx-push-url`, also put `hx-history="false"` on the
-page: htmx's history snapshot holds rendered rows, and mounting on a restored one
-duplicates them. Back then re-requests the page from the server.
+htmx swaps server HTML; Micra keeps local state inside it. Written for **htmx 4**
+(events are `htmx:after:settle`, `htmx:before:swap`; attributes are inherited only
+with `:inherited`).
+
+**With `<micra-name>` tags (2.10+) there is no glue.** A swapped-in tag mounts
+itself, a swapped-out one is destroyed. Server events from the `HX-Trigger` header
+arrive as DOM events named after them, on the element that made the request, and
+they bubble, so a component listens with `.window`:
+
+```html
+<!-- in <head> -->
+<script src="https://cdn.jsdelivr.net/npm/htmx.org@4/dist/htmx.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/micra.js@2/dist/micra.min.js"></script>
+<script>
+  Micra.define('cart', {
+    state: { count: 0 },
+    // Server: HX-Trigger: {"cart:updated": {"count": 3}}
+    sync(e) { this.state.count = e.detail.count },
+  })
+</script>
+
+<!-- in <body> -->
+<main id="main" hx-get="/page/home" hx-trigger="load"></main>
+
+<!-- in server HTML, anywhere on the page or in a swapped fragment -->
+<micra-cart @cart:updated.window="sync">
+  Cart: <span data-text="count"></span>
+</micra-cart>
+```
+
+An object payload in `HX-Trigger` arrives as `e.detail` itself; any other value as
+`{ value: … }`.
+
+**With `data-component` roots**, mount what arrives and let `autoCleanup()` destroy
+what leaves:
+
+```js
+// in <head>, after Micra and your define() calls
+document.addEventListener('DOMContentLoaded', () => Micra.start())  // what's on the page
+Micra.autoCleanup()  // destroy components htmx swaps out
+
+// Mount [data-component] elements that arrive in a swap.
+document.addEventListener('htmx:after:settle', (e) => Micra.start(e.target))
+
+// Optional: forward server events to the Micra bus (this.on('cart:updated', …)).
+for (const name of ['cart:updated']) {
+  document.addEventListener(name, (e) => Micra.emit(name, e.detail))
+}
+```
 
 **Morph swaps (htmx 4 `innerMorph` / `outerMorph`, Micra 2.13+).** A live component
 is skipped by the morph: Micra puts `hx-morph-skip` on its root, so its rendered
 rows, input values and state survive while the HTML around it updates. If the new
 HTML no longer has the component, it is removed and destroyed. Give `data-component` roots an `id`, and repeated tags too: morphing pairs elements by tag and position, so an id-less `<div data-component>` can be mistaken for a neighbouring `<div>`. To make the server replace a component, change its `id`.
 
-```html
-<main hx-get="/page/home" hx-trigger="load" hx-swap="innerHTML"></main>
-
-<script src="https://cdn.jsdelivr.net/npm/htmx.org@2/dist/htmx.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/micra.js@2/dist/micra.min.js"></script>
-<script>
-  Micra.define('counter', {
-    state: { count: 0 },
-    inc() { this.state.count++ },
-  })
-
-  Micra.start()  // initial mount
-
-  // Mount new [data-component] arriving via htmx swap.
-  document.body.addEventListener('htmx:afterSettle', (e) => {
-    Micra.start(e.target)
-  })
-
-  // Destroy Micra instances inside HTML about to be replaced.
-  document.body.addEventListener('htmx:beforeSwap', (e) => {
-    Micra.instances().forEach((inst, root) => {
-      if (e.target.contains(root)) inst.destroy()
-    })
-  })
-
-  // Bridge server-sent HX-Trigger events into the Micra bus.
-  document.body.addEventListener('htmx:trigger', (e) => {
-    const d = e.detail
-    if (typeof d === 'string') return Micra.emit(d)
-    for (const [k, v] of Object.entries(d)) Micra.emit(k, v)
-  })
-</script>
-```
+**History.** htmx 4 keeps no history snapshots: Back re-requests the page and swaps
+the body, so components mount fresh. Load Micra and your `define()` calls in
+`<head>`: scripts inside the swapped body run again, and a second copy of Micra
+would start with an empty registry. (htmx 2 restored a cached snapshot that already
+held rendered rows; there, put `hx-history="false"` on the page.)
 
 Rules of thumb:
 
-- **Never put `hx-swap` directly on a `[data-component]` element that
-  swaps its own `innerHTML`** — the cached directive scan points at gone
-  DOM. Use a wrapper as the swap target.
-- **`Micra.start()` is idempotent**, so re-scanning a subtree that
-  contains already-mounted siblings is safe.
-- **Always scope to `e.target`** in the bridge, not `document` — scanning
-  the whole page on every swap is wasteful.
+- **Never put `hx-swap` directly on a `[data-component]` element that swaps its own
+  `innerHTML`** — the cached directive scan points at gone DOM. Use a wrapper as the
+  swap target. (A `<micra-name>` tag replaced from outside is fine.)
+- **`Micra.start()` is idempotent**, so re-scanning a subtree that contains
+  already-mounted siblings is safe.
+- **Scope `Micra.start()` to `e.target`**, not `document`.
+- **Don't tear down on `htmx:before:swap`** in htmx 4: it fires on the requesting
+  element, not on the swap target. `autoCleanup()` or tags handle teardown.
 
-Full reference with state-survival patterns, `hx-vals`/`hx-include`
-bridging, and per-component loading state lives in
-`docs/recipes/htmx.md`.
+Full reference with state-survival patterns, `hx-vals`/`hx-include` bridging, and
+per-component loading state: https://micrajs.dev/docs/recipes/htmx
 
 ## Recipe 12 — Rails + Micra (importmap, CSRF, Turbo Drive)
 
@@ -678,7 +696,7 @@ import * as Micra from "micra"
 
 Micra.define("tasks-board", {
   state: { tasks: [], draft: "" },
-  onCreate() { this.state.tasks = JSON.parse(this.prop("initialTasks") || "[]") },
+  onCreate() { this.state.tasks = this.prop("initialTasks", []) },
   async add() {
     const task = await this.fetch("/tasks", { method: "POST", body: { title: this.state.draft.trim() } })
     this.state.tasks = [...this.state.tasks, task]
@@ -705,10 +723,10 @@ Rules of thumb:
 - **Add `turbo:load`** alongside `DOMContentLoaded` if you have Turbo
   Drive enabled (default since Rails 7). Without it, only the first
   page load wires up.
-- **JSON in `data-*` attributes does NOT auto-parse.** Non-primitive
-  props (`@tasks.as_json.to_json`) are strings client-side — call
-  `JSON.parse(this.prop('initialTasks'))` in `onCreate`. Primitives
-  (numbers, booleans) auto-cast through `this.prop()`.
+- **JSON in `data-*` attributes parses when you pass an array or object
+  default** (2.14+): `this.prop('initialTasks', [])`. Without such a default the
+  value stays a string (`JSON.parse(this.prop('initialTasks'))` on older versions).
+  Primitives (numbers, booleans) auto-cast through `this.prop()`.
 - **Turbo Frames** that swap their own `innerHTML` and contain a
   `[data-component]` will leave the cached scan pointing at gone DOM.
   Same footgun as htmx — keep `data-component` outside the frame, or

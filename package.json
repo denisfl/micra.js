@@ -1,6 +1,6 @@
 {
   "name": "micra.js",
-  "version": "2.13.0",
+  "version": "2.14.0",
   "description": "Lightweight reactive UI framework for server-rendered pages — reactive state, directives, event bus. ~7.5 KB gzip.",
   "type": "module",
   "main": "./dist/micra.cjs.js",

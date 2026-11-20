@@ -15,6 +15,11 @@
  */
 import type { CachedBinding, InternalInstance, StateRecord } from '../types';
 /**
+ * @internal Attach a DOM listener and track it on the instance for destroy().
+ * `target` defaults to the element; `.window` / `.outside` pass window/document.
+ */
+export declare function track<S extends StateRecord>(instance: InternalInstance<S>, el: Element, type: string, fn: EventListener, target?: EventTarget, c?: boolean | AddEventListenerOptions): void;
+/**
  * Bind `data-on="event:method[,event2:method2]"` and `@event[.mod]="method"`
  * listeners. Bound once per element (`__micraEvents`) — re-renders are no-ops.
  *

@@ -30,7 +30,7 @@ import { on as busOn, emit as busEmit } from "../core/bus";
 import { createReactiveState, createScheduler, setPath } from "../core/reactive";
 import { applyDirectives, validateDirectives } from "../dom/directives";
 import { renderList } from "../dom/each";
-import { bindDataOn, bindModels } from "../dom/events";
+import { bindDataOn, bindModels, track } from "../dom/events";
 import { collectRefs } from "../dom/refs";
 import { NESTED_COMPONENT_FILTER, scanComponent } from "../dom/scan";
 import { releaseScan } from "../core/destroy";
@@ -102,6 +102,14 @@ export function mount<S extends StateRecord, M>(
     if (val === undefined) return defaultVal;
     // A string default opts out of auto-cast: data-zip="01234" stays "01234".
     if (typeof defaultVal === "string") return val as unknown as T;
+    // An array/object default asks for JSON: data-items='[{"id":1}]'.
+    if (defaultVal && typeof defaultVal === "object")
+      try {
+        return JSON.parse(val);
+      } catch {
+        warn(__DEV__ && `data-${name} is not valid JSON`);
+        return defaultVal;
+      }
     if (val === "true") return true as unknown as T;
     if (val === "false") return false as unknown as T;
     if (val !== "" && !isNaN(Number(val))) return Number(val) as unknown as T;
@@ -114,6 +122,17 @@ export function mount<S extends StateRecord, M>(
   // the shallow proxy fires a render without hand-spreading nested objects.
   instance.set = (path: string, value: unknown): void =>
     setPath(instance.state as StateRecord, path, value);
+
+  // ── listen() ──────────────────────────────────────────────────────────────
+  // A listener added from JS, tracked like @event ones so destroy() removes it.
+  instance.listen = (target, type, fn, c) => {
+    const h = (e: Event) => fn.call(instance, e);
+    track(instance, root, type, h, target, c);
+    return () => {
+      target.removeEventListener(type, h, c);
+      instance.__micraListeners = instance.__micraListeners!.filter((r) => r.fn !== h);
+    };
+  };
 
   // ── fetch(), emit(), on() ─────────────────────────────────────────────────
   instance.fetch = micraFetch;
@@ -205,6 +224,8 @@ export function mount<S extends StateRecord, M>(
           "render() re-entry detected — mutation inside a directive expression is ignored. Move state writes to a method.",
       );
     isRendering = true;
+    // The first render belongs to mounting (onCreate), not to onUpdate.
+    const mounted = scan;
     try {
       // Single-pass scan, cached for re-renders. Replaces what used to be
       // ~10 separate querySelectorAll passes per render.
@@ -217,6 +238,8 @@ export function mount<S extends StateRecord, M>(
     } finally {
       isRendering = false;
     }
+    // After the render, so state writes in onUpdate schedule the next one.
+    if (mounted) definition.onUpdate?.call(instance, dirty);
   };
 
   // ── Destroy ───────────────────────────────────────────────────────────────

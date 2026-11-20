@@ -39,8 +39,10 @@ Use `<element data-component="name">` plus `Micra.start()` only when:
 Both forms can share a page, and everything inside the root is written the same way.
 
 `this` inside methods: `this.state` (reactive Proxy), `this.$el`, `this.refs`,
-`this.prop(name, default)`, `this.fetch(url, opts)`, `this.emit(event, payload)`,
-`this.on(event, handler)` (auto-unsubscribed on destroy).
+`this.prop(name, default)` (an array/object default parses JSON, 2.14+),
+`this.fetch(url, opts)`, `this.emit(event, payload)`,
+`this.on(event, handler)` (auto-unsubscribed on destroy), `this.listen(target, type, fn)`
+(DOM listener removed on destroy, 2.14+). Hook `onUpdate(keys)` runs after renders (2.14+).
 
 ## Rules
 
